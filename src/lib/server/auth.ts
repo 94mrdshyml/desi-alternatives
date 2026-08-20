@@ -17,7 +17,7 @@ export function createAuth(
 ) {
   const db = createDb(d1);
 
-  const plugins = [
+  const plugins: any[] = [
     admin({
       defaultRole: 'user',
       adminRole: 'admin',
