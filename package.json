@@ -18,6 +18,8 @@
     "@astrojs/cloudflare": "^12.2.0",
     "@astrojs/react": "^4.2.1",
     "@better-auth/infra": "^0.4.1",
+    "@better-auth/scim": "^1.7.1",
+    "@better-auth/sso": "^1.7.1",
     "@tailwindcss/vite": "^4.0.7",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
