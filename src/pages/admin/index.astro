@@ -7,6 +7,7 @@ import { eq, desc } from 'drizzle-orm';
 const user = Astro.locals.user;
 const db = Astro.locals.db;
 
+let allToolsList: any[] = [];
 let pendingClaims: any[] = [];
 let pendingTools: any[] = [];
 let allUsersList: any[] = [];
@@ -18,7 +19,42 @@ let categoryCounts: Record<string, number> = {};
 
 if (db && user && user.role === 'admin') {
   try {
-    // 1. Pending Claims
+    // 1. All Directory Tools
+    allToolsList = await db
+      .select({
+        id: desiTools.id,
+        name: desiTools.name,
+        slug: desiTools.slug,
+        tagline: desiTools.tagline,
+        description: desiTools.description,
+        websiteUrl: desiTools.websiteUrl,
+        logoUrl: desiTools.logoUrl,
+        categoryId: desiTools.categoryId,
+        categoryName: categories.name,
+        categoryEmoji: categories.emoji,
+        pricingModel: desiTools.pricingModel,
+        startingPriceInr: desiTools.startingPriceInr,
+        hasIndianDataResidency: desiTools.hasIndianDataResidency,
+        hasGstInvoice: desiTools.hasGstInvoice,
+        hasInrPricing: desiTools.hasInrPricing,
+        hasUpiSupport: desiTools.hasUpiSupport,
+        isOpenSource: desiTools.isOpenSource,
+        hasIstSupport: desiTools.hasIstSupport,
+        isSelfHostable: desiTools.isSelfHostable,
+        hasFreeTier: desiTools.hasFreeTier,
+        isFeatured: desiTools.isFeatured,
+        status: desiTools.status,
+        createdAt: desiTools.createdAt,
+      })
+      .from(desiTools)
+      .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+      .orderBy(desc(desiTools.createdAt))
+      .all();
+
+    totalToolsCount = allToolsList.length;
+    pendingTools = allToolsList.filter((t) => t.status === 'draft');
+
+    // 2. Pending Claims
     pendingClaims = await db
       .select({
         id: claimsQueue.id,
@@ -38,24 +74,6 @@ if (db && user && user.role === 'admin') {
       .leftJoin(users, eq(claimsQueue.userId, users.id))
       .where(eq(claimsQueue.status, 'pending'))
       .orderBy(desc(claimsQueue.submittedAt))
-      .all();
-
-    // 2. Pending / Draft Tools
-    pendingTools = await db
-      .select({
-        id: desiTools.id,
-        name: desiTools.name,
-        slug: desiTools.slug,
-        tagline: desiTools.tagline,
-        websiteUrl: desiTools.websiteUrl,
-        pricingModel: desiTools.pricingModel,
-        startingPriceInr: desiTools.startingPriceInr,
-        createdAt: desiTools.createdAt,
-        status: desiTools.status,
-      })
-      .from(desiTools)
-      .where(eq(desiTools.status, 'draft'))
-      .orderBy(desc(desiTools.createdAt))
       .all();
 
     // 3. All Users
@@ -78,13 +96,7 @@ if (db && user && user.role === 'admin') {
     allCategoriesList = await db.select().from(categories).orderBy(categories.name).all();
     globalToolsList = await db.select().from(globalTools).orderBy(globalTools.name).all();
 
-    const allTools = await db
-      .select({ id: desiTools.id, categoryId: desiTools.categoryId })
-      .from(desiTools)
-      .all();
-
-    totalToolsCount = allTools.length;
-    for (const t of allTools) {
+    for (const t of allToolsList) {
       if (t.categoryId) {
         categoryCounts[t.categoryId] = (categoryCounts[t.categoryId] || 0) + 1;
       }
@@ -101,10 +113,12 @@ if (db && user && user.role === 'admin') {
   <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
     {!user || user.role !== 'admin' ? (
       <div class="mx-auto max-w-md rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
-        <span class="text-3xl">🛡️</span>
+        <svg class="mx-auto h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m11-3.5a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
         <h1 class="mt-3 text-lg font-bold text-red-900">Admin Access Restricted</h1>
         <p class="mt-2 text-xs text-red-700 leading-relaxed">
-          You must be logged into an account with the <code>admin</code> role to view the moderation center and manage tools.
+          You must be logged into an account with the <code>admin</code> role to view the moderation center.
         </p>
         <a
           href="/login"
@@ -125,7 +139,7 @@ if (db && user && user.role === 'admin') {
               </span>
             </div>
             <p class="mt-1 text-xs text-muted-foreground">
-              Direct tool publishing, category taxonomy management, user role elevation, and moderation queues.
+              Direct tool management, R2 logo uploads, category taxonomy, user roles, and moderation queues.
             </p>
           </div>
 
@@ -136,7 +150,10 @@ if (db && user && user.role === 'admin') {
               id="open-create-tool-modal"
               class="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
             >
-              <span>➕ Add New Tool</span>
+              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              <span>Add New Tool</span>
             </button>
 
             <button
@@ -144,7 +161,10 @@ if (db && user && user.role === 'admin') {
               id="open-create-cat-modal"
               class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-3.5 py-2 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition cursor-pointer"
             >
-              <span>📁 Add Category</span>
+              <svg class="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+              </svg>
+              <span>Add Category</span>
             </button>
           </div>
         </div>
@@ -169,11 +189,113 @@ if (db && user && user.role === 'admin') {
           </div>
         </div>
 
-        <!-- Section 1: Categories Taxonomy Management -->
+        <!-- Section 1: All Directory Tools Management -->
         <section class="mt-10">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-foreground">
-              Categories & Taxonomy ({allCategoriesList.length})
+              Directory Tools ({allToolsList.length})
+            </h2>
+            <span class="text-xs text-muted-foreground">Edit, unpublish, delete, or feature any tool</span>
+          </div>
+
+          <div class="mt-3 overflow-hidden rounded-2xl border border-border bg-white shadow-xs">
+            <table class="w-full text-left text-xs">
+              <thead class="border-b border-border bg-secondary/40">
+                <tr>
+                  <th class="py-3 px-4 font-semibold text-foreground">Tool</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Category</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Status</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Featured</th>
+                  <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                {allToolsList.map((t) => (
+                  <tr class="hover:bg-slate-50/50">
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-2.5">
+                        <img src={t.logoUrl} alt={t.name} class="h-6 w-6 rounded-md object-contain border border-border bg-slate-50 p-0.5" />
+                        <div>
+                          <a href={`/tools/${t.slug}`} target="_blank" class="font-bold text-foreground hover:text-primary transition">
+                            {t.name}
+                          </a>
+                          <p class="text-[11px] text-muted-foreground line-clamp-1">{t.tagline}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4 text-foreground font-medium">
+                      <span>{t.categoryEmoji} {t.categoryName || 'Unassigned'}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                      {t.status === 'published' ? (
+                        <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-800 border border-emerald-200">
+                          Published
+                        </span>
+                      ) : (
+                        <span class="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">
+                          Draft
+                        </span>
+                      )}
+                    </td>
+                    <td class="py-3 px-4">
+                      {t.isFeatured ? (
+                        <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+                          ★ Featured
+                        </span>
+                      ) : (
+                        <span class="text-muted-foreground text-[11px]">Standard</span>
+                      )}
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <div class="inline-flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          class="edit-tool-btn rounded-lg border border-border bg-white px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-slate-50 transition cursor-pointer"
+                          data-tool-json={JSON.stringify(t)}
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          data-tool-action="toggleFeatured"
+                          data-tool-id={t.id}
+                          class="rounded-lg border border-amber-200 bg-amber-50/60 px-2 py-1 text-[11px] font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer"
+                        >
+                          {t.isFeatured ? 'Unfeature' : 'Feature'}
+                        </button>
+
+                        <button
+                          type="button"
+                          data-tool-action="toggleStatus"
+                          data-tool-id={t.id}
+                          class="rounded-lg border border-border bg-white px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-slate-50 transition cursor-pointer"
+                        >
+                          {t.status === 'published' ? 'Unpublish' : 'Publish'}
+                        </button>
+
+                        <button
+                          type="button"
+                          data-tool-action="delete"
+                          data-tool-id={t.id}
+                          class="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section 2: Categories Taxonomy Management -->
+        <section class="mt-10">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-foreground">
+              Categories Taxonomy ({allCategoriesList.length})
             </h2>
             <span class="text-xs text-muted-foreground">Clean URLs live at <code>/category/[slug]</code></span>
           </div>
@@ -243,7 +365,7 @@ if (db && user && user.role === 'admin') {
           </div>
         </section>
 
-        <!-- Section 2: User & Role Management -->
+        <!-- Section 3: User & Role Management -->
         <section class="mt-10">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-foreground">
@@ -342,71 +464,7 @@ if (db && user && user.role === 'admin') {
           </div>
         </section>
 
-        <!-- Section 3: Pending Tool Submissions -->
-        <section class="mt-10">
-          <h2 class="text-base font-bold text-foreground">
-            Pending Tool Submissions ({pendingTools.length})
-          </h2>
-
-          <div class="mt-3 overflow-hidden rounded-2xl border border-border bg-white shadow-xs">
-            {pendingTools.length === 0 ? (
-              <div class="p-8 text-center text-xs text-muted-foreground">
-                No pending tool submissions in queue.
-              </div>
-            ) : (
-              <table class="w-full text-left text-xs">
-                <thead class="border-b border-border bg-secondary/40">
-                  <tr>
-                    <th class="py-3 px-4 font-semibold text-foreground">Tool</th>
-                    <th class="py-3 px-4 font-semibold text-foreground">Pricing</th>
-                    <th class="py-3 px-4 font-semibold text-foreground">Website</th>
-                    <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-border">
-                  {pendingTools.map((tool) => (
-                    <tr class="hover:bg-slate-50/50">
-                      <td class="py-3 px-4">
-                        <p class="font-bold text-foreground">{tool.name}</p>
-                        <p class="text-muted-foreground line-clamp-1">{tool.tagline}</p>
-                      </td>
-                      <td class="py-3 px-4 font-medium text-foreground">
-                        {tool.pricingModel} {tool.startingPriceInr ? `(₹${tool.startingPriceInr})` : ''}
-                      </td>
-                      <td class="py-3 px-4">
-                        <a href={tool.websiteUrl} target="_blank" class="text-primary underline hover:text-primary-hover">
-                          {tool.websiteUrl}
-                        </a>
-                      </td>
-                      <td class="py-3 px-4 text-right">
-                        <div class="inline-flex items-center gap-2">
-                          <button
-                            type="button"
-                            data-tool-action="publish"
-                            data-tool-id={tool.id}
-                            class="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-700 transition cursor-pointer"
-                          >
-                            Publish
-                          </button>
-                          <button
-                            type="button"
-                            data-tool-action="delete"
-                            data-tool-id={tool.id}
-                            class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        </section>
-
-        <!-- Section 4: Pending Claims Queue -->
+        <!-- Section 4: Pending Ownership Claims -->
         <section class="mt-10">
           <h2 class="text-base font-bold text-foreground">
             Pending Ownership Claims ({pendingClaims.length})
@@ -473,7 +531,7 @@ if (db && user && user.role === 'admin') {
   <div id="create-tool-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
     <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-2xl">
       <div class="flex items-center justify-between pb-3 border-b border-border">
-        <h3 class="text-base font-bold text-foreground">➕ Add New Indian SaaS Tool (Direct Publish)</h3>
+        <h3 class="text-base font-bold text-foreground">Add New Indian SaaS Tool</h3>
         <button id="close-tool-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
       </div>
 
@@ -481,7 +539,7 @@ if (db && user && user.role === 'admin') {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label class="block text-xs font-semibold text-foreground">Tool Name *</label>
-            <input type="text" name="name" required placeholder="e.g. Zoho" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <input type="text" id="create-tool-name-input" name="name" required placeholder="e.g. Zoho" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
           <div>
             <label class="block text-xs font-semibold text-foreground">Website URL *</label>
@@ -492,6 +550,21 @@ if (db && user && user.role === 'admin') {
         <div>
           <label class="block text-xs font-semibold text-foreground">Tagline *</label>
           <input type="text" name="tagline" required placeholder="Suite of cloud software applications for businesses" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+        </div>
+
+        <!-- Logo Upload to R2 or URL -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Tool Logo (Upload to Cloudflare R2)</label>
+          <div class="mt-1 flex items-center gap-3">
+            <input
+              type="file"
+              id="create-tool-logo-file"
+              accept="image/*"
+              class="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-border file:text-xs file:font-semibold file:bg-slate-50 file:text-foreground hover:file:bg-slate-100 cursor-pointer"
+            />
+            <input type="hidden" name="logoUrl" id="create-tool-logo-url-hidden" />
+            <span id="create-tool-upload-status" class="text-[11px] text-muted-foreground"></span>
+          </div>
         </div>
 
         <div>
@@ -541,12 +614,13 @@ if (db && user && user.role === 'admin') {
         <div>
           <label class="block text-xs font-semibold text-foreground mb-1.5">Sovereign Compliance Badges</label>
           <div class="grid grid-cols-2 gap-2 text-xs">
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIndianDataResidency" /> 🇮🇳 India Data Residency</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasGstInvoice" /> 🧾 GST Invoices</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasInrPricing" /> ₹ Direct INR Billing</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasUpiSupport" /> ⚡ UPI Payments</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="isOpenSource" /> 🔓 Open Source</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIstSupport" /> ⏱️ Dedicated IST Support</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIndianDataResidency" /> India Data Residency</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasGstInvoice" /> GST Invoices</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasInrPricing" /> Direct INR Billing</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasUpiSupport" /> UPI Payments</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="isOpenSource" /> Open Source</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIstSupport" /> Dedicated IST Support</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="isFeatured" /> Featured on Homepage</label>
           </div>
         </div>
 
@@ -560,11 +634,103 @@ if (db && user && user.role === 'admin') {
     </div>
   </div>
 
-  <!-- Modal 2: Create Category -->
+  <!-- Modal 2: Edit Tool Modal -->
+  <div id="edit-tool-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-border">
+        <h3 class="text-base font-bold text-foreground">Edit Tool Details</h3>
+        <button id="close-edit-tool-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
+      </div>
+
+      <form id="admin-edit-tool-form" class="mt-4 space-y-4">
+        <input type="hidden" name="id" id="edit-tool-id" />
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Tool Name *</label>
+            <input type="text" id="edit-tool-name" name="name" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Website URL *</label>
+            <input type="url" id="edit-tool-website" name="websiteUrl" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Tagline *</label>
+          <input type="text" id="edit-tool-tagline" name="tagline" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+        </div>
+
+        <!-- Logo Upload to R2 or URL -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Logo URL / Replace via R2</label>
+          <div class="mt-1 flex items-center gap-3">
+            <input type="text" id="edit-tool-logo-url" name="logoUrl" class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <input type="file" id="edit-tool-logo-file" accept="image/*" class="text-xs text-muted-foreground file:py-1 file:px-2.5 file:rounded-xl file:border file:border-border file:bg-slate-50 cursor-pointer shrink-0" />
+          </div>
+          <span id="edit-tool-upload-status" class="text-[11px] text-muted-foreground"></span>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Description</label>
+          <textarea id="edit-tool-description" name="description" rows="2" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Category *</label>
+            <select id="edit-tool-category" name="categoryId" required class="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
+              {allCategoriesList.map((c) => (
+                <option value={c.id}>{c.emoji} {c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Pricing Model *</label>
+            <select id="edit-tool-pricing-model" name="pricingModel" required class="mt-1 w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
+              <option value="Freemium">Freemium</option>
+              <option value="Free">Free</option>
+              <option value="Paid">Paid</option>
+              <option value="Open-Source">Open-Source</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Starting Price (₹ INR)</label>
+            <input type="number" id="edit-tool-price" name="startingPriceInr" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <!-- Sovereign Badges Checklist -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground mb-1.5">Sovereign Compliance Badges</label>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="edit-tool-residency" name="hasIndianDataResidency" /> India Data Residency</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="edit-tool-gst" name="hasGstInvoice" /> GST Invoices</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="edit-tool-inr" name="hasInrPricing" /> Direct INR Billing</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="edit-tool-upi" name="hasUpiSupport" /> UPI Payments</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="edit-tool-oss" name="isOpenSource" /> Open Source</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="edit-tool-ist" name="hasIstSupport" /> Dedicated IST Support</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="edit-tool-featured" name="isFeatured" /> Featured on Homepage</label>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer"
+        >
+          Save Changes
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 3: Create Category -->
   <div id="create-cat-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
     <div class="relative w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-2xl">
       <div class="flex items-center justify-between pb-3 border-b border-border">
-        <h3 class="text-base font-bold text-foreground">📁 Add New Category</h3>
+        <h3 class="text-base font-bold text-foreground">Add New Category</h3>
         <button id="close-create-cat-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
       </div>
 
@@ -602,11 +768,11 @@ if (db && user && user.role === 'admin') {
     </div>
   </div>
 
-  <!-- Modal 3: Edit Category -->
+  <!-- Modal 4: Edit Category -->
   <div id="edit-cat-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
     <div class="relative w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-2xl">
       <div class="flex items-center justify-between pb-3 border-b border-border">
-        <h3 class="text-base font-bold text-foreground">✏️ Edit Category</h3>
+        <h3 class="text-base font-bold text-foreground">Edit Category</h3>
         <button id="close-edit-cat-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
       </div>
 
@@ -648,7 +814,49 @@ if (db && user && user.role === 'admin') {
 </BaseLayout>
 
 <script>
-  // Tool modal
+  // Tool R2 Upload Helper
+  async function uploadFileToR2(fileInput: HTMLInputElement, statusEl: HTMLElement | null, hiddenUrlInput: HTMLInputElement | null) {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+
+    if (statusEl) statusEl.textContent = 'Uploading to R2...';
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = (await res.json()) as any;
+      if (res.ok && data.url) {
+        if (hiddenUrlInput) hiddenUrlInput.value = data.url;
+        if (statusEl) statusEl.textContent = 'Uploaded to R2!';
+      } else {
+        if (statusEl) statusEl.textContent = data.error || 'Upload failed.';
+      }
+    } catch {
+      if (statusEl) statusEl.textContent = 'Upload network error.';
+    }
+  }
+
+  // Create Tool R2 Upload
+  const createLogoFileInput = document.getElementById('create-tool-logo-file') as HTMLInputElement | null;
+  const createLogoUrlHidden = document.getElementById('create-tool-logo-url-hidden') as HTMLInputElement | null;
+  const createUploadStatus = document.getElementById('create-tool-upload-status');
+  if (createLogoFileInput) {
+    createLogoFileInput.addEventListener('change', () => uploadFileToR2(createLogoFileInput, createUploadStatus, createLogoUrlHidden));
+  }
+
+  // Edit Tool R2 Upload
+  const editLogoFileInput = document.getElementById('edit-tool-logo-file') as HTMLInputElement | null;
+  const editLogoUrlInput = document.getElementById('edit-tool-logo-url') as HTMLInputElement | null;
+  const editUploadStatus = document.getElementById('edit-tool-upload-status');
+  if (editLogoFileInput) {
+    editLogoFileInput.addEventListener('change', () => uploadFileToR2(editLogoFileInput, editUploadStatus, editLogoUrlInput));
+  }
+
+  // Create Tool modal
   const toolModal = document.getElementById('create-tool-modal');
   const openToolBtn = document.getElementById('open-create-tool-modal');
   const closeToolBtn = document.getElementById('close-tool-modal');
@@ -667,6 +875,7 @@ if (db && user && user.role === 'admin') {
         action: 'create',
         name: formData.get('name'),
         websiteUrl: formData.get('websiteUrl'),
+        logoUrl: createLogoUrlHidden?.value || formData.get('logoUrl'),
         tagline: formData.get('tagline'),
         description: formData.get('description'),
         categoryId: formData.get('categoryId'),
@@ -679,6 +888,7 @@ if (db && user && user.role === 'admin') {
         hasUpiSupport: formData.get('hasUpiSupport') === 'on',
         isOpenSource: formData.get('isOpenSource') === 'on',
         hasIstSupport: formData.get('hasIstSupport') === 'on',
+        isFeatured: formData.get('isFeatured') === 'on',
       };
 
       try {
@@ -691,6 +901,84 @@ if (db && user && user.role === 'admin') {
           window.location.reload();
         } else {
           alert('Failed to publish tool');
+        }
+      } catch {
+        alert('Network error');
+      }
+    });
+  }
+
+  // Edit Tool modal
+  const editToolModal = document.getElementById('edit-tool-modal');
+  const closeEditToolBtn = document.getElementById('close-edit-tool-modal');
+  const editToolForm = document.getElementById('admin-edit-tool-form') as HTMLFormElement | null;
+
+  if (closeEditToolBtn && editToolModal) {
+    closeEditToolBtn.addEventListener('click', () => editToolModal.classList.add('hidden'));
+  }
+
+  document.querySelectorAll('.edit-tool-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const dataStr = btn.getAttribute('data-tool-json');
+      if (!dataStr || !editToolModal) return;
+      const t = JSON.parse(dataStr);
+
+      (document.getElementById('edit-tool-id') as HTMLInputElement).value = t.id;
+      (document.getElementById('edit-tool-name') as HTMLInputElement).value = t.name || '';
+      (document.getElementById('edit-tool-website') as HTMLInputElement).value = t.websiteUrl || '';
+      (document.getElementById('edit-tool-logo-url') as HTMLInputElement).value = t.logoUrl || '';
+      (document.getElementById('edit-tool-tagline') as HTMLInputElement).value = t.tagline || '';
+      (document.getElementById('edit-tool-description') as HTMLTextAreaElement).value = t.description || '';
+      (document.getElementById('edit-tool-category') as HTMLSelectElement).value = t.categoryId || '';
+      (document.getElementById('edit-tool-pricing-model') as HTMLSelectElement).value = t.pricingModel || 'Freemium';
+      (document.getElementById('edit-tool-price') as HTMLInputElement).value = t.startingPriceInr !== null ? String(t.startingPriceInr) : '';
+
+      (document.getElementById('edit-tool-residency') as HTMLInputElement).checked = Boolean(t.hasIndianDataResidency);
+      (document.getElementById('edit-tool-gst') as HTMLInputElement).checked = Boolean(t.hasGstInvoice);
+      (document.getElementById('edit-tool-inr') as HTMLInputElement).checked = Boolean(t.hasInrPricing);
+      (document.getElementById('edit-tool-upi') as HTMLInputElement).checked = Boolean(t.hasUpiSupport);
+      (document.getElementById('edit-tool-oss') as HTMLInputElement).checked = Boolean(t.isOpenSource);
+      (document.getElementById('edit-tool-ist') as HTMLInputElement).checked = Boolean(t.hasIstSupport);
+      (document.getElementById('edit-tool-featured') as HTMLInputElement).checked = Boolean(t.isFeatured);
+
+      editToolModal.classList.remove('hidden');
+    });
+  });
+
+  if (editToolForm) {
+    editToolForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(editToolForm);
+      const payload = {
+        action: 'update',
+        id: formData.get('id'),
+        name: formData.get('name'),
+        websiteUrl: formData.get('websiteUrl'),
+        logoUrl: formData.get('logoUrl'),
+        tagline: formData.get('tagline'),
+        description: formData.get('description'),
+        categoryId: formData.get('categoryId'),
+        pricingModel: formData.get('pricingModel'),
+        startingPriceInr: formData.get('startingPriceInr'),
+        hasIndianDataResidency: formData.get('hasIndianDataResidency') === 'on',
+        hasGstInvoice: formData.get('hasGstInvoice') === 'on',
+        hasInrPricing: formData.get('hasInrPricing') === 'on',
+        hasUpiSupport: formData.get('hasUpiSupport') === 'on',
+        isOpenSource: formData.get('isOpenSource') === 'on',
+        hasIstSupport: formData.get('hasIstSupport') === 'on',
+        isFeatured: formData.get('isFeatured') === 'on',
+      };
+
+      try {
+        const res = await fetch('/api/admin/tools', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          alert('Failed to update tool');
         }
       } catch {
         alert('Network error');
@@ -841,7 +1129,7 @@ if (db && user && user.role === 'admin') {
     });
   });
 
-  // Tool moderation actions
+  // Tool moderation actions (publish, unpublish, toggleFeatured, delete)
   document.querySelectorAll('[data-tool-action]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const toolId = btn.getAttribute('data-tool-id');
@@ -858,7 +1146,7 @@ if (db && user && user.role === 'admin') {
           window.location.reload();
         } else {
           alert('Failed to perform action');
-          btn.textContent = action || 'Retry';
+          btn.textContent = 'Retry';
         }
       } catch {
         alert('Network error');

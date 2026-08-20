@@ -128,6 +128,7 @@ export const desiTools = sqliteTable('desi_tools', {
   startingPriceInr: integer('starting_price_inr'),
   claimedById: text('claimed_by_id').references(() => users.id),
   status: text('status', { enum: ['draft', 'published', 'archived'] }).default('published').notNull(),
+  isFeatured: integer('is_featured', { mode: 'boolean' }).default(false).notNull(),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

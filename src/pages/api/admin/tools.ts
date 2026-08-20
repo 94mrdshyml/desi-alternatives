@@ -18,6 +18,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body = (await request.json()) as any;
     const { toolId, action } = body;
 
+    // 1. Create Tool (Direct Publish)
     if (action === 'create') {
       const {
         name,
@@ -36,16 +37,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
         hasIstSupport,
         isSelfHostable,
         hasFreeTier,
+        isFeatured,
         globalToolIds,
       } = body;
 
       if (!name || !tagline || !websiteUrl || !categoryId) {
         return new Response(
           JSON.stringify({ error: 'Name, tagline, website URL, and category are required.' }),
-          {
-            status: 400,
-            headers: { 'Content-Type': 'application/json' },
-          }
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
         );
       }
 
@@ -72,8 +71,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         hasIstSupport: Boolean(hasIstSupport),
         isSelfHostable: Boolean(isSelfHostable),
         hasFreeTier: Boolean(hasFreeTier),
+        isFeatured: Boolean(isFeatured),
         claimedById: user.id,
-        status: 'published', // Direct admin publish
+        status: 'published',
       });
 
       if (Array.isArray(globalToolIds)) {
@@ -94,25 +94,96 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    if (!toolId || !action || !['publish', 'archive', 'delete'].includes(action)) {
-      return new Response(JSON.stringify({ error: 'Invalid parameters' }), {
-        status: 400,
+    // 2. Update Existing Tool
+    if (action === 'update') {
+      const {
+        id,
+        name,
+        tagline,
+        description,
+        websiteUrl,
+        logoUrl,
+        categoryId,
+        pricingModel,
+        startingPriceInr,
+        hasIndianDataResidency,
+        hasGstInvoice,
+        hasInrPricing,
+        hasUpiSupport,
+        isOpenSource,
+        hasIstSupport,
+        isSelfHostable,
+        hasFreeTier,
+        isFeatured,
+      } = body;
+
+      if (!id || !name || !tagline || !websiteUrl || !categoryId) {
+        return new Response(
+          JSON.stringify({ error: 'Tool ID, name, tagline, website URL, and category are required for update.' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+      await db
+        .update(desiTools)
+        .set({
+          name,
+          slug,
+          tagline,
+          description: description || tagline,
+          websiteUrl,
+          logoUrl,
+          categoryId,
+          pricingModel: pricingModel || 'Freemium',
+          startingPriceInr: startingPriceInr !== undefined && startingPriceInr !== '' ? Number(startingPriceInr) : null,
+          hasIndianDataResidency: Boolean(hasIndianDataResidency),
+          hasGstInvoice: Boolean(hasGstInvoice),
+          hasInrPricing: Boolean(hasInrPricing),
+          hasUpiSupport: Boolean(hasUpiSupport),
+          isOpenSource: Boolean(isOpenSource),
+          hasIstSupport: Boolean(hasIstSupport),
+          isSelfHostable: Boolean(isSelfHostable),
+          hasFreeTier: Boolean(hasFreeTier),
+          isFeatured: Boolean(isFeatured),
+        })
+        .where(eq(desiTools.id, id));
+
+      return new Response(JSON.stringify({ success: true }), {
+        status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    if (action === 'publish') {
-      await db.update(desiTools).set({ status: 'published' }).where(eq(desiTools.id, toolId));
-    } else if (action === 'archive') {
-      await db.update(desiTools).set({ status: 'archived' }).where(eq(desiTools.id, toolId));
-    } else if (action === 'delete') {
-      await db.delete(desiTools).where(eq(desiTools.id, toolId));
+    // 3. Toggle Featured
+    if (action === 'toggleFeatured') {
+      const tool = await db.select().from(desiTools).where(eq(desiTools.id, toolId)).get();
+      if (!tool) {
+        return new Response(JSON.stringify({ error: 'Tool not found' }), { status: 404 });
+      }
+      await db.update(desiTools).set({ isFeatured: !tool.isFeatured }).where(eq(desiTools.id, toolId));
+      return new Response(JSON.stringify({ success: true, isFeatured: !tool.isFeatured }), { status: 200 });
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    // 4. Toggle Status (Publish / Unpublish)
+    if (action === 'toggleStatus') {
+      const tool = await db.select().from(desiTools).where(eq(desiTools.id, toolId)).get();
+      if (!tool) {
+        return new Response(JSON.stringify({ error: 'Tool not found' }), { status: 404 });
+      }
+      const nextStatus = tool.status === 'published' ? 'draft' : 'published';
+      await db.update(desiTools).set({ status: nextStatus }).where(eq(desiTools.id, toolId));
+      return new Response(JSON.stringify({ success: true, status: nextStatus }), { status: 200 });
+    }
+
+    // 5. Delete Tool
+    if (action === 'delete') {
+      await db.delete(desiTools).where(eq(desiTools.id, toolId));
+      return new Response(JSON.stringify({ success: true }), { status: 200 });
+    }
+
+    return new Response(JSON.stringify({ error: 'Invalid action parameter' }), { status: 400 });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,

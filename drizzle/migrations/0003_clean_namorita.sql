@@ -1,0 +1,1 @@
+ALTER TABLE `desi_tools` ADD `is_featured` integer DEFAULT false NOT NULL;
