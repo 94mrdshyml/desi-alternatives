@@ -1,0 +1,51 @@
+---
+interface Props {
+  categories: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    emoji: string;
+    count?: number;
+  }>;
+  activeCategory?: string;
+}
+
+const { categories, activeCategory = 'all' } = Astro.props;
+---
+
+<div class="flex items-center gap-2 overflow-x-auto pb-4 pt-2 no-scrollbar">
+  <a
+    href="/"
+    class:list={[
+      'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold transition cursor-pointer shadow-2xs',
+      activeCategory === 'all'
+        ? 'bg-foreground text-background shadow-xs'
+        : 'border border-border bg-white text-muted-foreground hover:border-primary/40 hover:text-foreground',
+    ]}
+  >
+    <span>✨</span>
+    <span>All Tools</span>
+  </a>
+
+  {
+    categories.map((cat) => (
+      <a
+        href={`/?category=${cat.slug}`}
+        class:list={[
+          'inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold transition cursor-pointer shadow-2xs',
+          activeCategory === cat.slug
+            ? 'bg-foreground text-background shadow-xs'
+            : 'border border-border bg-white text-muted-foreground hover:border-primary/40 hover:text-foreground',
+        ]}
+      >
+        <span>{cat.emoji}</span>
+        <span>{cat.name}</span>
+        {cat.count !== undefined && (
+          <span class="ml-1 rounded-full bg-secondary px-1.5 py-0.2 text-[10px] text-muted-foreground">
+            {cat.count}
+          </span>
+        )}
+      </a>
+    ))
+  }
+</div>

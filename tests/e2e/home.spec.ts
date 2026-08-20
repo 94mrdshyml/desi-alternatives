@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Landing Page E2E', () => {
+test.describe('Landing Page & Directory E2E', () => {
   test('renders sovereign editorial header and title', async ({ page }) => {
     await page.goto('/');
 
@@ -15,5 +15,11 @@ test.describe('Landing Page E2E', () => {
     // Check Sovereign Indian SaaS badge
     const badge = page.locator('main').getByText('Sovereign Indian SaaS Directory');
     await expect(badge).toBeVisible();
+  });
+
+  test('renders category navigation pills', async ({ page }) => {
+    await page.goto('/');
+    const allToolsPill = page.locator('main').getByText('All Tools');
+    await expect(allToolsPill).toBeVisible();
   });
 });
