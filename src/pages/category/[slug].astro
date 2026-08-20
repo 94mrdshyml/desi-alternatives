@@ -10,64 +10,83 @@ import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/serv
 const db = Astro.locals.db;
 const { slug } = Astro.params;
 
-if (!slug || !db) {
+if (!slug) {
   return Astro.redirect('/404');
 }
 
-// 1. Fetch target category
-const currentCategory = await db
-  .select()
-  .from(categories)
-  .where(eq(categories.slug, slug))
-  .get();
+let currentCategory: any = null;
+let allCategories: any[] = [];
+let rawTools: any[] = [];
+let rawAlternatives: any[] = [];
+
+if (db) {
+  try {
+    currentCategory = await db
+      .select()
+      .from(categories)
+      .where(eq(categories.slug, slug))
+      .get();
+
+    allCategories = await db.select().from(categories).all();
+
+    rawTools = await db
+      .select({
+        id: desiTools.id,
+        slug: desiTools.slug,
+        name: desiTools.name,
+        tagline: desiTools.tagline,
+        description: desiTools.description,
+        websiteUrl: desiTools.websiteUrl,
+        logoUrl: desiTools.logoUrl,
+        primaryColor: desiTools.primaryColor,
+        categoryId: desiTools.categoryId,
+        categorySlug: categories.slug,
+        categoryName: categories.name,
+        hasGstInvoice: desiTools.hasGstInvoice,
+        hasIndianDataResidency: desiTools.hasIndianDataResidency,
+        hasInrPricing: desiTools.hasInrPricing,
+        hasUpiSupport: desiTools.hasUpiSupport,
+        isOpenSource: desiTools.isOpenSource,
+        hasIstSupport: desiTools.hasIstSupport,
+        isSelfHostable: desiTools.isSelfHostable,
+        hasFreeTier: desiTools.hasFreeTier,
+        pricingModel: desiTools.pricingModel,
+        startingPriceInr: desiTools.startingPriceInr,
+      })
+      .from(desiTools)
+      .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+      .where(eq(desiTools.status, 'published'))
+      .all();
+
+    rawAlternatives = await db
+      .select({
+        desiToolId: toolAlternatives.desiToolId,
+        globalName: globalTools.name,
+        globalSlug: globalTools.slug,
+      })
+      .from(toolAlternatives)
+      .leftJoin(globalTools, eq(toolAlternatives.globalToolId, globalTools.id))
+      .all();
+  } catch (e) {
+    console.error('Error fetching category and tools:', e);
+  }
+}
 
 if (!currentCategory) {
-  return Astro.redirect('/404');
+  const formattedName = slug
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+
+  currentCategory = {
+    id: `cat_${slug}`,
+    name: formattedName,
+    slug,
+    emoji: '⚡',
+    description: `Discover sovereign Indian ${formattedName} software alternatives.`,
+    isFeatured: true,
+  };
 }
-
-// 2. Fetch all categories for filter pills
-const allCategories = await db.select().from(categories).all();
-
-// 3. Fetch tools in this category
-const rawTools = await db
-  .select({
-    id: desiTools.id,
-    slug: desiTools.slug,
-    name: desiTools.name,
-    tagline: desiTools.tagline,
-    description: desiTools.description,
-    websiteUrl: desiTools.websiteUrl,
-    logoUrl: desiTools.logoUrl,
-    primaryColor: desiTools.primaryColor,
-    categoryId: desiTools.categoryId,
-    categorySlug: categories.slug,
-    categoryName: categories.name,
-    hasGstInvoice: desiTools.hasGstInvoice,
-    hasIndianDataResidency: desiTools.hasIndianDataResidency,
-    hasInrPricing: desiTools.hasInrPricing,
-    hasUpiSupport: desiTools.hasUpiSupport,
-    isOpenSource: desiTools.isOpenSource,
-    hasIstSupport: desiTools.hasIstSupport,
-    isSelfHostable: desiTools.isSelfHostable,
-    hasFreeTier: desiTools.hasFreeTier,
-    pricingModel: desiTools.pricingModel,
-    startingPriceInr: desiTools.startingPriceInr,
-  })
-  .from(desiTools)
-  .leftJoin(categories, eq(desiTools.categoryId, categories.id))
-  .where(eq(desiTools.status, 'published'))
-  .all();
-
-// 4. Fetch alternatives
-const rawAlternatives = await db
-  .select({
-    desiToolId: toolAlternatives.desiToolId,
-    globalName: globalTools.name,
-    globalSlug: globalTools.slug,
-  })
-  .from(toolAlternatives)
-  .leftJoin(globalTools, eq(toolAlternatives.globalToolId, globalTools.id))
-  .all();
 
 const altMap: Record<string, Array<{ name: string; slug: string }>> = {};
 for (const alt of rawAlternatives) {
