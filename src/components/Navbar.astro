@@ -1,7 +1,7 @@
 ---
 const user = Astro.locals.user;
 const avatarUrl = user
-  ? user.image || `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(user.name || user.email || 'desi')}`
+  ? user.image || `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(user.name || user.email || 'desi')}`
   : null;
 ---
 
