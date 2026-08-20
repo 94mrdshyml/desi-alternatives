@@ -28,6 +28,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.124.0'
           command: d1 migrations apply desi-db --remote
 
       - name: Deploy Worker
@@ -35,6 +36,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: '4.124.0'
           secrets: |
             BETTER_AUTH_SECRET
             BETTER_AUTH_API_KEY
