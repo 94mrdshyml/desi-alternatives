@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+.bun/
+
+# Build and runtime outputs
+dist/
+.astro/
+.wrangler/
+.mf/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Testing
+coverage/
+playwright-report/
+test-results/
