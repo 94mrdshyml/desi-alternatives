@@ -49,6 +49,7 @@ export function createAuth(
     trustedOrigins: [
       'http://localhost:4321',
       'http://localhost:3000',
+      'https://da.mrdshyml.xyz',
       'https://desi-alternatives.mridu.workers.dev',
       'https://desialternatives.in',
       ...(requestOrigin ? [requestOrigin] : []),
