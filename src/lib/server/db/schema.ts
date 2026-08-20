@@ -129,6 +129,14 @@ export const desiTools = sqliteTable('desi_tools', {
   claimedById: text('claimed_by_id').references(() => users.id),
   status: text('status', { enum: ['draft', 'published', 'archived'] }).default('published').notNull(),
   isFeatured: integer('is_featured', { mode: 'boolean' }).default(false).notNull(),
+
+  // Social Profile Handles / Links
+  twitterHandle: text('twitter_handle'),
+  instagramHandle: text('instagram_handle'),
+  youtubeUrl: text('youtube_url'),
+  facebookUrl: text('facebook_url'),
+  linkedinUrl: text('linkedin_url'),
+
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

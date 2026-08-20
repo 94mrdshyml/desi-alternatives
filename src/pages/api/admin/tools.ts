@@ -26,6 +26,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         description,
         websiteUrl,
         logoUrl,
+        primaryColor,
         categoryId,
         pricingModel,
         startingPriceInr,
@@ -38,6 +39,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         isSelfHostable,
         hasFreeTier,
         isFeatured,
+        twitterHandle,
+        instagramHandle,
+        youtubeUrl,
+        facebookUrl,
+        linkedinUrl,
         globalToolIds,
       } = body;
 
@@ -59,7 +65,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         description: description || tagline,
         websiteUrl,
         logoUrl: logoUrl || `https://logo.clearbit.com/${new URL(websiteUrl).hostname}`,
-        primaryColor: '#D97706',
+        primaryColor: primaryColor || '#D97706',
         categoryId,
         pricingModel: pricingModel || 'Freemium',
         startingPriceInr: startingPriceInr !== undefined ? Number(startingPriceInr) : null,
@@ -72,6 +78,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         isSelfHostable: Boolean(isSelfHostable),
         hasFreeTier: Boolean(hasFreeTier),
         isFeatured: Boolean(isFeatured),
+        twitterHandle: twitterHandle ? String(twitterHandle).trim().replace(/^@/, '') : null,
+        instagramHandle: instagramHandle ? String(instagramHandle).trim().replace(/^@/, '') : null,
+        youtubeUrl: youtubeUrl ? String(youtubeUrl).trim() : null,
+        facebookUrl: facebookUrl ? String(facebookUrl).trim() : null,
+        linkedinUrl: linkedinUrl ? String(linkedinUrl).trim() : null,
         claimedById: user.id,
         status: 'published',
       });
@@ -103,6 +114,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         description,
         websiteUrl,
         logoUrl,
+        primaryColor,
         categoryId,
         pricingModel,
         startingPriceInr,
@@ -115,6 +127,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
         isSelfHostable,
         hasFreeTier,
         isFeatured,
+        twitterHandle,
+        instagramHandle,
+        youtubeUrl,
+        facebookUrl,
+        linkedinUrl,
       } = body;
 
       if (!id || !name || !tagline || !websiteUrl || !categoryId) {
@@ -135,6 +152,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
           description: description || tagline,
           websiteUrl,
           logoUrl,
+          primaryColor: primaryColor || '#D97706',
           categoryId,
           pricingModel: pricingModel || 'Freemium',
           startingPriceInr: startingPriceInr !== undefined && startingPriceInr !== '' ? Number(startingPriceInr) : null,
@@ -147,6 +165,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
           isSelfHostable: Boolean(isSelfHostable),
           hasFreeTier: Boolean(hasFreeTier),
           isFeatured: Boolean(isFeatured),
+          twitterHandle: twitterHandle ? String(twitterHandle).trim().replace(/^@/, '') : null,
+          instagramHandle: instagramHandle ? String(instagramHandle).trim().replace(/^@/, '') : null,
+          youtubeUrl: youtubeUrl ? String(youtubeUrl).trim() : null,
+          facebookUrl: facebookUrl ? String(facebookUrl).trim() : null,
+          linkedinUrl: linkedinUrl ? String(linkedinUrl).trim() : null,
         })
         .where(eq(desiTools.id, id));
 

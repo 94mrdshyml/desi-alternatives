@@ -42,6 +42,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       pricingModel,
       startingPriceInr,
       globalToolIds,
+      twitterHandle,
+      instagramHandle,
+      youtubeUrl,
+      facebookUrl,
+      linkedinUrl,
     } = body;
 
     if (!name || !tagline || !websiteUrl || !categoryId) {
@@ -77,6 +82,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       hasFreeTier: Boolean(hasFreeTier),
       pricingModel: pricingModel || 'Freemium',
       startingPriceInr: startingPriceInr !== undefined ? Number(startingPriceInr) : null,
+      twitterHandle: twitterHandle ? String(twitterHandle).trim().replace(/^@/, '') : null,
+      instagramHandle: instagramHandle ? String(instagramHandle).trim().replace(/^@/, '') : null,
+      youtubeUrl: youtubeUrl ? String(youtubeUrl).trim() : null,
+      facebookUrl: facebookUrl ? String(facebookUrl).trim() : null,
+      linkedinUrl: linkedinUrl ? String(linkedinUrl).trim() : null,
       claimedById: user.id,
       status: 'draft', // Requires admin review
     });

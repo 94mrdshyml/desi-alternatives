@@ -29,6 +29,7 @@ if (db && user && user.role === 'admin') {
         description: desiTools.description,
         websiteUrl: desiTools.websiteUrl,
         logoUrl: desiTools.logoUrl,
+        primaryColor: desiTools.primaryColor,
         categoryId: desiTools.categoryId,
         categoryName: categories.name,
         categoryEmoji: categories.emoji,
@@ -44,6 +45,11 @@ if (db && user && user.role === 'admin') {
         hasFreeTier: desiTools.hasFreeTier,
         isFeatured: desiTools.isFeatured,
         status: desiTools.status,
+        twitterHandle: desiTools.twitterHandle,
+        instagramHandle: desiTools.instagramHandle,
+        youtubeUrl: desiTools.youtubeUrl,
+        facebookUrl: desiTools.facebookUrl,
+        linkedinUrl: desiTools.linkedinUrl,
         createdAt: desiTools.createdAt,
       })
       .from(desiTools)
@@ -139,7 +145,7 @@ if (db && user && user.role === 'admin') {
               </span>
             </div>
             <p class="mt-1 text-xs text-muted-foreground">
-              Direct tool management, R2 logo uploads, category taxonomy, user roles, and moderation queues.
+              Direct tool management, R2 logo uploads, social handles, category taxonomy, user roles, and moderation queues.
             </p>
           </div>
 
@@ -204,6 +210,7 @@ if (db && user && user.role === 'admin') {
                 <tr>
                   <th class="py-3 px-4 font-semibold text-foreground">Tool</th>
                   <th class="py-3 px-4 font-semibold text-foreground">Category</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Socials</th>
                   <th class="py-3 px-4 font-semibold text-foreground">Status</th>
                   <th class="py-3 px-4 font-semibold text-foreground">Featured</th>
                   <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
@@ -225,6 +232,15 @@ if (db && user && user.role === 'admin') {
                     </td>
                     <td class="py-3 px-4 text-foreground font-medium">
                       <span>{t.categoryEmoji} {t.categoryName || 'Unassigned'}</span>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-1.5 text-muted-foreground text-[11px]">
+                        {t.twitterHandle && <span title={`@${t.twitterHandle}`}>𝕏</span>}
+                        {t.youtubeUrl && <span title={t.youtubeUrl}>▶</span>}
+                        {t.instagramHandle && <span title={`@${t.instagramHandle}`}>📸</span>}
+                        {t.linkedinUrl && <span title={t.linkedinUrl}>in</span>}
+                        {!t.twitterHandle && !t.youtubeUrl && !t.instagramHandle && !t.linkedinUrl && <span class="text-muted-foreground/50">—</span>}
+                      </div>
                     </td>
                     <td class="py-3 px-4">
                       {t.status === 'published' ? (
@@ -311,7 +327,7 @@ if (db && user && user.role === 'admin') {
                   <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-border">
+              <tbody class="divide-y border-border">
                 {allCategoriesList.map((cat) => (
                   <tr class="hover:bg-slate-50/50">
                     <td class="py-3 px-4 font-medium text-foreground">
@@ -552,18 +568,25 @@ if (db && user && user.role === 'admin') {
           <input type="text" name="tagline" required placeholder="Suite of cloud software applications for businesses" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
         </div>
 
-        <!-- Logo Upload to R2 or URL -->
-        <div>
-          <label class="block text-xs font-semibold text-foreground">Tool Logo (Upload to Cloudflare R2)</label>
-          <div class="mt-1 flex items-center gap-3">
-            <input
-              type="file"
-              id="create-tool-logo-file"
-              accept="image/*"
-              class="text-xs text-muted-foreground file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border file:border-border file:text-xs file:font-semibold file:bg-slate-50 file:text-foreground hover:file:bg-slate-100 cursor-pointer"
-            />
-            <input type="hidden" name="logoUrl" id="create-tool-logo-url-hidden" />
+        <!-- Logo Upload to R2 or URL & Brand Color -->
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Tool Logo (Upload to Cloudflare R2)</label>
+            <div class="mt-1 flex items-center gap-3">
+              <input
+                type="file"
+                id="create-tool-logo-file"
+                accept="image/*"
+                class="text-xs text-muted-foreground file:mr-2 file:py-1 file:px-2.5 file:rounded-xl file:border file:border-border file:text-xs file:font-semibold file:bg-slate-50 file:text-foreground hover:file:bg-slate-100 cursor-pointer"
+              />
+              <input type="hidden" name="logoUrl" id="create-tool-logo-url-hidden" />
+            </div>
             <span id="create-tool-upload-status" class="text-[11px] text-muted-foreground"></span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Primary Brand Color (Hex)</label>
+            <input type="text" name="primaryColor" placeholder="#D97706" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
         </div>
 
@@ -596,6 +619,29 @@ if (db && user && user.role === 'admin') {
           <div>
             <label class="block text-xs font-semibold text-foreground">Starting Price (₹ INR)</label>
             <input type="number" name="startingPriceInr" placeholder="0" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <!-- Social Media Profiles -->
+        <div class="rounded-xl border border-border bg-slate-50/50 p-3 space-y-2">
+          <label class="block text-xs font-bold text-foreground">Social & Community Handles</label>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 text-xs">
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">𝕏 / Twitter Handle</label>
+              <input type="text" name="twitterHandle" placeholder="e.g. signoz_hq (without @)" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">YouTube Channel URL</label>
+              <input type="url" name="youtubeUrl" placeholder="https://youtube.com/@signoz" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">Instagram Username</label>
+              <input type="text" name="instagramHandle" placeholder="e.g. signoz (without @)" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">LinkedIn Company URL</label>
+              <input type="url" name="linkedinUrl" placeholder="https://linkedin.com/company/signoz" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
           </div>
         </div>
 
@@ -661,14 +707,21 @@ if (db && user && user.role === 'admin') {
           <input type="text" id="edit-tool-tagline" name="tagline" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
         </div>
 
-        <!-- Logo Upload to R2 or URL -->
-        <div>
-          <label class="block text-xs font-semibold text-foreground">Logo URL / Replace via R2</label>
-          <div class="mt-1 flex items-center gap-3">
-            <input type="text" id="edit-tool-logo-url" name="logoUrl" class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
-            <input type="file" id="edit-tool-logo-file" accept="image/*" class="text-xs text-muted-foreground file:py-1 file:px-2.5 file:rounded-xl file:border file:border-border file:bg-slate-50 cursor-pointer shrink-0" />
+        <!-- Logo Upload to R2 or URL & Brand Color -->
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Logo URL / Replace via R2</label>
+            <div class="mt-1 flex items-center gap-2">
+              <input type="text" id="edit-tool-logo-url" name="logoUrl" class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+              <input type="file" id="edit-tool-logo-file" accept="image/*" class="text-xs text-muted-foreground file:py-1 file:px-2.5 file:rounded-xl file:border file:border-border file:bg-slate-50 cursor-pointer shrink-0" />
+            </div>
+            <span id="edit-tool-upload-status" class="text-[11px] text-muted-foreground"></span>
           </div>
-          <span id="edit-tool-upload-status" class="text-[11px] text-muted-foreground"></span>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Primary Brand Color (Hex)</label>
+            <input type="text" id="edit-tool-primary-color" name="primaryColor" placeholder="#D97706" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
         </div>
 
         <div>
@@ -699,6 +752,29 @@ if (db && user && user.role === 'admin') {
           <div>
             <label class="block text-xs font-semibold text-foreground">Starting Price (₹ INR)</label>
             <input type="number" id="edit-tool-price" name="startingPriceInr" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <!-- Social Media Profiles -->
+        <div class="rounded-xl border border-border bg-slate-50/50 p-3 space-y-2">
+          <label class="block text-xs font-bold text-foreground">Social & Community Handles</label>
+          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 text-xs">
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">𝕏 / Twitter Handle</label>
+              <input type="text" id="edit-tool-twitter" name="twitterHandle" placeholder="e.g. signoz_hq (without @)" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">YouTube Channel URL</label>
+              <input type="url" id="edit-tool-youtube" name="youtubeUrl" placeholder="https://youtube.com/@signoz" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">Instagram Username</label>
+              <input type="text" id="edit-tool-instagram" name="instagramHandle" placeholder="e.g. signoz (without @)" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <label class="block text-[11px] text-muted-foreground font-medium">LinkedIn Company URL</label>
+              <input type="url" id="edit-tool-linkedin" name="linkedinUrl" placeholder="https://linkedin.com/company/signoz" class="mt-0.5 w-full rounded-lg border border-border bg-white px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary" />
+            </div>
           </div>
         </div>
 
@@ -876,6 +952,7 @@ if (db && user && user.role === 'admin') {
         name: formData.get('name'),
         websiteUrl: formData.get('websiteUrl'),
         logoUrl: createLogoUrlHidden?.value || formData.get('logoUrl'),
+        primaryColor: formData.get('primaryColor'),
         tagline: formData.get('tagline'),
         description: formData.get('description'),
         categoryId: formData.get('categoryId'),
@@ -889,6 +966,11 @@ if (db && user && user.role === 'admin') {
         isOpenSource: formData.get('isOpenSource') === 'on',
         hasIstSupport: formData.get('hasIstSupport') === 'on',
         isFeatured: formData.get('isFeatured') === 'on',
+        twitterHandle: formData.get('twitterHandle'),
+        instagramHandle: formData.get('instagramHandle'),
+        youtubeUrl: formData.get('youtubeUrl'),
+        facebookUrl: formData.get('facebookUrl'),
+        linkedinUrl: formData.get('linkedinUrl'),
       };
 
       try {
@@ -927,11 +1009,17 @@ if (db && user && user.role === 'admin') {
       (document.getElementById('edit-tool-name') as HTMLInputElement).value = t.name || '';
       (document.getElementById('edit-tool-website') as HTMLInputElement).value = t.websiteUrl || '';
       (document.getElementById('edit-tool-logo-url') as HTMLInputElement).value = t.logoUrl || '';
+      (document.getElementById('edit-tool-primary-color') as HTMLInputElement).value = t.primaryColor || '';
       (document.getElementById('edit-tool-tagline') as HTMLInputElement).value = t.tagline || '';
       (document.getElementById('edit-tool-description') as HTMLTextAreaElement).value = t.description || '';
       (document.getElementById('edit-tool-category') as unknown as HTMLSelectElement).value = t.categoryId || '';
       (document.getElementById('edit-tool-pricing-model') as unknown as HTMLSelectElement).value = t.pricingModel || 'Freemium';
       (document.getElementById('edit-tool-price') as HTMLInputElement).value = t.startingPriceInr !== null ? String(t.startingPriceInr) : '';
+
+      (document.getElementById('edit-tool-twitter') as HTMLInputElement).value = t.twitterHandle || '';
+      (document.getElementById('edit-tool-youtube') as HTMLInputElement).value = t.youtubeUrl || '';
+      (document.getElementById('edit-tool-instagram') as HTMLInputElement).value = t.instagramHandle || '';
+      (document.getElementById('edit-tool-linkedin') as HTMLInputElement).value = t.linkedinUrl || '';
 
       (document.getElementById('edit-tool-residency') as HTMLInputElement).checked = Boolean(t.hasIndianDataResidency);
       (document.getElementById('edit-tool-gst') as HTMLInputElement).checked = Boolean(t.hasGstInvoice);
@@ -955,6 +1043,7 @@ if (db && user && user.role === 'admin') {
         name: formData.get('name'),
         websiteUrl: formData.get('websiteUrl'),
         logoUrl: formData.get('logoUrl'),
+        primaryColor: formData.get('primaryColor'),
         tagline: formData.get('tagline'),
         description: formData.get('description'),
         categoryId: formData.get('categoryId'),
@@ -967,6 +1056,11 @@ if (db && user && user.role === 'admin') {
         isOpenSource: formData.get('isOpenSource') === 'on',
         hasIstSupport: formData.get('hasIstSupport') === 'on',
         isFeatured: formData.get('isFeatured') === 'on',
+        twitterHandle: formData.get('twitterHandle'),
+        instagramHandle: formData.get('instagramHandle'),
+        youtubeUrl: formData.get('youtubeUrl'),
+        facebookUrl: formData.get('facebookUrl'),
+        linkedinUrl: formData.get('linkedinUrl'),
       };
 
       try {
