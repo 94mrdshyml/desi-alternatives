@@ -17,13 +17,16 @@ import {
 // 1. BETTER-AUTH INFRASTRUCTURE TABLES
 // ==========================================
 
+export const userRoles = ['admin', 'user'] as const;
+export type UserRole = (typeof userRoles)[number];
+
 export const users = sqliteTable('users', {
   id: text('id').primaryKey().$defaultFn(createUserId),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
-  role: text('role').default('user').notNull(),
+  role: text('role', { enum: ['admin', 'user'] }).default('user').notNull(),
   banned: integer('banned', { mode: 'boolean' }).default(false),
   banReason: text('ban_reason'),
   banExpires: integer('ban_expires', { mode: 'timestamp' }),

@@ -9,7 +9,9 @@ const db = Astro.locals.db;
 
 let pendingClaims: any[] = [];
 let pendingTools: any[] = [];
+let allUsersList: any[] = [];
 let totalToolsCount = 0;
+let totalAdminsCount = 0;
 
 if (db && user && user.role === 'admin') {
   try {
@@ -53,6 +55,22 @@ if (db && user && user.role === 'admin') {
       .orderBy(desc(desiTools.createdAt))
       .all();
 
+    // 3. All Registered Users
+    allUsersList = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        role: users.role,
+        banned: users.banned,
+        createdAt: users.createdAt,
+      })
+      .from(users)
+      .orderBy(desc(users.createdAt))
+      .all();
+
+    totalAdminsCount = allUsersList.filter((u) => u.role === 'admin').length;
+
     const allTools = await db.select({ id: desiTools.id }).from(desiTools).all();
     totalToolsCount = allTools.length;
   } catch (e) {
@@ -61,7 +79,7 @@ if (db && user && user.role === 'admin') {
 }
 ---
 
-<BaseLayout title="Admin Moderation Queue — Desi Alternatives">
+<BaseLayout title="Admin Moderation & Users — Desi Alternatives">
   <Navbar />
 
   <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -70,7 +88,7 @@ if (db && user && user.role === 'admin') {
         <span class="text-3xl">🛡️</span>
         <h1 class="mt-3 text-lg font-bold text-red-900">Admin Access Restricted</h1>
         <p class="mt-2 text-xs text-red-700 leading-relaxed">
-          You must be logged into an account with the <code>admin</code> role to view the moderation queue.
+          You must be logged into an account with the <code>admin</code> role to view the moderation center and manage roles.
         </p>
         <a
           href="/login"
@@ -82,27 +100,31 @@ if (db && user && user.role === 'admin') {
     ) : (
       <div>
         <!-- Admin Header -->
-        <div class="flex items-center justify-between border-b border-border pb-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-6">
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-2xl font-bold text-foreground">Admin Moderation Center</h1>
-              <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
-                Admin
+              <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 uppercase">
+                Admin Panel
               </span>
             </div>
             <p class="mt-1 text-xs text-muted-foreground">
-              Review founder tool submissions, verify listing ownership claims, and maintain directory integrity.
+              Review founder tool submissions, verify listing ownership claims, and elevate user roles.
             </p>
           </div>
 
-          <div class="flex items-center gap-4 text-xs">
+          <div class="flex flex-wrap items-center gap-3 text-xs">
+            <div class="rounded-xl border border-border bg-white px-3 py-2 text-center shadow-2xs">
+              <span class="text-muted-foreground">Total Users</span>
+              <p class="font-bold text-foreground text-sm">{allUsersList.length}</p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center shadow-2xs">
+              <span class="text-amber-800 font-semibold">Admins</span>
+              <p class="font-bold text-amber-900 text-sm">{totalAdminsCount}</p>
+            </div>
             <div class="rounded-xl border border-border bg-white px-3 py-2 text-center shadow-2xs">
               <span class="text-muted-foreground">Total Tools</span>
               <p class="font-bold text-foreground text-sm">{totalToolsCount}</p>
-            </div>
-            <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center shadow-2xs">
-              <span class="text-amber-800 font-semibold">Pending Claims</span>
-              <p class="font-bold text-amber-900 text-sm">{pendingClaims.length}</p>
             </div>
             <div class="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-center shadow-2xs">
               <span class="text-blue-800 font-semibold">Pending Submissions</span>
@@ -111,8 +133,111 @@ if (db && user && user.role === 'admin') {
           </div>
         </div>
 
-        <!-- Section 1: Pending Tool Submissions -->
+        <!-- Section 1: User & Role Management -->
         <section class="mt-8">
+          <div class="flex items-center justify-between">
+            <h2 class="text-base font-bold text-foreground">
+              User & Role Management ({allUsersList.length})
+            </h2>
+            <span class="text-xs text-muted-foreground">Change roles or moderate user access</span>
+          </div>
+
+          <div class="mt-3 overflow-hidden rounded-2xl border border-border bg-white shadow-xs">
+            <table class="w-full text-left text-xs">
+              <thead class="border-b border-border bg-secondary/40">
+                <tr>
+                  <th class="py-3 px-4 font-semibold text-foreground">User</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Email</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Role</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Status</th>
+                  <th class="py-3 px-4 font-semibold text-foreground text-right">Role Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                {allUsersList.map((u) => (
+                  <tr class="hover:bg-slate-50/50">
+                    <td class="py-3 px-4 font-semibold text-foreground">
+                      {u.name}
+                    </td>
+                    <td class="py-3 px-4 text-muted-foreground">
+                      {u.email}
+                    </td>
+                    <td class="py-3 px-4">
+                      {u.role === 'admin' ? (
+                        <span class="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 uppercase">
+                          Admin
+                        </span>
+                      ) : (
+                        <span class="inline-flex items-center rounded-md bg-secondary px-2 py-0.5 text-[10px] font-medium text-foreground">
+                          User
+                        </span>
+                      )}
+                    </td>
+                    <td class="py-3 px-4">
+                      {u.banned ? (
+                        <span class="inline-flex items-center rounded-md bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-800">
+                          Banned
+                        </span>
+                      ) : (
+                        <span class="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
+                          Active
+                        </span>
+                      )}
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <div class="inline-flex items-center gap-2">
+                        {u.role === 'admin' ? (
+                          <button
+                            type="button"
+                            data-user-action="setRole"
+                            data-user-id={u.id}
+                            data-target-role="user"
+                            class="rounded-lg border border-border bg-white px-2.5 py-1 text-[11px] font-semibold text-foreground hover:bg-slate-50 transition cursor-pointer"
+                          >
+                            Demote to User
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            data-user-action="setRole"
+                            data-user-id={u.id}
+                            data-target-role="admin"
+                            class="rounded-lg bg-amber-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-amber-700 transition cursor-pointer"
+                          >
+                            Promote to Admin
+                          </button>
+                        )}
+
+                        {u.banned ? (
+                          <button
+                            type="button"
+                            data-user-action="unban"
+                            data-user-id={u.id}
+                            class="rounded-lg border border-emerald-300 bg-emerald-50 px-2 py-1 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100 transition cursor-pointer"
+                          >
+                            Unban
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            data-user-action="ban"
+                            data-user-id={u.id}
+                            class="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[10px] font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                          >
+                            Ban
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Section 2: Pending Tool Submissions -->
+        <section class="mt-10">
           <h2 class="text-base font-bold text-foreground">
             Pending Tool Submissions ({pendingTools.length})
           </h2>
@@ -175,7 +300,7 @@ if (db && user && user.role === 'admin') {
           </div>
         </section>
 
-        <!-- Section 2: Pending Claims Queue -->
+        <!-- Section 3: Pending Claims Queue -->
         <section class="mt-10">
           <h2 class="text-base font-bold text-foreground">
             Pending Ownership Claims ({pendingClaims.length})
@@ -246,6 +371,32 @@ if (db && user && user.role === 'admin') {
 </BaseLayout>
 
 <script>
+  // User role actions
+  document.querySelectorAll('[data-user-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const userId = btn.getAttribute('data-user-id');
+      const action = btn.getAttribute('data-user-action');
+      const role = btn.getAttribute('data-target-role');
+      btn.textContent = 'Updating...';
+
+      try {
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, action, role }),
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          alert('Failed to update user');
+          btn.textContent = 'Retry';
+        }
+      } catch {
+        alert('Network error');
+      }
+    });
+  });
+
   // Tool action listeners
   document.querySelectorAll('[data-tool-action]').forEach((btn) => {
     btn.addEventListener('click', async () => {
