@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar.astro';
 import CategoryFilter from '@/components/CategoryFilter.astro';
 import ToolCard from '@/components/ToolCard.astro';
 import SearchDialog from '@/components/SearchDialog';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
 
 const db = Astro.locals.db;

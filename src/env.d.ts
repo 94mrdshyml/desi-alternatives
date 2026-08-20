@@ -23,7 +23,7 @@ declare namespace App {
     };
     db: import('./lib/server/db').Database;
     auth: import('./lib/server/auth').Auth;
-    user: import('better-auth').User | null;
+    user: (import('better-auth').User & { role?: string; banned?: boolean; banReason?: string; banExpires?: Date }) | null;
     session: import('better-auth').Session | null;
   }
 }

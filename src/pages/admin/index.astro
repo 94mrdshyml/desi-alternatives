@@ -1,0 +1,298 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import { claimsQueue, desiTools, users } from '@/lib/server/db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+const db = Astro.locals.db;
+
+let pendingClaims: any[] = [];
+let pendingTools: any[] = [];
+let totalToolsCount = 0;
+
+if (db && user && user.role === 'admin') {
+  try {
+    // 1. Pending Claims
+    pendingClaims = await db
+      .select({
+        id: claimsQueue.id,
+        toolId: claimsQueue.toolId,
+        toolName: desiTools.name,
+        toolSlug: desiTools.slug,
+        userId: claimsQueue.userId,
+        userName: users.name,
+        userEmail: users.email,
+        workEmail: claimsQueue.workEmail,
+        notes: claimsQueue.notes,
+        submittedAt: claimsQueue.submittedAt,
+        status: claimsQueue.status,
+      })
+      .from(claimsQueue)
+      .leftJoin(desiTools, eq(claimsQueue.toolId, desiTools.id))
+      .leftJoin(users, eq(claimsQueue.userId, users.id))
+      .where(eq(claimsQueue.status, 'pending'))
+      .orderBy(desc(claimsQueue.submittedAt))
+      .all();
+
+    // 2. Pending / Draft Tools
+    pendingTools = await db
+      .select({
+        id: desiTools.id,
+        name: desiTools.name,
+        slug: desiTools.slug,
+        tagline: desiTools.tagline,
+        websiteUrl: desiTools.websiteUrl,
+        pricingModel: desiTools.pricingModel,
+        startingPriceInr: desiTools.startingPriceInr,
+        createdAt: desiTools.createdAt,
+        status: desiTools.status,
+      })
+      .from(desiTools)
+      .where(eq(desiTools.status, 'draft'))
+      .orderBy(desc(desiTools.createdAt))
+      .all();
+
+    const allTools = await db.select({ id: desiTools.id }).from(desiTools).all();
+    totalToolsCount = allTools.length;
+  } catch (e) {
+    console.error('Failed to load admin queue:', e);
+  }
+}
+---
+
+<BaseLayout title="Admin Moderation Queue — Desi Alternatives">
+  <Navbar />
+
+  <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
+    {!user || user.role !== 'admin' ? (
+      <div class="mx-auto max-w-md rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+        <span class="text-3xl">🛡️</span>
+        <h1 class="mt-3 text-lg font-bold text-red-900">Admin Access Restricted</h1>
+        <p class="mt-2 text-xs text-red-700 leading-relaxed">
+          You must be logged into an account with the <code>admin</code> role to view the moderation queue.
+        </p>
+        <a
+          href="/login"
+          class="mt-5 inline-flex items-center rounded-xl bg-foreground px-4 py-2 text-xs font-semibold text-background hover:bg-foreground/90 transition"
+        >
+          Sign in as Admin
+        </a>
+      </div>
+    ) : (
+      <div>
+        <!-- Admin Header -->
+        <div class="flex items-center justify-between border-b border-border pb-6">
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-2xl font-bold text-foreground">Admin Moderation Center</h1>
+              <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                Admin
+              </span>
+            </div>
+            <p class="mt-1 text-xs text-muted-foreground">
+              Review founder tool submissions, verify listing ownership claims, and maintain directory integrity.
+            </p>
+          </div>
+
+          <div class="flex items-center gap-4 text-xs">
+            <div class="rounded-xl border border-border bg-white px-3 py-2 text-center shadow-2xs">
+              <span class="text-muted-foreground">Total Tools</span>
+              <p class="font-bold text-foreground text-sm">{totalToolsCount}</p>
+            </div>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-center shadow-2xs">
+              <span class="text-amber-800 font-semibold">Pending Claims</span>
+              <p class="font-bold text-amber-900 text-sm">{pendingClaims.length}</p>
+            </div>
+            <div class="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-center shadow-2xs">
+              <span class="text-blue-800 font-semibold">Pending Submissions</span>
+              <p class="font-bold text-blue-900 text-sm">{pendingTools.length}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Section 1: Pending Tool Submissions -->
+        <section class="mt-8">
+          <h2 class="text-base font-bold text-foreground">
+            Pending Tool Submissions ({pendingTools.length})
+          </h2>
+
+          <div class="mt-3 overflow-hidden rounded-2xl border border-border bg-white shadow-xs">
+            {pendingTools.length === 0 ? (
+              <div class="p-8 text-center text-xs text-muted-foreground">
+                No pending tool submissions in queue.
+              </div>
+            ) : (
+              <table class="w-full text-left text-xs">
+                <thead class="border-b border-border bg-secondary/40">
+                  <tr>
+                    <th class="py-3 px-4 font-semibold text-foreground">Tool</th>
+                    <th class="py-3 px-4 font-semibold text-foreground">Pricing</th>
+                    <th class="py-3 px-4 font-semibold text-foreground">Website</th>
+                    <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  {pendingTools.map((tool) => (
+                    <tr class="hover:bg-slate-50/50">
+                      <td class="py-3 px-4">
+                        <p class="font-bold text-foreground">{tool.name}</p>
+                        <p class="text-muted-foreground line-clamp-1">{tool.tagline}</p>
+                      </td>
+                      <td class="py-3 px-4 font-medium text-foreground">
+                        {tool.pricingModel} {tool.startingPriceInr ? `(₹${tool.startingPriceInr})` : ''}
+                      </td>
+                      <td class="py-3 px-4">
+                        <a href={tool.websiteUrl} target="_blank" class="text-primary underline hover:text-primary-hover">
+                          {tool.websiteUrl}
+                        </a>
+                      </td>
+                      <td class="py-3 px-4 text-right">
+                        <div class="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            data-tool-action="publish"
+                            data-tool-id={tool.id}
+                            class="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-700 transition cursor-pointer"
+                          >
+                            Publish
+                          </button>
+                          <button
+                            type="button"
+                            data-tool-action="delete"
+                            data-tool-id={tool.id}
+                            class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+
+        <!-- Section 2: Pending Claims Queue -->
+        <section class="mt-10">
+          <h2 class="text-base font-bold text-foreground">
+            Pending Ownership Claims ({pendingClaims.length})
+          </h2>
+
+          <div class="mt-3 overflow-hidden rounded-2xl border border-border bg-white shadow-xs">
+            {pendingClaims.length === 0 ? (
+              <div class="p-8 text-center text-xs text-muted-foreground">
+                No pending claims in queue.
+              </div>
+            ) : (
+              <table class="w-full text-left text-xs">
+                <thead class="border-b border-border bg-secondary/40">
+                  <tr>
+                    <th class="py-3 px-4 font-semibold text-foreground">Tool</th>
+                    <th class="py-3 px-4 font-semibold text-foreground">Claimant</th>
+                    <th class="py-3 px-4 font-semibold text-foreground">Work Email</th>
+                    <th class="py-3 px-4 font-semibold text-foreground">Notes</th>
+                    <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  {pendingClaims.map((claim) => (
+                    <tr class="hover:bg-slate-50/50">
+                      <td class="py-3 px-4 font-bold text-foreground">
+                        {claim.toolName}
+                      </td>
+                      <td class="py-3 px-4">
+                        <p class="font-medium text-foreground">{claim.userName}</p>
+                        <p class="text-muted-foreground">{claim.userEmail}</p>
+                      </td>
+                      <td class="py-3 px-4 font-semibold text-primary">
+                        {claim.workEmail}
+                      </td>
+                      <td class="py-3 px-4 text-muted-foreground">
+                        {claim.notes || '—'}
+                      </td>
+                      <td class="py-3 px-4 text-right">
+                        <div class="inline-flex items-center gap-2">
+                          <button
+                            type="button"
+                            data-claim-action="approve"
+                            data-claim-id={claim.id}
+                            class="rounded-lg bg-emerald-600 px-3 py-1.5 font-semibold text-white hover:bg-emerald-700 transition cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            data-claim-action="reject"
+                            data-claim-id={claim.id}
+                            class="rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </section>
+      </div>
+    )}
+  </main>
+</BaseLayout>
+
+<script>
+  // Tool action listeners
+  document.querySelectorAll('[data-tool-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const toolId = btn.getAttribute('data-tool-id');
+      const action = btn.getAttribute('data-tool-action');
+      btn.textContent = 'Processing...';
+
+      try {
+        const res = await fetch('/api/admin/tools', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toolId, action }),
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          alert('Failed to perform action');
+          btn.textContent = action || 'Retry';
+        }
+      } catch {
+        alert('Network error');
+      }
+    });
+  });
+
+  // Claim action listeners
+  document.querySelectorAll('[data-claim-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const claimId = btn.getAttribute('data-claim-id');
+      const action = btn.getAttribute('data-claim-action');
+      btn.textContent = 'Processing...';
+
+      try {
+        const res = await fetch('/api/admin/claims', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ claimId, action }),
+        });
+        if (res.ok) {
+          window.location.reload();
+        } else {
+          alert('Failed to perform action');
+          btn.textContent = action || 'Retry';
+        }
+      } catch {
+        alert('Network error');
+      }
+    });
+  });
+</script>

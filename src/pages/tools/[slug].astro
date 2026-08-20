@@ -1,0 +1,426 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import { eq } from 'drizzle-orm';
+import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
+
+const db = Astro.locals.db;
+const { slug } = Astro.params;
+
+if (!slug || !db) {
+  return Astro.redirect('/404');
+}
+
+// 1. Fetch tool details
+const toolResult = await db
+  .select({
+    id: desiTools.id,
+    slug: desiTools.slug,
+    name: desiTools.name,
+    tagline: desiTools.tagline,
+    description: desiTools.description,
+    websiteUrl: desiTools.websiteUrl,
+    logoUrl: desiTools.logoUrl,
+    primaryColor: desiTools.primaryColor,
+    categoryId: desiTools.categoryId,
+    categorySlug: categories.slug,
+    categoryName: categories.name,
+    categoryEmoji: categories.emoji,
+    hasGstInvoice: desiTools.hasGstInvoice,
+    hasIndianDataResidency: desiTools.hasIndianDataResidency,
+    hasInrPricing: desiTools.hasInrPricing,
+    hasUpiSupport: desiTools.hasUpiSupport,
+    isOpenSource: desiTools.isOpenSource,
+    hasIstSupport: desiTools.hasIstSupport,
+    isSelfHostable: desiTools.isSelfHostable,
+    hasFreeTier: desiTools.hasFreeTier,
+    pricingModel: desiTools.pricingModel,
+    startingPriceInr: desiTools.startingPriceInr,
+    claimedById: desiTools.claimedById,
+  })
+  .from(desiTools)
+  .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+  .where(eq(desiTools.slug, slug))
+  .get();
+
+if (!toolResult) {
+  return Astro.redirect('/404');
+}
+
+// 2. Fetch alternatives
+const alternatives = await db
+  .select({
+    id: globalTools.id,
+    name: globalTools.name,
+    slug: globalTools.slug,
+    websiteUrl: globalTools.websiteUrl,
+    logoUrl: globalTools.logoUrl,
+  })
+  .from(toolAlternatives)
+  .leftJoin(globalTools, eq(toolAlternatives.globalToolId, globalTools.id))
+  .where(eq(toolAlternatives.desiToolId, toolResult.id))
+  .all();
+
+const user = Astro.locals.user;
+---
+
+<BaseLayout
+  title={`${toolResult.name} — Indian Alternative to ${alternatives.map((a: any) => a.name).join(', ') || 'Global SaaS'}`}
+  description={toolResult.tagline}
+>
+  <Navbar />
+
+  <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+    <!-- Breadcrumbs -->
+    <nav class="flex items-center gap-2 text-xs text-muted-foreground">
+      <a href="/" class="hover:text-foreground transition">Home</a>
+      <span>/</span>
+      <a href={`/?category=${toolResult.categorySlug}`} class="hover:text-foreground transition">
+        {toolResult.categoryName}
+      </a>
+      <span>/</span>
+      <span class="font-medium text-foreground">{toolResult.name}</span>
+    </nav>
+
+    <!-- Hero Header -->
+    <div class="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-8">
+      <div class="flex items-start gap-4">
+        <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-border bg-slate-50 p-2 shadow-xs">
+          <img
+            src={toolResult.logoUrl}
+            alt={`${toolResult.name} logo`}
+            class="h-full w-full object-contain"
+            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+          />
+          <div class="hidden h-full w-full items-center justify-center text-lg font-bold text-foreground">
+            {toolResult.name.slice(0, 2).toUpperCase()}
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {toolResult.name}
+            </h1>
+            <span class="inline-flex items-center rounded-md bg-secondary px-2.5 py-0.5 text-xs font-semibold text-secondary-foreground">
+              {toolResult.pricingModel}
+            </span>
+          </div>
+
+          <p class="mt-1 text-sm font-medium text-muted-foreground sm:text-base">
+            {toolResult.tagline}
+          </p>
+        </div>
+      </div>
+
+      <!-- Action CTAs -->
+      <div class="flex items-center gap-3">
+        <a
+          href={toolResult.websiteUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
+        >
+          <span>Visit Website</span>
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+
+        <button
+          type="button"
+          id="claim-tool-btn"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-semibold text-foreground shadow-2xs hover:border-primary/40 hover:bg-slate-50 transition cursor-pointer"
+        >
+          <span>🛡️ Claim Tool</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content Layout -->
+    <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <!-- Left Column (2 Cols): Description & Comparison -->
+      <div class="space-y-8 lg:col-span-2">
+        <!-- Overview Section -->
+        <section class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+          <h2 class="text-base font-bold text-foreground">About {toolResult.name}</h2>
+          <p class="mt-3 text-sm leading-relaxed text-foreground/80">
+            {toolResult.description}
+          </p>
+        </section>
+
+        <!-- Sovereign Alternative Direct Comparison -->
+        {alternatives.length > 0 && (
+          <section class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <h2 class="text-base font-bold text-foreground">
+                Sovereign Alternative Comparison
+              </h2>
+              <span class="text-xs font-medium text-muted-foreground">
+                vs {alternatives.map((a: any) => a.name).join(', ')}
+              </span>
+            </div>
+
+            <div class="mt-5 overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-border bg-secondary/50">
+                    <th class="py-2.5 px-3 font-semibold text-foreground">Feature / Advantage</th>
+                    <th class="py-2.5 px-3 font-semibold text-primary">{toolResult.name} (🇮🇳 Sovereign)</th>
+                    <th class="py-2.5 px-3 font-semibold text-muted-foreground">{alternatives[0]?.name || 'Global SaaS'} (🇺🇸)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-border">
+                  <tr>
+                    <td class="py-3 px-3 font-medium text-foreground">Billing Currency</td>
+                    <td class="py-3 px-3 text-emerald-700 font-semibold">INR (₹) Direct via UPI / Cards</td>
+                    <td class="py-3 px-3 text-muted-foreground">USD ($) + 3.5% Forex Markup</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 px-3 font-medium text-foreground">Tax / GST Input Credit</td>
+                    <td class="py-3 px-3 text-emerald-700 font-semibold">18% GST Input Credit Claimable</td>
+                    <td class="py-3 px-3 text-red-600">Reverse Charge / Non-claimable</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 px-3 font-medium text-foreground">Data Residency</td>
+                    <td class="py-3 px-3 text-emerald-700 font-semibold">
+                      {toolResult.hasIndianDataResidency ? '🇮🇳 Local Indian Data Centers' : 'Global / Multi-region'}
+                    </td>
+                    <td class="py-3 px-3 text-muted-foreground">US / EU Regions</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 px-3 font-medium text-foreground">Support Hours</td>
+                    <td class="py-3 px-3 text-emerald-700 font-semibold">
+                      {toolResult.hasIstSupport ? 'IST Business Hours + Direct Chat' : 'Standard IST'}
+                    </td>
+                    <td class="py-3 px-3 text-muted-foreground">PST / EST Timezones</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        <!-- INR Savings & Forex Calculator Widget -->
+        <section class="rounded-2xl border border-amber-200 bg-amber-50/50 p-6 shadow-xs">
+          <div class="flex items-center gap-2 text-amber-900">
+            <span class="text-lg">🧮</span>
+            <h2 class="text-base font-bold">Sovereign ROI & Tax Savings Calculator</h2>
+          </div>
+          <p class="mt-1 text-xs text-amber-800">
+            See how much your Indian startup saves switching from international billing to {toolResult.name}.
+          </p>
+
+          <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div class="rounded-xl border border-amber-200/80 bg-white p-4 text-center shadow-2xs">
+              <span class="text-[11px] font-semibold text-muted-foreground uppercase">Forex Surcharges</span>
+              <p class="mt-1 text-lg font-bold text-emerald-600">₹0 (0%)</p>
+              <span class="text-[10px] text-muted-foreground">vs 3.5% on international cards</span>
+            </div>
+
+            <div class="rounded-xl border border-amber-200/80 bg-white p-4 text-center shadow-2xs">
+              <span class="text-[11px] font-semibold text-muted-foreground uppercase">GST Tax Credit</span>
+              <p class="mt-1 text-lg font-bold text-emerald-600">18% Input</p>
+              <span class="text-[10px] text-muted-foreground">Directly offset your GST liability</span>
+            </div>
+
+            <div class="rounded-xl border border-amber-200/80 bg-white p-4 text-center shadow-2xs">
+              <span class="text-[11px] font-semibold text-muted-foreground uppercase">Typical Annual Savings</span>
+              <p class="mt-1 text-lg font-bold text-primary">30% - 60%</p>
+              <span class="text-[10px] text-muted-foreground">Compared to USD subscription rates</span>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Right Column: Sovereign Checklist Matrix & Meta -->
+      <div class="space-y-6">
+        <!-- Checklist Matrix -->
+        <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+          <h3 class="text-sm font-bold text-foreground">Sovereign Indian Checklist</h3>
+          <p class="mt-1 text-xs text-muted-foreground">Verified compliance badges</p>
+
+          <div class="mt-4 space-y-3">
+            <div class="flex items-center justify-between text-xs">
+              <span class="flex items-center gap-2 text-foreground font-medium">
+                <span>🇮🇳</span> Indian Data Residency
+              </span>
+              <span class={toolResult.hasIndianDataResidency ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}>
+                {toolResult.hasIndianDataResidency ? 'Verified' : 'Global'}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between text-xs">
+              <span class="flex items-center gap-2 text-foreground font-medium">
+                <span>🧾</span> GST Invoicing
+              </span>
+              <span class={toolResult.hasGstInvoice ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}>
+                {toolResult.hasGstInvoice ? 'Available' : 'No'}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between text-xs">
+              <span class="flex items-center gap-2 text-foreground font-medium">
+                <span>⚡</span> UPI / INR Pricing
+              </span>
+              <span class={toolResult.hasUpiSupport ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}>
+                {toolResult.hasUpiSupport ? 'Supported' : 'No'}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between text-xs">
+              <span class="flex items-center gap-2 text-foreground font-medium">
+                <span>🔓</span> Open Source
+              </span>
+              <span class={toolResult.isOpenSource ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}>
+                {toolResult.isOpenSource ? 'Yes' : 'Proprietary'}
+              </span>
+            </div>
+
+            <div class="flex items-center justify-between text-xs">
+              <span class="flex items-center gap-2 text-foreground font-medium">
+                <span>⏱️</span> IST Working Hours Support
+              </span>
+              <span class={toolResult.hasIstSupport ? 'text-emerald-700 font-semibold' : 'text-muted-foreground'}>
+                {toolResult.hasIstSupport ? 'Dedicated' : 'Standard'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pricing Summary Box -->
+        <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+          <h3 class="text-sm font-bold text-foreground">Starting Price</h3>
+          <div class="mt-2 flex items-baseline gap-1">
+            {toolResult.startingPriceInr !== null && toolResult.startingPriceInr !== undefined ? (
+              toolResult.startingPriceInr === 0 ? (
+                <span class="text-2xl font-bold text-emerald-700">Free Tier</span>
+              ) : (
+                <>
+                  <span class="text-2xl font-bold text-foreground">₹{toolResult.startingPriceInr.toLocaleString('en-IN')}</span>
+                  <span class="text-xs text-muted-foreground">/month</span>
+                </>
+              )
+            ) : (
+              <span class="text-xl font-bold text-foreground">Contact Sales</span>
+            )}
+          </div>
+
+          <a
+            href={toolResult.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="mt-4 block w-full rounded-xl bg-foreground py-2.5 text-center text-xs font-semibold text-background hover:bg-foreground/90 transition"
+          >
+            Explore Plans on {toolResult.name} →
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Claim Listing Modal Dialog -->
+  <div id="claim-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+    <div class="relative w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-border">
+        <h3 class="text-base font-bold text-foreground">Claim {toolResult.name}</h3>
+        <button id="close-claim-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
+      </div>
+
+      <form id="claim-form" class="mt-4 space-y-4" data-tool-id={toolResult.id}>
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Work Email (@{toolResult.slug}.com or official domain)</label>
+          <input
+            type="email"
+            name="workEmail"
+            required
+            placeholder="founder@company.com"
+            class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+          />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Verification Notes / Role</label>
+          <textarea
+            name="notes"
+            rows="2"
+            placeholder="Founder / Product Lead at..."
+            class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+          ></textarea>
+        </div>
+
+        <div id="claim-error" class="hidden rounded-lg bg-red-50 p-2 text-xs font-medium text-red-700"></div>
+        <div id="claim-success" class="hidden rounded-lg bg-emerald-50 p-2 text-xs font-medium text-emerald-700"></div>
+
+        <button
+          type="submit"
+          class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover transition cursor-pointer"
+        >
+          Submit Claim Request
+        </button>
+      </form>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const claimBtn = document.getElementById('claim-tool-btn');
+  const claimModal = document.getElementById('claim-modal');
+  const closeModal = document.getElementById('close-claim-modal');
+  const claimForm = document.getElementById('claim-form') as HTMLFormElement | null;
+  const claimError = document.getElementById('claim-error');
+  const claimSuccess = document.getElementById('claim-success');
+
+  if (claimBtn && claimModal && closeModal) {
+    claimBtn.addEventListener('click', () => {
+      claimModal.classList.remove('hidden');
+    });
+
+    closeModal.addEventListener('click', () => {
+      claimModal.classList.add('hidden');
+    });
+
+    claimModal.addEventListener('click', (e) => {
+      if (e.target === claimModal) claimModal.classList.add('hidden');
+    });
+  }
+
+  if (claimForm) {
+    claimForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (claimError) claimError.classList.add('hidden');
+      if (claimSuccess) claimSuccess.classList.add('hidden');
+
+      const formData = new FormData(claimForm);
+      const toolId = claimForm.getAttribute('data-tool-id');
+
+      try {
+        const res = await fetch('/api/tools/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            toolId,
+            workEmail: formData.get('workEmail'),
+            notes: formData.get('notes'),
+          }),
+        });
+
+        const data = (await res.json()) as any;
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to submit claim');
+        }
+
+        if (claimSuccess) {
+          claimSuccess.textContent = 'Claim submitted! Our moderation team will verify your listing within 24 hours.';
+          claimSuccess.classList.remove('hidden');
+          claimForm.reset();
+        }
+      } catch (err: any) {
+        if (claimError) {
+          claimError.textContent = err.message;
+          claimError.classList.remove('hidden');
+        }
+      }
+    });
+  }
+</script>
