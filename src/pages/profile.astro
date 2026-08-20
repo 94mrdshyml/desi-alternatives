@@ -1,0 +1,400 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import { users } from '@/lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+const db = Astro.locals.db;
+
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+let dbUser: any = null;
+if (db) {
+  try {
+    dbUser = await db.select().from(users).where(eq(users.id, user.id)).get();
+  } catch (e) {
+    console.error('Failed to load user profile:', e);
+  }
+}
+
+const currentUser = dbUser || user;
+const avatarUrl = currentUser.image || `https://api.dicebear.com/9.x/glass/svg?seed=${encodeURIComponent(currentUser.username || currentUser.name || currentUser.email || 'desi')}`;
+---
+
+<BaseLayout title="My Profile & Account Settings — Desi Alternatives">
+  <Navbar />
+
+  <main class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+    <div class="border-b border-border pb-6">
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Profile Settings</h1>
+        {currentUser.role === 'admin' && (
+          <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 uppercase">
+            Admin
+          </span>
+        )}
+      </div>
+      <p class="mt-1 text-xs sm:text-sm text-muted-foreground">
+        Manage your personal details, funny username, avatar, and security credentials.
+      </p>
+    </div>
+
+    <div class="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
+      <!-- Left Column: Avatar & Account Summary Card -->
+      <div class="space-y-6 md:col-span-1">
+        <div class="rounded-2xl border border-border bg-white p-6 text-center shadow-xs">
+          <div class="relative mx-auto h-28 w-28 overflow-hidden rounded-full border-4 border-amber-100 bg-amber-50 shadow-inner">
+            <img
+              id="avatar-preview"
+              src={avatarUrl}
+              alt={currentUser.name || 'User avatar'}
+              class="h-full w-full object-cover"
+            />
+          </div>
+
+          <h2 class="mt-4 text-base font-bold text-foreground">{currentUser.name}</h2>
+          <p class="text-xs font-semibold text-primary">@{currentUser.username || 'username'}</p>
+          <p class="mt-1 text-xs text-muted-foreground truncate">{currentUser.email}</p>
+
+          <!-- Avatar Uploader -->
+          <div class="mt-5 border-t border-border pt-4 text-left">
+            <label class="block text-xs font-semibold text-foreground mb-1.5">Change Avatar</label>
+            <div class="flex flex-col gap-2">
+              <label class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-3 py-2 text-xs font-semibold text-foreground hover:bg-slate-50 cursor-pointer transition shadow-2xs">
+                <svg class="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+                <span>Upload Custom Photo</span>
+                <input type="file" id="avatar-file-input" accept="image/*" class="hidden" />
+              </label>
+
+              <button
+                type="button"
+                id="dicebear-avatar-btn"
+                class="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-slate-50 px-3 py-2 text-xs font-semibold text-foreground/80 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <span>🎲 Randomize Wave Avatar</span>
+              </button>
+            </div>
+            <span id="avatar-upload-status" class="mt-1.5 block text-[11px] text-muted-foreground"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Profile Info & Password Forms -->
+      <div class="space-y-6 md:col-span-2">
+        <!-- 1. Personal Information Form -->
+        <section class="rounded-2xl border border-border bg-white p-6 sm:p-7 shadow-xs">
+          <h2 class="text-base font-bold text-foreground">Personal Information</h2>
+          <p class="mt-0.5 text-xs text-muted-foreground">Update your identity and display username</p>
+
+          <form id="profile-info-form" class="mt-5 space-y-4">
+            <input type="hidden" id="avatar-url-hidden" name="image" value={currentUser.image || ''} />
+
+            <!-- First Name & Last Name -->
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label for="firstName" class="block text-xs font-semibold text-foreground">First Name *</label>
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  required
+                  value={currentUser.firstName || currentUser.name?.split(' ')[0] || ''}
+                  class="mt-1 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label for="lastName" class="block text-xs font-semibold text-foreground">Last Name</label>
+                <input
+                  type="text"
+                  id="lastName"
+                  name="lastName"
+                  value={currentUser.lastName || currentUser.name?.split(' ').slice(1).join(' ') || ''}
+                  class="mt-1 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <!-- Username with Funny Generator -->
+            <div>
+              <div class="flex items-center justify-between">
+                <label for="username" class="block text-xs font-semibold text-foreground">Username *</label>
+                <button
+                  type="button"
+                  id="generate-username-btn"
+                  class="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:text-primary-hover cursor-pointer"
+                >
+                  <span>🎲 Generate Funny Username</span>
+                </button>
+              </div>
+              <div class="mt-1 flex rounded-xl border border-border bg-slate-50 focus-within:border-primary">
+                <span class="inline-flex items-center pl-3 text-xs text-muted-foreground font-mono">@</span>
+                <input
+                  type="text"
+                  id="username-input"
+                  name="username"
+                  required
+                  value={currentUser.username || ''}
+                  placeholder="cosmic-samosa-42"
+                  class="w-full bg-transparent px-2 py-2 text-xs text-foreground font-mono focus:outline-none"
+                />
+              </div>
+              <p class="mt-1 text-[11px] text-muted-foreground">Unique handle for community submissions and comments.</p>
+            </div>
+
+            <!-- Email (Read Only) -->
+            <div>
+              <label class="block text-xs font-semibold text-foreground">Email Address</label>
+              <input
+                type="email"
+                disabled
+                value={currentUser.email}
+                class="mt-1 w-full rounded-xl border border-border bg-slate-100 px-3.5 py-2 text-xs text-muted-foreground cursor-not-allowed"
+              />
+            </div>
+
+            <div id="profile-status" class="hidden rounded-xl p-3 text-xs font-medium"></div>
+
+            <button
+              type="submit"
+              id="save-profile-btn"
+              class="rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
+            >
+              Save Profile Changes
+            </button>
+          </form>
+        </section>
+
+        <!-- 2. Change Password Form -->
+        <section class="rounded-2xl border border-border bg-white p-6 sm:p-7 shadow-xs">
+          <h2 class="text-base font-bold text-foreground">Security & Password</h2>
+          <p class="mt-0.5 text-xs text-muted-foreground">Update your password to keep your account secure</p>
+
+          <form id="change-password-form" class="mt-5 space-y-4">
+            <div>
+              <label for="currentPassword" class="block text-xs font-semibold text-foreground">Current Password *</label>
+              <input
+                type="password"
+                id="currentPassword"
+                name="currentPassword"
+                required
+                autocomplete="current-password"
+                class="mt-1 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label for="newPassword" class="block text-xs font-semibold text-foreground">New Password *</label>
+                <input
+                  type="password"
+                  id="newPassword"
+                  name="newPassword"
+                  required
+                  minlength="8"
+                  autocomplete="new-password"
+                  class="mt-1 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label for="confirmPassword" class="block text-xs font-semibold text-foreground">Confirm New Password *</label>
+                <input
+                  type="password"
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  required
+                  minlength="8"
+                  autocomplete="new-password"
+                  class="mt-1 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div id="password-status" class="hidden rounded-xl p-3 text-xs font-medium"></div>
+
+            <button
+              type="submit"
+              id="save-password-btn"
+              class="rounded-xl border border-border bg-white px-5 py-2.5 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+            >
+              Update Password
+            </button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </main>
+</BaseLayout>
+
+<script>
+  import { changePassword } from '@/lib/auth-client';
+
+  // 1. Funny Username Generator
+  const generateUsernameBtn = document.getElementById('generate-username-btn');
+  const usernameInput = document.getElementById('username-input') as HTMLInputElement | null;
+  const avatarPreview = document.getElementById('avatar-preview') as HTMLImageElement | null;
+  const avatarUrlHidden = document.getElementById('avatar-url-hidden') as HTMLInputElement | null;
+
+  if (generateUsernameBtn && usernameInput) {
+    generateUsernameBtn.addEventListener('click', async () => {
+      generateUsernameBtn.textContent = 'Generating...';
+      try {
+        const res = await fetch('/api/user/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'generateUsername' }),
+        });
+        const data = (await res.json()) as any;
+        if (data.username) {
+          usernameInput.value = data.username;
+        }
+      } finally {
+        generateUsernameBtn.textContent = '🎲 Generate Funny Username';
+      }
+    });
+  }
+
+  // 2. Randomize Wave Avatar
+  const dicebearBtn = document.getElementById('dicebear-avatar-btn');
+  if (dicebearBtn && avatarPreview && avatarUrlHidden) {
+    dicebearBtn.addEventListener('click', () => {
+      const seed = Math.random().toString(36).substring(2, 10);
+      const newAvatar = `https://api.dicebear.com/9.x/glass/svg?seed=${seed}`;
+      avatarPreview.src = newAvatar;
+      avatarUrlHidden.value = newAvatar;
+    });
+  }
+
+  // 3. Custom Avatar R2 Upload
+  const avatarFileInput = document.getElementById('avatar-file-input') as HTMLInputElement | null;
+  const avatarUploadStatus = document.getElementById('avatar-upload-status');
+
+  if (avatarFileInput && avatarPreview && avatarUrlHidden && avatarUploadStatus) {
+    avatarFileInput.addEventListener('change', async () => {
+      const file = avatarFileInput.files?.[0];
+      if (!file) return;
+
+      avatarUploadStatus.textContent = 'Uploading avatar to R2...';
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = (await res.json()) as any;
+        if (res.ok && data.url) {
+          avatarPreview.src = data.url;
+          avatarUrlHidden.value = data.url;
+          avatarUploadStatus.textContent = 'Avatar uploaded successfully!';
+        } else {
+          avatarUploadStatus.textContent = data.error || 'Upload failed.';
+        }
+      } catch {
+        avatarUploadStatus.textContent = 'Upload network error.';
+      }
+    });
+  }
+
+  // 4. Save Profile Info
+  const profileForm = document.getElementById('profile-info-form') as HTMLFormElement | null;
+  const profileStatus = document.getElementById('profile-status');
+  const saveProfileBtn = document.getElementById('save-profile-btn') as HTMLButtonElement | null;
+
+  if (profileForm && profileStatus && saveProfileBtn) {
+    profileForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      profileStatus.className = 'hidden rounded-xl p-3 text-xs font-medium';
+      saveProfileBtn.disabled = true;
+      saveProfileBtn.textContent = 'Saving...';
+
+      const formData = new FormData(profileForm);
+      const payload = {
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName'),
+        username: formData.get('username'),
+        image: avatarUrlHidden?.value || formData.get('image'),
+      };
+
+      try {
+        const res = await fetch('/api/user/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+        const data = (await res.json()) as any;
+
+        if (res.ok) {
+          profileStatus.textContent = 'Profile changes saved successfully!';
+          profileStatus.className = 'rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 text-xs font-semibold';
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          profileStatus.textContent = data.error || 'Failed to update profile.';
+          profileStatus.className = 'rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold';
+        }
+      } catch {
+        profileStatus.textContent = 'Network error. Please try again.';
+        profileStatus.className = 'rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold';
+      } finally {
+        saveProfileBtn.disabled = false;
+        saveProfileBtn.textContent = 'Save Profile Changes';
+      }
+    });
+  }
+
+  // 5. Change Password Form
+  const passwordForm = document.getElementById('change-password-form') as HTMLFormElement | null;
+  const passwordStatus = document.getElementById('password-status');
+  const savePasswordBtn = document.getElementById('save-password-btn') as HTMLButtonElement | null;
+
+  if (passwordForm && passwordStatus && savePasswordBtn) {
+    passwordForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      passwordStatus.className = 'hidden rounded-xl p-3 text-xs font-medium';
+
+      const formData = new FormData(passwordForm);
+      const currentPassword = formData.get('currentPassword') as string;
+      const newPassword = formData.get('newPassword') as string;
+      const confirmPassword = formData.get('confirmPassword') as string;
+
+      if (newPassword !== confirmPassword) {
+        passwordStatus.textContent = 'New passwords do not match.';
+        passwordStatus.className = 'rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold';
+        return;
+      }
+
+      savePasswordBtn.disabled = true;
+      savePasswordBtn.textContent = 'Updating...';
+
+      try {
+        const res = await changePassword({
+          currentPassword,
+          newPassword,
+          revokeOtherSessions: true,
+        });
+
+        if (res.error) {
+          passwordStatus.textContent = res.error.message || 'Failed to update password.';
+          passwordStatus.className = 'rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold';
+        } else {
+          passwordStatus.textContent = 'Password updated successfully!';
+          passwordStatus.className = 'rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 text-xs font-semibold';
+          passwordForm.reset();
+        }
+      } catch (err: any) {
+        passwordStatus.textContent = err.message || 'Password update failed.';
+        passwordStatus.className = 'rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold';
+      } finally {
+        savePasswordBtn.disabled = false;
+        savePasswordBtn.textContent = 'Update Password';
+      }
+    });
+  }
+</script>

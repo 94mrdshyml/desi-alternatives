@@ -61,6 +61,13 @@ export function createAuth(
       'https://desialternatives.in',
       ...(requestOrigin ? [requestOrigin] : []),
     ],
+    user: {
+      additionalFields: {
+        firstName: { type: 'string', required: false },
+        lastName: { type: 'string', required: false },
+        username: { type: 'string', required: false },
+      },
+    },
     plugins,
     emailAndPassword: {
       enabled: true,

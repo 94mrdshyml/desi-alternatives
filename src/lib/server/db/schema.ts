@@ -23,6 +23,9 @@ export type UserRole = (typeof userRoles)[number];
 export const users = sqliteTable('users', {
   id: text('id').primaryKey().$defaultFn(createUserId),
   name: text('name').notNull(),
+  firstName: text('first_name'),
+  lastName: text('last_name'),
+  username: text('username').unique(),
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),

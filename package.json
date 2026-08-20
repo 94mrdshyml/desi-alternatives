@@ -43,7 +43,8 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.0.1",
     "tailwindcss": "^4.0.7",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "unique-names-generator": "^4.7.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250214.0",
