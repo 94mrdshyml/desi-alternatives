@@ -12,11 +12,16 @@ export const ALL: APIRoute = async (context) => {
     });
   }
 
-  const auth = createAuth(env.DB, {
-    BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_URL: env.BETTER_AUTH_URL,
-    BETTER_AUTH_API_KEY: env.BETTER_AUTH_API_KEY,
-  });
+  const origin = new URL(context.request.url).origin;
+  const auth = createAuth(
+    env.DB,
+    {
+      BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET,
+      BETTER_AUTH_URL: env.BETTER_AUTH_URL,
+      BETTER_AUTH_API_KEY: env.BETTER_AUTH_API_KEY,
+    },
+    origin
+  );
 
   return auth.handler(context.request);
 };

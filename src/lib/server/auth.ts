@@ -11,7 +11,8 @@ export function createAuth(
     BETTER_AUTH_SECRET?: string;
     BETTER_AUTH_URL?: string;
     BETTER_AUTH_API_KEY?: string;
-  }
+  },
+  requestOrigin?: string
 ) {
   const db = createDb(d1);
 
@@ -30,6 +31,9 @@ export function createAuth(
     );
   }
 
+  // Determine baseURL dynamically: requestOrigin > env.BETTER_AUTH_URL > fallback
+  const baseURL = requestOrigin || env.BETTER_AUTH_URL || 'http://localhost:4321';
+
   return betterAuth({
     database: drizzleAdapter(db, {
       provider: 'sqlite',
@@ -41,7 +45,14 @@ export function createAuth(
       },
     }),
     secret: env.BETTER_AUTH_SECRET || 'dev_secret_desi_alternatives_minimum_32_characters_long',
-    baseURL: env.BETTER_AUTH_URL || 'http://localhost:4321',
+    baseURL,
+    trustedOrigins: [
+      'http://localhost:4321',
+      'http://localhost:3000',
+      'https://desi-alternatives.mridu.workers.dev',
+      'https://desialternatives.in',
+      ...(requestOrigin ? [requestOrigin] : []),
+    ],
     plugins,
     emailAndPassword: {
       enabled: true,

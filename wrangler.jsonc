@@ -27,7 +27,7 @@
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "http://localhost:4321"
+    "BETTER_AUTH_URL": "https://desi-alternatives.mridu.workers.dev"
   },
   "observability": {
     "enabled": true
