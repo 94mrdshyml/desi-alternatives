@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { dash, sentinel } from '@better-auth/infra';
+import { admin } from 'better-auth/plugins';
 import { createDb } from './db';
 import * as schema from './db/schema';
 import { generateId } from './id';
@@ -16,7 +17,13 @@ export function createAuth(
 ) {
   const db = createDb(d1);
 
-  const plugins = [];
+  const plugins = [
+    admin({
+      defaultRole: 'user',
+      adminRole: 'admin',
+    }),
+  ];
+
   if (env.BETTER_AUTH_API_KEY) {
     plugins.push(
       dash({

@@ -23,7 +23,10 @@ export const users = sqliteTable('users', {
   email: text('email').notNull().unique(),
   emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
   image: text('image'),
-  role: text('role', { enum: ['admin', 'editor', 'author', 'user'] }).default('user').notNull(),
+  role: text('role').default('user').notNull(),
+  banned: integer('banned', { mode: 'boolean' }).default(false),
+  banReason: text('ban_reason'),
+  banExpires: integer('ban_expires', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
@@ -35,6 +38,7 @@ export const sessions = sqliteTable('sessions', {
   expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
   ipAddress: text('ip_address'),
   userAgent: text('user_agent'),
+  impersonatedBy: text('impersonated_by'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
