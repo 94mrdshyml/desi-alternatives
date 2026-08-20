@@ -51,6 +51,7 @@ export const accounts = sqliteTable('accounts', {
   scope: text('scope'),
   idToken: text('id_token'),
   password: text('password'),
+  issuer: text('issuer'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });

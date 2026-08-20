@@ -27,7 +27,7 @@
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "https://desi-alternatives.mridu.workers.dev"
+    "BETTER_AUTH_URL": "https://da.mrdshyml.xyz"
   },
   "observability": {
     "enabled": true
