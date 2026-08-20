@@ -3,13 +3,13 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 ---
 
 <BaseLayout title="Login — Desi Alternatives" description="Sign in to your Desi Alternatives account">
-  <main class="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
+  <main class="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 bg-slate-50/50">
     <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
-      <a href="/" class="inline-flex items-center gap-2 text-2xl font-bold tracking-tight">
+      <a href="/" class="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
         <span>Desi</span>
         <span class="font-serif-editorial italic text-primary">Alternatives</span>
       </a>
-      <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+      <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
         Welcome <span class="font-serif-editorial italic font-normal text-primary">back</span>
       </h1>
       <p class="mt-2 text-sm text-muted-foreground">
@@ -18,9 +18,9 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     </div>
 
     <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
+      <div class="rounded-xl border border-border bg-white p-6 shadow-sm sm:p-8">
         <form id="login-form" class="space-y-5">
-          <div id="error-message" class="hidden rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive"></div>
+          <div id="error-message" class="hidden rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700"></div>
 
           <div>
             <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -34,7 +34,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
                 autocomplete="email"
                 required
                 placeholder="name@company.in"
-                class="block w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                class="block w-full rounded-lg border border-input bg-white px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
               />
             </div>
           </div>
@@ -53,7 +53,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
                 autocomplete="current-password"
                 required
                 placeholder="••••••••••••"
-                class="block w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                class="block w-full rounded-lg border border-input bg-white px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
               />
             </div>
           </div>
@@ -62,7 +62,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
             <button
               type="submit"
               id="submit-btn"
-              class="flex w-full justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
+              class="flex w-full justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
             >
               Sign In
             </button>
@@ -71,7 +71,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 
         <div class="mt-6 border-t border-border pt-6 text-center text-xs text-muted-foreground">
           Don't have an account?{' '}
-          <a href="/register" class="font-medium text-primary hover:underline">
+          <a href="/register" class="font-semibold text-primary hover:underline">
             Register here
           </a>
         </div>

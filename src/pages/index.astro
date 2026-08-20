@@ -3,32 +3,32 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 ---
 
 <BaseLayout>
-  <header class="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
+  <header class="sticky top-0 z-50 border-b border-border bg-white/90 backdrop-blur-md">
     <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6 lg:px-8">
-      <a href="/" class="flex items-center gap-2 text-xl font-bold tracking-tight">
+      <a href="/" class="flex items-center gap-2 text-xl font-bold tracking-tight text-foreground">
         <span>Desi</span>
         <span class="font-serif-editorial italic text-primary">Alternatives</span>
       </a>
 
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-3">
         <button
           type="button"
-          class="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-foreground"
+          class="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-xs transition hover:border-primary/40 hover:text-foreground cursor-pointer"
         >
           <span>Quick Search</span>
-          <kbd class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
+          <kbd class="rounded bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
         </button>
 
         <a
           href="/login"
-          class="text-xs font-medium text-muted-foreground hover:text-foreground transition"
+          class="rounded-lg px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:text-foreground transition"
         >
           Sign In
         </a>
 
         <a
           href="/register"
-          class="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-90 transition"
+          class="rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition"
         >
           Get Started
         </a>
@@ -36,13 +36,13 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
     </div>
   </header>
 
-  <main class="mx-auto max-w-6xl px-4 py-16 sm:px-6 lg:px-8">
+  <main class="mx-auto max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-3xl text-center">
-      <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+      <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-800 shadow-xs">
         <span>🇮🇳 Sovereign Indian SaaS Directory</span>
       </div>
 
-      <h1 class="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+      <h1 class="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl text-foreground">
         Discover <span class="font-serif-editorial italic font-normal text-primary">sovereign</span> Indian software for your stack
       </h1>
 
@@ -53,13 +53,13 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
       <div class="mt-8 flex justify-center gap-3">
         <a
           href="/register"
-          class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition"
+          class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary-hover transition cursor-pointer"
         >
           Submit a Tool
         </a>
         <a
           href="/login"
-          class="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-xs hover:border-primary/40 transition"
+          class="rounded-lg border border-border bg-white px-5 py-2.5 text-sm font-semibold text-foreground shadow-xs hover:bg-slate-50 hover:border-primary/40 transition cursor-pointer"
         >
           Claim Listing
         </a>
