@@ -15,12 +15,16 @@ export const GET: APIRoute = async ({ params, locals }) => {
       return new Response('Asset not found', { status: 404 });
     }
 
-    const headers = new Headers();
-    object.writeHttpMetadata(headers);
-    headers.set('etag', object.httpEtag);
-    headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+    const headers: Record<string, string> = {
+      'Cache-Control': 'public, max-age=31536000, immutable',
+      etag: object.httpEtag,
+    };
 
-    return new Response(object.body, {
+    if (object.httpMetadata?.contentType) {
+      headers['Content-Type'] = object.httpMetadata.contentType;
+    }
+
+    return new Response(object.body as any, {
       status: 200,
       headers,
     });

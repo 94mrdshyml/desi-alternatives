@@ -929,8 +929,8 @@ if (db && user && user.role === 'admin') {
       (document.getElementById('edit-tool-logo-url') as HTMLInputElement).value = t.logoUrl || '';
       (document.getElementById('edit-tool-tagline') as HTMLInputElement).value = t.tagline || '';
       (document.getElementById('edit-tool-description') as HTMLTextAreaElement).value = t.description || '';
-      (document.getElementById('edit-tool-category') as HTMLSelectElement).value = t.categoryId || '';
-      (document.getElementById('edit-tool-pricing-model') as HTMLSelectElement).value = t.pricingModel || 'Freemium';
+      (document.getElementById('edit-tool-category') as unknown as HTMLSelectElement).value = t.categoryId || '';
+      (document.getElementById('edit-tool-pricing-model') as unknown as HTMLSelectElement).value = t.pricingModel || 'Freemium';
       (document.getElementById('edit-tool-price') as HTMLInputElement).value = t.startingPriceInr !== null ? String(t.startingPriceInr) : '';
 
       (document.getElementById('edit-tool-residency') as HTMLInputElement).checked = Boolean(t.hasIndianDataResidency);
