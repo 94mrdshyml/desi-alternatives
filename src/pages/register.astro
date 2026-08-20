@@ -1,0 +1,140 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="Register — Desi Alternatives" description="Create your Desi Alternatives account">
+  <main class="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+      <a href="/" class="inline-flex items-center gap-2 text-2xl font-bold tracking-tight">
+        <span>Desi</span>
+        <span class="font-serif-editorial italic text-primary">Alternatives</span>
+      </a>
+      <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">
+        Create an <span class="font-serif-editorial italic font-normal text-primary">account</span>
+      </h1>
+      <p class="mt-2 text-sm text-muted-foreground">
+        Join sovereign Indian SaaS community, submit tools, and claim profiles
+      </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div class="rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8">
+        <form id="register-form" class="space-y-5">
+          <div id="error-message" class="hidden rounded-lg border border-destructive/20 bg-destructive/10 p-3 text-xs text-destructive"></div>
+
+          <div>
+            <label for="name" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Full Name
+            </label>
+            <div class="mt-1.5">
+              <input
+                id="name"
+                name="name"
+                type="text"
+                autocomplete="name"
+                required
+                placeholder="Rohan Sharma"
+                class="block w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Work Email
+            </label>
+            <div class="mt-1.5">
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                required
+                placeholder="name@company.in"
+                class="block w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Password
+            </label>
+            <div class="mt-1.5">
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autocomplete="new-password"
+                required
+                minlength="8"
+                placeholder="Minimum 8 characters"
+                class="block w-full rounded-lg border border-input bg-background px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/60 shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              id="submit-btn"
+              class="flex w-full justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
+            >
+              Create Account
+            </button>
+          </div>
+        </form>
+
+        <div class="mt-6 border-t border-border pt-6 text-center text-xs text-muted-foreground">
+          Already have an account?{' '}
+          <a href="/login" class="font-medium text-primary hover:underline">
+            Sign in
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import { signUp } from '@/lib/auth-client';
+
+    const form = document.getElementById('register-form') as HTMLFormElement;
+    const errorDiv = document.getElementById('error-message') as HTMLDivElement;
+    const submitBtn = document.getElementById('submit-btn') as HTMLButtonElement;
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorDiv.classList.add('hidden');
+      errorDiv.textContent = '';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Creating account...';
+
+      const formData = new FormData(form);
+      const name = formData.get('name') as string;
+      const email = formData.get('email') as string;
+      const password = formData.get('password') as string;
+
+      try {
+        const res = await signUp.email({
+          name,
+          email,
+          password,
+        });
+
+        if (res.error) {
+          errorDiv.textContent = res.error.message || 'Registration failed';
+          errorDiv.classList.remove('hidden');
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Create Account';
+        } else {
+          window.location.href = '/';
+        }
+      } catch (err: any) {
+        errorDiv.textContent = err.message || 'Something went wrong. Please try again.';
+        errorDiv.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Create Account';
+      }
+    });
+  </script>
+</BaseLayout>

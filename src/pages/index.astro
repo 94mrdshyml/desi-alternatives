@@ -10,14 +10,28 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
         <span class="font-serif-editorial italic text-primary">Alternatives</span>
       </a>
 
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
         <button
           type="button"
-          class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-foreground"
+          class="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-muted-foreground shadow-sm transition hover:border-primary/40 hover:text-foreground"
         >
           <span>Quick Search</span>
           <kbd class="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">⌘K</kbd>
         </button>
+
+        <a
+          href="/login"
+          class="text-xs font-medium text-muted-foreground hover:text-foreground transition"
+        >
+          Sign In
+        </a>
+
+        <a
+          href="/register"
+          class="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:opacity-90 transition"
+        >
+          Get Started
+        </a>
       </div>
     </div>
   </header>
@@ -35,6 +49,21 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
       <p class="mt-6 text-base leading-relaxed text-muted-foreground sm:text-lg">
         Replace expensive international subscriptions. Sovereign data residency, direct UPI/INR pricing, GST input tax credits, and responsive IST support.
       </p>
+
+      <div class="mt-8 flex justify-center gap-3">
+        <a
+          href="/register"
+          class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-90 transition"
+        >
+          Submit a Tool
+        </a>
+        <a
+          href="/login"
+          class="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground shadow-xs hover:border-primary/40 transition"
+        >
+          Claim Listing
+        </a>
+      </div>
     </div>
   </main>
 </BaseLayout>
