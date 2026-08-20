@@ -1,0 +1,164 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import CategoryFilter from '@/components/CategoryFilter.astro';
+import ToolCard from '@/components/ToolCard.astro';
+import SearchDialog from '@/components/SearchDialog';
+import { eq } from 'drizzle-orm';
+import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
+
+const db = Astro.locals.db;
+const { slug } = Astro.params;
+
+if (!slug || !db) {
+  return Astro.redirect('/404');
+}
+
+// 1. Fetch target category
+const currentCategory = await db
+  .select()
+  .from(categories)
+  .where(eq(categories.slug, slug))
+  .get();
+
+if (!currentCategory) {
+  return Astro.redirect('/404');
+}
+
+// 2. Fetch all categories for filter pills
+const allCategories = await db.select().from(categories).all();
+
+// 3. Fetch tools in this category
+const rawTools = await db
+  .select({
+    id: desiTools.id,
+    slug: desiTools.slug,
+    name: desiTools.name,
+    tagline: desiTools.tagline,
+    description: desiTools.description,
+    websiteUrl: desiTools.websiteUrl,
+    logoUrl: desiTools.logoUrl,
+    primaryColor: desiTools.primaryColor,
+    categoryId: desiTools.categoryId,
+    categorySlug: categories.slug,
+    categoryName: categories.name,
+    hasGstInvoice: desiTools.hasGstInvoice,
+    hasIndianDataResidency: desiTools.hasIndianDataResidency,
+    hasInrPricing: desiTools.hasInrPricing,
+    hasUpiSupport: desiTools.hasUpiSupport,
+    isOpenSource: desiTools.isOpenSource,
+    hasIstSupport: desiTools.hasIstSupport,
+    isSelfHostable: desiTools.isSelfHostable,
+    hasFreeTier: desiTools.hasFreeTier,
+    pricingModel: desiTools.pricingModel,
+    startingPriceInr: desiTools.startingPriceInr,
+  })
+  .from(desiTools)
+  .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+  .where(eq(desiTools.status, 'published'))
+  .all();
+
+// 4. Fetch alternatives
+const rawAlternatives = await db
+  .select({
+    desiToolId: toolAlternatives.desiToolId,
+    globalName: globalTools.name,
+    globalSlug: globalTools.slug,
+  })
+  .from(toolAlternatives)
+  .leftJoin(globalTools, eq(toolAlternatives.globalToolId, globalTools.id))
+  .all();
+
+const altMap: Record<string, Array<{ name: string; slug: string }>> = {};
+for (const alt of rawAlternatives) {
+  if (alt.desiToolId && alt.globalName && alt.globalSlug) {
+    if (!altMap[alt.desiToolId]) altMap[alt.desiToolId] = [];
+    altMap[alt.desiToolId].push({ name: alt.globalName, slug: alt.globalSlug });
+  }
+}
+
+const categoryCounts: Record<string, number> = {};
+const allTools = rawTools.map((t: any) => {
+  const catSlug = t.categorySlug || 'other';
+  categoryCounts[catSlug] = (categoryCounts[catSlug] || 0) + 1;
+
+  return {
+    ...t,
+    alternatives: altMap[t.id] || [],
+  };
+});
+
+const categoryTools = allTools.filter((t) => t.categorySlug === slug);
+
+const categoryOptions = allCategories.map((c) => ({
+  id: c.id,
+  slug: c.slug,
+  name: c.name,
+  emoji: c.emoji,
+  count: categoryCounts[c.slug] || 0,
+}));
+
+const searchableTools = allTools.map((t) => ({
+  id: t.id,
+  slug: t.slug,
+  name: t.name,
+  tagline: t.tagline,
+  categoryName: t.categoryName,
+  alternatives: t.alternatives?.map((a: any) => a.name) || [],
+}));
+---
+
+<BaseLayout
+  title={`Best Indian ${currentCategory.name} Software Alternatives — Desi Alternatives`}
+  description={currentCategory.description || `Discover sovereign Indian ${currentCategory.name} software alternatives.`}
+>
+  <Navbar />
+  <SearchDialog client:idle tools={searchableTools} />
+
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <!-- Category Hero Banner -->
+    <div class="mx-auto max-w-3xl text-center">
+      <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1 text-xs font-semibold text-amber-800 shadow-2xs">
+        <span>{currentCategory.emoji}</span>
+        <span>{categoryTools.length} Indian Tools Listed</span>
+      </div>
+
+      <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl text-foreground">
+        Indian <span class="font-serif-editorial italic text-primary">{currentCategory.name}</span> Alternatives
+      </h1>
+
+      {currentCategory.description && (
+        <p class="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+          {currentCategory.description}
+        </p>
+      )}
+    </div>
+
+    <!-- Category Filter Tabs with Clean URLs -->
+    <div class="mt-10">
+      <CategoryFilter categories={categoryOptions} activeCategory={slug} />
+    </div>
+
+    <!-- Category Tools Grid -->
+    <div class="mt-6">
+      {categoryTools.length === 0 ? (
+        <div class="rounded-2xl border border-dashed border-border py-16 text-center">
+          <p class="text-sm font-semibold text-foreground">No tools listed in {currentCategory.name} yet.</p>
+          <p class="mt-1 text-xs text-muted-foreground">Are you building an Indian software tool in this space?</p>
+          <a
+            href="/submit"
+            class="mt-4 inline-flex items-center rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition"
+          >
+            Submit Tool to {currentCategory.name}
+          </a>
+        </div>
+      ) : (
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {categoryTools.map((tool) => (
+            <ToolCard tool={tool} />
+          ))}
+        </div>
+      )}
+    </div>
+  </main>
+</BaseLayout>

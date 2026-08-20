@@ -22,4 +22,11 @@ test.describe('Landing Page & Directory E2E', () => {
     const allToolsPill = page.locator('main').getByText('All Tools');
     await expect(allToolsPill).toBeVisible();
   });
+
+  test('navigates to clean category landing page', async ({ page }) => {
+    await page.goto('/category/developer-tools');
+    await expect(page).toHaveTitle(/Developer Tools/);
+    const categoryHeading = page.locator('main h1');
+    await expect(categoryHeading).toContainText('Developer Tools');
+  });
 });

@@ -75,7 +75,7 @@ const user = Astro.locals.user;
     <nav class="flex items-center gap-2 text-xs text-muted-foreground">
       <a href="/" class="hover:text-foreground transition">Home</a>
       <span>/</span>
-      <a href={`/?category=${toolResult.categorySlug}`} class="hover:text-foreground transition">
+      <a href={`/category/${toolResult.categorySlug}`} class="hover:text-foreground transition">
         {toolResult.categoryName}
       </a>
       <span>/</span>
