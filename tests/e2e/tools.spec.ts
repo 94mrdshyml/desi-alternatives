@@ -4,11 +4,11 @@ test.describe('Tools & Pages E2E', () => {
   test('renders submit page', async ({ page }) => {
     await page.goto('/submit');
     await expect(page).toHaveTitle(/Submit/);
-    await expect(page.locator('h1')).toContainText('List your');
+    await expect(page.locator('main h1')).toContainText('List your');
   });
 
   test('restricts admin page for unauthenticated users', async ({ page }) => {
     await page.goto('/admin');
-    await expect(page.locator('h1')).toContainText('Admin Access Restricted');
+    await expect(page.locator('main h1')).toContainText('Admin Access Restricted');
   });
 });
