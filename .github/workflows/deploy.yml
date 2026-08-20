@@ -19,7 +19,9 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build Application
-        run: bun run build
+        run: |
+          bun run build
+          echo "_worker.js" > dist/.assetsignore
 
       - name: Apply D1 Remote Migrations
         uses: cloudflare/wrangler-action@v3
