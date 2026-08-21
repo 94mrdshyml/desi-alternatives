@@ -11,4 +11,10 @@ test.describe('Tools & Pages E2E', () => {
     await page.goto('/admin');
     await expect(page.locator('main h1')).toContainText('Admin Access Restricted');
   });
+
+  test('renders programmatic SEO alternative comparison page', async ({ page }) => {
+    await page.goto('/alternatives/datadog');
+    await expect(page.locator('main h1')).toContainText('Alternatives to');
+    await expect(page.locator('table')).toBeVisible();
+  });
 });

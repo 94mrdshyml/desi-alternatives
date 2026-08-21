@@ -623,20 +623,29 @@ if (db && user && user.role === 'admin') {
             <input type="text" id="create-tool-name-input" name="name" required placeholder="e.g. Zoho" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-foreground">Website URL *</label>
-            <input type="url" name="websiteUrl" required placeholder="https://zoho.com" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-semibold text-foreground">Website URL *</label>
+              <button
+                type="button"
+                id="create-tool-autofill-btn"
+                class="text-[11px] font-semibold text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer"
+              >
+                ✨ <span>Auto-Fill</span>
+              </button>
+            </div>
+            <input type="url" id="create-tool-website-input" name="websiteUrl" required placeholder="https://zoho.com" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-foreground">Tagline *</label>
-          <input type="text" name="tagline" required placeholder="Suite of cloud software applications for businesses" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          <input type="text" id="create-tool-tagline-input" name="tagline" required placeholder="Suite of cloud software applications for businesses" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
         </div>
 
         <!-- Logo Upload to R2 or URL & Brand Color -->
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
-            <label class="block text-xs font-semibold text-foreground">Tool Logo (Upload to Cloudflare R2)</label>
+            <label class="block text-xs font-semibold text-foreground">Tool Logo (Upload to Cloudflare R2 or Scraped)</label>
             <div class="mt-1 flex items-center gap-3">
               <input
                 type="file"
@@ -651,13 +660,13 @@ if (db && user && user.role === 'admin') {
 
           <div>
             <label class="block text-xs font-semibold text-foreground">Primary Brand Color (Hex)</label>
-            <input type="text" name="primaryColor" placeholder="#D97706" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <input type="text" id="create-tool-primary-color-input" name="primaryColor" placeholder="#D97706" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
         </div>
 
         <div>
           <label class="block text-xs font-semibold text-foreground">Description</label>
-          <textarea name="description" rows="2" placeholder="Full overview of the software..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
+          <textarea id="create-tool-description-input" name="description" rows="2" placeholder="Full overview of the software..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
         </div>
 
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1002,6 +1011,57 @@ if (db && user && user.role === 'admin') {
   const openToolBtn = document.getElementById('open-create-tool-modal');
   const closeToolBtn = document.getElementById('close-tool-modal');
   const createToolForm = document.getElementById('admin-create-tool-form') as HTMLFormElement | null;
+  const autoFillBtn = document.getElementById('create-tool-autofill-btn');
+
+  if (autoFillBtn) {
+    autoFillBtn.addEventListener('click', async () => {
+      const websiteInput = document.getElementById('create-tool-website-input') as HTMLInputElement | null;
+      const url = websiteInput?.value?.trim();
+      if (!url) {
+        alert('Please enter a website URL first.');
+        return;
+      }
+
+      const originalText = autoFillBtn.innerHTML;
+      autoFillBtn.innerHTML = '⏳ <span>Scraping...</span>';
+
+      try {
+        const res = await fetch('/api/admin/scrape', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url }),
+        });
+        const data = (await res.json()) as any;
+        if (res.ok && data) {
+          const nameInput = document.getElementById('create-tool-name-input') as HTMLInputElement | null;
+          const taglineInput = document.getElementById('create-tool-tagline-input') as HTMLInputElement | null;
+          const descInput = document.getElementById('create-tool-description-input') as HTMLTextAreaElement | null;
+          const colorInput = document.getElementById('create-tool-primary-color-input') as HTMLInputElement | null;
+          const logoHidden = document.getElementById('create-tool-logo-url-hidden') as HTMLInputElement | null;
+          const uploadStatus = document.getElementById('create-tool-upload-status');
+
+          if (nameInput && !nameInput.value && data.title) nameInput.value = data.title;
+          if (taglineInput && data.description) taglineInput.value = data.description.slice(0, 140);
+          if (descInput && data.description) descInput.value = data.description;
+          if (colorInput && data.primaryColor) colorInput.value = data.primaryColor;
+          if (logoHidden && data.logoUrl) {
+            logoHidden.value = data.logoUrl;
+            if (uploadStatus) uploadStatus.textContent = 'Auto-fetched logo favicon!';
+          }
+          autoFillBtn.innerHTML = '✓ <span>Auto-Filled!</span>';
+          setTimeout(() => {
+            autoFillBtn.innerHTML = originalText;
+          }, 2000);
+        } else {
+          alert(data.error || 'Failed to auto-fetch metadata');
+          autoFillBtn.innerHTML = originalText;
+        }
+      } catch {
+        alert('Network error while scraping URL');
+        autoFillBtn.innerHTML = originalText;
+      }
+    });
+  }
 
   if (openToolBtn && toolModal && closeToolBtn) {
     openToolBtn.addEventListener('click', () => toolModal.classList.remove('hidden'));
