@@ -109,3 +109,23 @@
 - Built `/api/user/profile` endpoint with username uniqueness validation and formatting regex.
 - Switched default avatar generation from `glass` to `identicon` glyphs across Navbar and profile views.
 
+---
+
+## Session 6 — Admin Dashboard Tab Navigation & Declutter
+
+**Date & Time (IST):** 2026-08-21 20:30 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built
+- **Admin Tab Navigation System**:
+  - Modularized admin sections into 4 distinct tabs: `Directory Tools`, `Categories Taxonomy`, `User & Role Management`, and `Pending Claims Queue`.
+  - Added live badge counters to tab headers (`{totalToolsCount}`, `{allCategoriesList.length}`, `{allUsersList.length}`, `{pendingClaims.length}`) with amber highlight on pending items.
+  - Interactive top metric cards linked directly to their respective tabs.
+  - URL hash synchronization (`#tools`, `#categories`, `#users`, `#claims`) with zero layout flicker and browser back/forward support.
+- **Commands Preference Rule**: Added pre-approval rule for routine dev/test/build commands to workspace rules.
+
+### How We Built It
+- Refactored `src/pages/admin/index.astro` with tab panels, navigation bar, and clean hash-based switching script.
+
+

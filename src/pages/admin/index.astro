@@ -177,26 +177,91 @@ if (db && user && user.role === 'admin') {
 
         <!-- Metrics Row -->
         <div class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4 text-xs">
-          <div class="rounded-xl border border-border bg-white p-4 text-center shadow-2xs">
+          <button type="button" data-metric-tab="tools" class="rounded-xl border border-border bg-white p-4 text-center shadow-2xs hover:border-primary/50 transition cursor-pointer">
             <span class="text-muted-foreground">Total Tools</span>
             <p class="font-bold text-foreground text-lg mt-0.5">{totalToolsCount}</p>
-          </div>
-          <div class="rounded-xl border border-border bg-white p-4 text-center shadow-2xs">
+          </button>
+          <button type="button" data-metric-tab="categories" class="rounded-xl border border-border bg-white p-4 text-center shadow-2xs hover:border-primary/50 transition cursor-pointer">
             <span class="text-muted-foreground">Categories</span>
             <p class="font-bold text-foreground text-lg mt-0.5">{allCategoriesList.length}</p>
-          </div>
-          <div class="rounded-xl border border-border bg-white p-4 text-center shadow-2xs">
+          </button>
+          <button type="button" data-metric-tab="users" class="rounded-xl border border-border bg-white p-4 text-center shadow-2xs hover:border-primary/50 transition cursor-pointer">
             <span class="text-muted-foreground">Total Users</span>
             <p class="font-bold text-foreground text-lg mt-0.5">{allUsersList.length}</p>
-          </div>
-          <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center shadow-2xs">
+          </button>
+          <button type="button" data-metric-tab="claims" class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-center shadow-2xs hover:border-amber-400 transition cursor-pointer">
             <span class="text-amber-800 font-semibold">Pending Approvals</span>
             <p class="font-bold text-amber-900 text-lg mt-0.5">{pendingTools.length + pendingClaims.length}</p>
-          </div>
+          </button>
         </div>
 
-        <!-- Section 1: All Directory Tools Management -->
-        <section class="mt-10">
+        <!-- Dedicated Admin In-Page Menu Bar -->
+        <div class="mt-8 rounded-2xl border border-border bg-slate-100/80 p-1.5 dark:bg-zinc-900/80 shadow-2xs">
+          <nav class="flex items-center gap-1.5 overflow-x-auto" aria-label="Admin Menu" id="admin-tabs-nav">
+            <!-- Menu Item 1: Tools -->
+            <button
+              type="button"
+              data-tab-target="tools"
+              class="admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer bg-white dark:bg-zinc-800 text-foreground font-bold shadow-xs border border-border/60"
+            >
+              <svg class="h-3.5 w-3.5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              <span>Directory Tools</span>
+              <span class="tab-badge rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                {allToolsList.length}
+              </span>
+            </button>
+
+            <!-- Menu Item 2: Categories -->
+            <button
+              type="button"
+              data-tab-target="categories"
+              class="admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer text-muted-foreground hover:text-foreground font-medium border border-transparent"
+            >
+              <svg class="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              <span>Categories Taxonomy</span>
+              <span class="tab-badge rounded-full bg-slate-200/80 dark:bg-zinc-800 px-2 py-0.5 text-[10px] font-bold text-foreground">
+                {allCategoriesList.length}
+              </span>
+            </button>
+
+            <!-- Menu Item 3: Users -->
+            <button
+              type="button"
+              data-tab-target="users"
+              class="admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer text-muted-foreground hover:text-foreground font-medium border border-transparent"
+            >
+              <svg class="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+              <span>User & Role Controls</span>
+              <span class="tab-badge rounded-full bg-slate-200/80 dark:bg-zinc-800 px-2 py-0.5 text-[10px] font-bold text-foreground">
+                {allUsersList.length}
+              </span>
+            </button>
+
+            <!-- Menu Item 4: Claims Queue -->
+            <button
+              type="button"
+              data-tab-target="claims"
+              class="admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer text-muted-foreground hover:text-foreground font-medium border border-transparent"
+            >
+              <svg class="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              <span>Ownership Claims</span>
+              <span class={`tab-badge rounded-full px-2 py-0.5 text-[10px] font-bold ${pendingClaims.length > 0 ? 'bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950 dark:text-amber-300' : 'bg-slate-200/80 dark:bg-zinc-800 text-foreground'}`}>
+                {pendingClaims.length}
+              </span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Section 1: All Directory Tools Management (Tab: tools) -->
+        <section id="tab-panel-tools" class="tab-panel mt-6">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-foreground">
               Directory Tools ({allToolsList.length})
@@ -307,8 +372,8 @@ if (db && user && user.role === 'admin') {
           </div>
         </section>
 
-        <!-- Section 2: Categories Taxonomy Management -->
-        <section class="mt-10">
+        <!-- Section 2: Categories Taxonomy Management (Tab: categories) -->
+        <section id="tab-panel-categories" class="tab-panel mt-6 hidden">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-foreground">
               Categories Taxonomy ({allCategoriesList.length})
@@ -381,8 +446,8 @@ if (db && user && user.role === 'admin') {
           </div>
         </section>
 
-        <!-- Section 3: User & Role Management -->
-        <section class="mt-10">
+        <!-- Section 3: User & Role Management (Tab: users) -->
+        <section id="tab-panel-users" class="tab-panel mt-6 hidden">
           <div class="flex items-center justify-between">
             <h2 class="text-base font-bold text-foreground">
               User & Role Management ({allUsersList.length})
@@ -480,8 +545,8 @@ if (db && user && user.role === 'admin') {
           </div>
         </section>
 
-        <!-- Section 4: Pending Ownership Claims -->
-        <section class="mt-10">
+        <!-- Section 4: Pending Ownership Claims (Tab: claims) -->
+        <section id="tab-panel-claims" class="tab-panel mt-6 hidden">
           <h2 class="text-base font-bold text-foreground">
             Pending Ownership Claims ({pendingClaims.length})
           </h2>
@@ -1271,5 +1336,66 @@ if (db && user && user.role === 'admin') {
         alert('Network error');
       }
     });
+  });
+
+  // Tab Navigation Logic
+  function switchTab(targetTab: string) {
+    const validTabs = ['tools', 'categories', 'users', 'claims'];
+    const activeTab = validTabs.includes(targetTab) ? targetTab : 'tools';
+
+    // Update panels
+    document.querySelectorAll('.tab-panel').forEach((panel) => {
+      if (panel.id === `tab-panel-${activeTab}`) {
+        panel.classList.remove('hidden');
+      } else {
+        panel.classList.add('hidden');
+      }
+    });
+
+    // Update tab buttons
+    document.querySelectorAll('.admin-tab-btn').forEach((btn) => {
+      const target = btn.getAttribute('data-tab-target');
+      const icon = btn.querySelector('svg');
+      if (target === activeTab) {
+        btn.className = 'admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer bg-white dark:bg-zinc-800 text-foreground font-bold shadow-xs border border-border/60';
+        if (icon) icon.className = 'h-3.5 w-3.5 text-primary';
+      } else {
+        btn.className = 'admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer text-muted-foreground hover:text-foreground font-medium border border-transparent';
+        if (icon) icon.className = 'h-3.5 w-3.5 text-muted-foreground';
+      }
+    });
+
+    // Update URL hash without jump
+    if (window.location.hash.replace('#', '') !== activeTab) {
+      history.replaceState(null, '', `#${activeTab}`);
+    }
+  }
+
+  // Initial tab from hash or default 'tools'
+  const initialHash = window.location.hash.replace('#', '');
+  if (initialHash) {
+    switchTab(initialHash);
+  }
+
+  // Handle tab button clicks
+  document.querySelectorAll('.admin-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-tab-target');
+      if (target) switchTab(target);
+    });
+  });
+
+  // Handle metric card clicks to switch tabs
+  document.querySelectorAll('[data-metric-tab]').forEach((card) => {
+    card.addEventListener('click', () => {
+      const target = card.getAttribute('data-metric-tab');
+      if (target) switchTab(target);
+    });
+  });
+
+  // Listen to external hash changes
+  window.addEventListener('hashchange', () => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash) switchTab(hash);
   });
 </script>
