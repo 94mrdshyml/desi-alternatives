@@ -152,7 +152,7 @@ const schemaData = {
   <SearchDialog client:idle tools={searchableTools} />
 
   <!-- Inject Schema.org JSON-LD for Programmatic SEO -->
-  <script type="application/ld+json" set:html={JSON.stringify(schemaData)} />
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaData)} />
 
   <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
     <!-- Breadcrumb Navigation -->

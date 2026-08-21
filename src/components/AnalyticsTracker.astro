@@ -37,6 +37,8 @@
 
   if (isToolPage && currentSlug) {
     sendEvent({ eventType: 'tool_view', toolSlug: currentSlug });
+  } else if (isAlternativePage && currentSlug) {
+    sendEvent({ eventType: 'pageview', globalToolSlug: currentSlug });
   } else {
     sendEvent({ eventType: 'pageview' });
   }
