@@ -155,5 +155,34 @@
 - Built `src/pages/alternatives/[slug].astro`, `src/lib/server/scraper.ts`, and `src/pages/api/admin/scrape.ts`.
 - Integrated client-side metadata populators across submission and admin views.
 
+---
+
+## Session 8 — First-Party Analytics Engine & Founder Intelligence
+
+**Date & Time (IST):** 2026-08-21 21:20 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built
+- **Cloudflare Analytics Engine Integration**:
+  - Bound dataset `desi_analytics` via `ANALYTICS` binding in `wrangler.jsonc` and `src/env.d.ts`.
+  - Built edge event writer in `src/lib/server/analytics.ts`.
+- **Privacy & Automatic Daily Salt Rotation**:
+  - Cookieless daily session hashing `SHA-256(SECRET + YYYY-MM-DD + IP + UserAgent)` with zero manual intervention.
+  - Fully compliant with India DPDP Act 2023 and GDPR.
+- **Hardware & Demographic Telemetry**:
+  - User-Agent parser detecting Device (desktop/mobile/tablet), OS (macOS, Windows, Linux, iOS, Android), and Browser (Chrome, Safari, Firefox, Edge, Arc, Brave).
+  - Cloudflare Edge Geo Resolution (`request.cf`) capturing Country, State/Region, and City.
+- **Client Beacon & Ingestion Endpoint**:
+  - Lightweight (<1KB) tracker `src/components/AnalyticsTracker.astro` mounted globally in `BaseLayout.astro`.
+  - Ingestion endpoint `POST /api/analytics/collect` executing via non-blocking `ctx.waitUntil()`.
+  - Event interceptors capturing Pageviews, Outbound Website Clicks (`data-outbound-tool`), and Sovereign Badge Clicks (`data-badge-type`).
+- **Admin Analytics Dashboard (`/admin#analytics`)**:
+  - Added 5th tab `📊 Analytics Intelligence` in admin center.
+  - Displays Impressions, Cookieless Unique Visitors, Outbound Leads Delivered (CTR %), Top High-Intent Indian Tools, Domestic Tech Hub Distribution (Bengaluru, NCR, Mumbai, Hyderabad, Chennai), Device/Browser breakdown, and Buyer Intent Signals.
+- **Unit Testing**:
+  - Comprehensive parser and daily hasher tests in `tests/unit/analytics.test.ts` (10/10 passing).
+
+
 
 

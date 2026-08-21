@@ -7,10 +7,13 @@ type R2Bucket = import('@cloudflare/workers-types').R2Bucket;
 interface CloudflareEnv {
   DB: D1Database;
   R2_BUCKET: R2Bucket;
+  ANALYTICS?: import('@cloudflare/workers-types').AnalyticsEngineDataset;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
   BETTER_AUTH_API_KEY?: string;
   RESEND_API_KEY?: string;
+  CLOUDFLARE_API_TOKEN?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
 }
 
 declare namespace App {

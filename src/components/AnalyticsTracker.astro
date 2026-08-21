@@ -1,0 +1,82 @@
+---
+/**
+ * First-Party Sovereign Analytics Beacon Tracker (<1KB)
+ * Zero third-party trackers, zero cookies, non-blocking via sendBeacon.
+ */
+---
+
+<script>
+  function sendEvent(data: Record<string, any>) {
+    try {
+      const payload = JSON.stringify({
+        path: window.location.pathname,
+        referrer: document.referrer || '',
+        ...data,
+      });
+
+      if (navigator.sendBeacon) {
+        navigator.sendBeacon('/api/analytics/collect', payload);
+      } else {
+        fetch('/api/analytics/collect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: true,
+        }).catch(() => {});
+      }
+    } catch {
+      // Fail silently to never disrupt user experience
+    }
+  }
+
+  // 1. Initial Pageview
+  const pathname = window.location.pathname;
+  const isToolPage = pathname.startsWith('/tools/');
+  const isAlternativePage = pathname.startsWith('/alternatives/');
+  const currentSlug = pathname.split('/')[2] || '';
+
+  if (isToolPage && currentSlug) {
+    sendEvent({ eventType: 'tool_view', toolSlug: currentSlug });
+  } else {
+    sendEvent({ eventType: 'pageview' });
+  }
+
+  // 2. Click Delegation (Outbound Clicks & Trust Badges)
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+
+    // Outbound link click (e.g. "Visit Website")
+    const outboundEl = target.closest('[data-outbound-tool]') as HTMLElement | null;
+    if (outboundEl) {
+      const toolSlug = outboundEl.getAttribute('data-outbound-tool') || currentSlug;
+      sendEvent({
+        eventType: 'outbound_click',
+        toolSlug,
+        targetUrl: (outboundEl as HTMLAnchorElement).href || '',
+      });
+      return;
+    }
+
+    // Sovereign Badge click / interest
+    const badgeEl = target.closest('[data-badge-type]') as HTMLElement | null;
+    if (badgeEl) {
+      const badgeType = badgeEl.getAttribute('data-badge-type');
+      sendEvent({
+        eventType: 'badge_click',
+        badgeType,
+        toolSlug: currentSlug,
+      });
+    }
+  });
+
+  // 3. Search Query Tracking (Cmd+K / Search Dialog)
+  window.addEventListener('desi:search', ((e: CustomEvent) => {
+    if (e.detail?.query) {
+      sendEvent({
+        eventType: 'search',
+        searchQuery: String(e.detail.query).slice(0, 100),
+      });
+    }
+  }) as EventListener);
+</script>

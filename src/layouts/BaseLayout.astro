@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import AnalyticsTracker from '@/components/AnalyticsTracker.astro';
 
 interface Props {
   title?: string;
@@ -31,5 +32,6 @@ const {
   </head>
   <body class="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
     <slot />
+    <AnalyticsTracker />
   </body>
 </html>

@@ -26,6 +26,12 @@
       "bucket_name": "desi-assets"
     }
   ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "ANALYTICS",
+      "dataset": "desi_analytics"
+    }
+  ],
   "vars": {
     "BETTER_AUTH_URL": "https://da.mrdshyml.xyz"
   },
