@@ -1358,10 +1358,10 @@ if (db && user && user.role === 'admin') {
       const icon = btn.querySelector('svg');
       if (target === activeTab) {
         btn.className = 'admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer bg-white dark:bg-zinc-800 text-foreground font-bold shadow-xs border border-border/60';
-        if (icon) icon.className = 'h-3.5 w-3.5 text-primary';
+        if (icon) icon.setAttribute('class', 'h-3.5 w-3.5 text-primary');
       } else {
         btn.className = 'admin-tab-btn flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs transition cursor-pointer text-muted-foreground hover:text-foreground font-medium border border-transparent';
-        if (icon) icon.className = 'h-3.5 w-3.5 text-muted-foreground';
+        if (icon) icon.setAttribute('class', 'h-3.5 w-3.5 text-muted-foreground');
       }
     });
 

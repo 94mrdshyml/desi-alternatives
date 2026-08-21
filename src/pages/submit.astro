@@ -1,18 +1,16 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
-import { categories, globalTools } from '@/lib/server/db/schema';
+import { categories } from '@/lib/server/db/schema';
 
 const db = Astro.locals.db;
 const user = Astro.locals.user;
 
 let categoriesList: any[] = [];
-let globalToolsList: any[] = [];
 
 if (db) {
   try {
     categoriesList = await db.select().from(categories).all();
-    globalToolsList = await db.select().from(globalTools).all();
   } catch (e) {
     console.error('Failed to load form dependencies:', e);
   }
