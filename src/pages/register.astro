@@ -1,3 +1,429 @@
 ---
-return Astro.redirect('/login');
+import BaseLayout from '@/layouts/BaseLayout.astro';
+
+// If user is already logged in, redirect home
+const user = Astro.locals.user;
+if (user) {
+  return Astro.redirect('/');
+}
 ---
+
+<BaseLayout title="Get Started — Desi Alternatives" description="Create your account to submit tools, claim profiles, and explore Indian alternatives to global giants.">
+  <main class="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 bg-slate-50/50">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+      <a href="/" class="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
+        <span>Desi</span>
+        <span class="font-serif-editorial italic text-primary">Alternatives</span>
+      </a>
+      <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
+        Get <span class="font-serif-editorial italic font-normal text-primary">started</span>
+      </h1>
+      <p class="mt-2 text-xs sm:text-sm text-muted-foreground">
+        Create your free account with a 6-digit email verification code
+      </p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div class="rounded-2xl border border-border bg-white p-6 shadow-xs sm:p-8">
+        <!-- Status Messages -->
+        <div id="error-message" class="hidden mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 font-medium"></div>
+        <div id="info-message" class="hidden mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-medium"></div>
+
+        <!-- Step 1: Name + Email Entry -->
+        <form id="register-step-form" class="space-y-4">
+          <div>
+            <label for="name-input" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Full Name
+            </label>
+            <div class="mt-1.5">
+              <input
+                id="name-input"
+                name="name"
+                type="text"
+                autocomplete="name"
+                required
+                placeholder="Rohan Sharma"
+                class="block w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label for="email-input" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Work Email
+            </label>
+            <div class="mt-1.5">
+              <input
+                id="email-input"
+                name="email"
+                type="email"
+                autocomplete="email"
+                required
+                placeholder="name@company.in"
+                class="block w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+            </div>
+            <p class="mt-1.5 text-[11px] text-muted-foreground">
+              We'll send a 6-digit numeric verification code to this address.
+            </p>
+          </div>
+
+          <div>
+            <button
+              type="submit"
+              id="send-code-btn"
+              class="flex w-full justify-center rounded-xl bg-primary px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
+            >
+              Send 6-Digit Code
+            </button>
+          </div>
+        </form>
+
+        <!-- Step 2: 6-Digit OTP Entry (Initially Hidden) -->
+        <div id="otp-step-container" class="hidden space-y-5">
+          <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-center">
+            <p class="text-xs text-amber-900">
+              Code sent to <span id="display-email" class="font-bold"></span>
+            </p>
+            <button
+              type="button"
+              id="change-email-btn"
+              class="mt-1 text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+            >
+              Edit email or name
+            </button>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center mb-2">
+              Enter 6-Digit Verification Code
+            </label>
+
+            <!-- 6 Individual Numeric Boxes -->
+            <div class="flex items-center justify-between gap-1.5 sm:gap-2">
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="1"
+                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                data-index="0"
+                autocomplete="one-time-code"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="1"
+                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                data-index="1"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="1"
+                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                data-index="2"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="1"
+                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                data-index="3"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="1"
+                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                data-index="4"
+              />
+              <input
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                maxlength="1"
+                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                data-index="5"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="verify-code-btn"
+            class="flex w-full justify-center rounded-xl bg-primary px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
+          >
+            Verify & Create Account
+          </button>
+
+          <div class="text-center text-xs text-muted-foreground">
+            Didn't receive the code?{' '}
+            <button
+              type="button"
+              id="resend-code-btn"
+              class="font-semibold text-primary hover:underline cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Resend Code
+            </button>
+          </div>
+        </div>
+
+        <!-- Cross Link to Sign In -->
+        <div class="mt-6 border-t border-border pt-5 text-center text-xs text-muted-foreground">
+          Already have an account?{' '}
+          <a href="/login" class="font-semibold text-primary hover:underline">
+            Sign in
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    import { authClient } from '@/lib/auth-client';
+
+    const registerForm = document.getElementById('register-step-form') as HTMLFormElement;
+    const nameInput = document.getElementById('name-input') as HTMLInputElement;
+    const emailInput = document.getElementById('email-input') as HTMLInputElement;
+    const sendCodeBtn = document.getElementById('send-code-btn') as HTMLButtonElement;
+    const otpContainer = document.getElementById('otp-step-container') as HTMLDivElement;
+    const displayEmail = document.getElementById('display-email') as HTMLElement;
+    const changeEmailBtn = document.getElementById('change-email-btn') as HTMLButtonElement;
+    const verifyBtn = document.getElementById('verify-code-btn') as HTMLButtonElement;
+    const resendBtn = document.getElementById('resend-code-btn') as HTMLButtonElement;
+    const errorDiv = document.getElementById('error-message') as HTMLDivElement;
+    const infoDiv = document.getElementById('info-message') as HTMLDivElement;
+    const otpBoxes = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-box'));
+
+    let currentEmail = '';
+    let resendTimer: any = null;
+    let resendCountdown = 30;
+
+    function showError(msg: string) {
+      if (infoDiv) infoDiv.classList.add('hidden');
+      if (errorDiv) {
+        errorDiv.textContent = msg;
+        errorDiv.classList.remove('hidden');
+      }
+    }
+
+    function showInfo(msg: string) {
+      if (errorDiv) errorDiv.classList.add('hidden');
+      if (infoDiv) {
+        infoDiv.textContent = msg;
+        infoDiv.classList.remove('hidden');
+      }
+    }
+
+    function clearMessages() {
+      if (errorDiv) errorDiv.classList.add('hidden');
+      if (infoDiv) infoDiv.classList.add('hidden');
+    }
+
+    function getEnteredOtp(): string {
+      return otpBoxes.map((b) => b.value.trim()).join('');
+    }
+
+    function startResendCountdown() {
+      resendCountdown = 30;
+      if (resendBtn) {
+        resendBtn.disabled = true;
+        resendBtn.textContent = `Resend in ${resendCountdown}s`;
+      }
+      clearInterval(resendTimer);
+      resendTimer = setInterval(() => {
+        resendCountdown--;
+        if (resendCountdown <= 0) {
+          clearInterval(resendTimer);
+          if (resendBtn) {
+            resendBtn.disabled = false;
+            resendBtn.textContent = 'Resend Code';
+          }
+        } else {
+          if (resendBtn) {
+            resendBtn.textContent = `Resend in ${resendCountdown}s`;
+          }
+        }
+      }, 1000);
+    }
+
+    // Step 1: Send OTP
+    async function handleSendOtp() {
+      const email = emailInput.value.trim();
+      const name = nameInput.value.trim();
+      if (!email) {
+        showError('Please enter your work email.');
+        return;
+      }
+
+      if (name) {
+        try {
+          localStorage.setItem('desi_pending_name', name);
+        } catch {}
+      }
+
+      clearMessages();
+      sendCodeBtn.disabled = true;
+      sendCodeBtn.textContent = 'Sending 6-digit code...';
+
+      try {
+        const res = await authClient.emailOtp.sendVerificationOtp({
+          email,
+          type: 'sign-in',
+        });
+
+        if (res.error) {
+          showError(res.error.message || 'Failed to send verification code.');
+          sendCodeBtn.disabled = false;
+          sendCodeBtn.textContent = 'Send 6-Digit Code';
+          return;
+        }
+
+        currentEmail = email;
+        displayEmail.textContent = email;
+        registerForm.classList.add('hidden');
+        otpContainer.classList.remove('hidden');
+        showInfo('6-digit code sent! Check your inbox (and spam folder).');
+        startResendCountdown();
+
+        // Focus first box
+        otpBoxes[0]?.focus();
+      } catch (err: any) {
+        showError(err.message || 'Something went wrong. Please try again.');
+        sendCodeBtn.disabled = false;
+        sendCodeBtn.textContent = 'Send 6-Digit Code';
+      }
+    }
+
+    registerForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSendOtp();
+    });
+
+    changeEmailBtn?.addEventListener('click', () => {
+      otpContainer.classList.add('hidden');
+      registerForm.classList.remove('hidden');
+      clearMessages();
+      sendCodeBtn.disabled = false;
+      sendCodeBtn.textContent = 'Send 6-Digit Code';
+      emailInput.focus();
+    });
+
+    resendBtn?.addEventListener('click', async () => {
+      if (!currentEmail || resendCountdown > 0) return;
+      clearMessages();
+      resendBtn.disabled = true;
+      resendBtn.textContent = 'Sending...';
+
+      try {
+        const res = await authClient.emailOtp.sendVerificationOtp({
+          email: currentEmail,
+          type: 'sign-in',
+        });
+
+        if (res.error) {
+          showError(res.error.message || 'Failed to resend verification code.');
+          resendBtn.disabled = false;
+          resendBtn.textContent = 'Resend Code';
+        } else {
+          showInfo('Fresh 6-digit code sent!');
+          startResendCountdown();
+          otpBoxes.forEach((b) => (b.value = ''));
+          otpBoxes[0]?.focus();
+        }
+      } catch (err: any) {
+        showError(err.message || 'Failed to resend code.');
+        resendBtn.disabled = false;
+        resendBtn.textContent = 'Resend Code';
+      }
+    });
+
+    // Step 2: Verify OTP
+    async function handleVerifyOtp() {
+      const otp = getEnteredOtp();
+      if (otp.length !== 6) {
+        showError('Please enter the complete 6-digit code.');
+        return;
+      }
+
+      clearMessages();
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying & Creating Account...';
+
+      try {
+        const res = await authClient.signIn.emailOtp({
+          email: currentEmail,
+          otp,
+        });
+
+        if (res.error) {
+          showError(res.error.message || 'Invalid or expired verification code.');
+          verifyBtn.disabled = false;
+          verifyBtn.textContent = 'Verify & Create Account';
+          otpBoxes.forEach((b) => (b.value = ''));
+          otpBoxes[0]?.focus();
+          return;
+        }
+
+        showInfo('Verified successfully! Redirecting...');
+        window.location.href = '/';
+      } catch (err: any) {
+        showError(err.message || 'Verification failed. Please check the code.');
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify & Create Account';
+      }
+    }
+
+    verifyBtn?.addEventListener('click', handleVerifyOtp);
+
+    // Auto-advance and paste handling for OTP boxes
+    otpBoxes.forEach((box, idx) => {
+      box.addEventListener('input', (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const val = target.value.replace(/\D/g, '');
+        target.value = val.slice(0, 1);
+
+        if (val && idx < otpBoxes.length - 1) {
+          otpBoxes[idx + 1].focus();
+        }
+
+        if (getEnteredOtp().length === 6) {
+          handleVerifyOtp();
+        }
+      });
+
+      box.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Backspace' && !box.value && idx > 0) {
+          otpBoxes[idx - 1].focus();
+        }
+        if (e.key === 'Enter') {
+          handleVerifyOtp();
+        }
+      });
+
+      box.addEventListener('paste', (e: ClipboardEvent) => {
+        e.preventDefault();
+        const pasted = e.clipboardData?.getData('text') || '';
+        const digits = pasted.replace(/\D/g, '').slice(0, 6);
+
+        digits.split('').forEach((d, i) => {
+          if (otpBoxes[i]) {
+            otpBoxes[i].value = d;
+          }
+        });
+
+        if (digits.length === 6) {
+          otpBoxes[5].focus();
+          handleVerifyOtp();
+        } else if (digits.length > 0 && digits.length < 6) {
+          otpBoxes[digits.length].focus();
+        }
+      });
+    });
+  </script>
+</BaseLayout>

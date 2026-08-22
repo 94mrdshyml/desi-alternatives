@@ -1,16 +1,28 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Auth Pages E2E', () => {
-  test('renders passwordless login page with email input and send code button', async ({ page }) => {
+  test('renders passwordless login page with email input, send code button, and get started link', async ({ page }) => {
     await page.goto('/login');
     await expect(page).toHaveTitle(/Sign In/);
     await expect(page.locator('#email-input')).toBeVisible();
     await expect(page.locator('#send-code-btn')).toContainText('Send 6-Digit Code');
+    await expect(page.locator('a[href="/register"]')).toContainText('Get started');
   });
 
-  test('redirects register page to passwordless login flow', async ({ page }) => {
+  test('renders register page with name, email input, send code button, and sign in link', async ({ page }) => {
     await page.goto('/register');
-    await expect(page).toHaveURL(/login/);
+    await expect(page).toHaveTitle(/Get Started/);
+    await expect(page.locator('#name-input')).toBeVisible();
     await expect(page.locator('#email-input')).toBeVisible();
+    await expect(page.locator('#send-code-btn')).toContainText('Send 6-Digit Code');
+    await expect(page.locator('a[href="/login"]')).toContainText('Sign in');
+  });
+
+  test('navbar Get Started button links to /register and Sign In button links to /login', async ({ page }) => {
+    await page.goto('/');
+    const getStartedBtn = page.locator('header a[href="/register"]');
+    const signInBtn = page.locator('header a[href="/login"]');
+    await expect(getStartedBtn).toBeVisible();
+    await expect(signInBtn).toBeVisible();
   });
 });
