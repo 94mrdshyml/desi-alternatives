@@ -1,21 +1,16 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Auth Pages E2E', () => {
-  test('renders login page with email and password inputs', async ({ page }) => {
+  test('renders passwordless login page with email input and send code button', async ({ page }) => {
     await page.goto('/login');
-    await expect(page).toHaveTitle(/Login/);
-    await expect(page.locator('#email')).toBeVisible();
-    await expect(page.locator('#password')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toContainText('Sign In');
+    await expect(page).toHaveTitle(/Sign In/);
+    await expect(page.locator('#email-input')).toBeVisible();
+    await expect(page.locator('#send-code-btn')).toContainText('Send 6-Digit Code');
   });
 
-  test('renders register page with first name, last name, email and password inputs', async ({ page }) => {
+  test('redirects register page to passwordless login flow', async ({ page }) => {
     await page.goto('/register');
-    await expect(page).toHaveTitle(/Register/);
-    await expect(page.locator('#firstName')).toBeVisible();
-    await expect(page.locator('#lastName')).toBeVisible();
-    await expect(page.locator('#email')).toBeVisible();
-    await expect(page.locator('#password')).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toContainText('Create Account');
+    await expect(page).toHaveURL(/login/);
+    await expect(page.locator('#email-input')).toBeVisible();
   });
 });

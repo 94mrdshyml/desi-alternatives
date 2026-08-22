@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Landing Page & Directory E2E', () => {
-  test('renders sovereign editorial header and title', async ({ page }) => {
+  test('renders Indian tech header and title', async ({ page }) => {
     await page.goto('/');
 
     // Check title
@@ -9,11 +9,11 @@ test.describe('Landing Page & Directory E2E', () => {
 
     // Check main brand heading
     const heading = page.locator('main h1');
-    await expect(heading).toContainText('Discover');
-    await expect(heading).toContainText('sovereign');
+    await expect(heading).toContainText('Replace Global Giants');
+    await expect(heading).toContainText('Indian Tech');
 
-    // Check Sovereign Indian SaaS badge
-    const badge = page.locator('main').getByText('Sovereign Indian SaaS Directory');
+    // Check badge
+    const badge = page.locator('main').getByText('Indian Alternatives to Global Giants');
     await expect(badge).toBeVisible();
   });
 
