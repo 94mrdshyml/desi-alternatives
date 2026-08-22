@@ -15,4 +15,4 @@ ALTER TABLE `global_tools` ADD `features` text;--> statement-breakpoint
 ALTER TABLE `global_tools` ADD `starting_price_usd` integer;--> statement-breakpoint
 ALTER TABLE `global_tools` ADD `foreign_pain_points` text;--> statement-breakpoint
 ALTER TABLE `global_tools` ADD `category_id` text REFERENCES categories(id);--> statement-breakpoint
-ALTER TABLE `global_tools` ADD `updated_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL;
+ALTER TABLE `global_tools` ADD `updated_at` text;

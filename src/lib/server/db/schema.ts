@@ -105,7 +105,7 @@ export const globalTools = sqliteTable('global_tools', {
   foreignPainPoints: text('foreign_pain_points'), // JSON array of strings
   categoryId: text('category_id').references(() => categories.id),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
-  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: text('updated_at'),
 });
 
 // ==========================================
