@@ -41,7 +41,7 @@ export function createAuth(
           // fallback to defaults
         }
 
-        await sendOtpEmail({
+        const res = await sendOtpEmail({
           apiKey: env.RESEND_API_KEY,
           to: email,
           otp,
@@ -49,6 +49,11 @@ export function createAuth(
           fromName,
           fromEmail,
         });
+
+        if (!res.success) {
+          console.error('[sendVerificationOTP] Failed to dispatch email:', res.error);
+          throw new Error(res.error || 'Failed to dispatch verification email');
+        }
       },
     }),
   ];

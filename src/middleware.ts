@@ -7,6 +7,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   if (env?.DB) {
     const origin = new URL(context.request.url).origin;
+    const resendApiKey = env.RESEND_API_KEY || (import.meta as any).env?.RESEND_API_KEY || (globalThis as any).process?.env?.RESEND_API_KEY;
     context.locals.db = createDb(env.DB);
     context.locals.auth = createAuth(
       env.DB,
@@ -14,6 +15,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
         BETTER_AUTH_SECRET: env.BETTER_AUTH_SECRET,
         BETTER_AUTH_URL: env.BETTER_AUTH_URL,
         BETTER_AUTH_API_KEY: env.BETTER_AUTH_API_KEY,
+        RESEND_API_KEY: resendApiKey,
       },
       origin
     );
