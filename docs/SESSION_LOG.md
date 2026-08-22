@@ -258,6 +258,22 @@
   - All Vitest unit tests passed (13/13).
   - Deployed to Cloudflare Workers via CI/CD.
 
+---
+
+## Session 13 — Metadata Scraper API Method Fix & Resilient Anti-Bot Fallback
+
+**Date & Time (IST):** 2026-08-22 18:28 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Fixed & Built
+- **API Method Support**: Added `GET` handler in `src/pages/api/admin/scrape.ts` to accept query params (`?url=...`) matching frontend auto-fill requests (previously only accepted `POST`).
+- **Resilient Domain Fallback**:
+  - Enhanced `src/lib/server/scraper.ts` to gracefully handle anti-bot blocks (e.g. Cloudflare Turnstile / 403 on `notion.so`).
+  - Derived clean capitalized name (`Notion`), favicon logo (`https://www.google.com/s2/favicons?domain=notion.so&sz=128`), and taglines without crashing.
+- **Auto-Slugification on Global Giant Modal**: Added real-time auto-slugifier syncing name input to slug input on `#global-tool-modal`.
+
+
 
 
 
