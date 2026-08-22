@@ -333,3 +333,25 @@
   - Added live upload progress indicators (`"Uploading..."` -> `"✓ Uploaded"`).
 - **Interactive Logo Preview Thumbnail**:
   - Added dynamic logo preview box in both modals that reacts in real-time to file uploads, URL changes, scraping auto-fill, and tool editing.
+
+---
+
+## Session 17 — Dynamic Open Graph (OG) Image Generation & Social Previews
+
+**Date & Time (IST):** 2026-08-22 19:47 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Fixed & Built
+- **Dynamic Edge OG SVG Generators (1200x630 Social Cards)**:
+  - **Tool Detail OG Card** (`/api/og/tool/[slug].svg`): Dynamically renders tool name, tagline, city/state origin badge, sovereign badges (GST, INR, OSS, India cloud), starting price, and brand accents.
+  - **Programmatic Comparison OG Card** (`/api/og/alternative/[slug].svg`): Dynamically renders Foreign USD price comparison vs. top 3 mapped Indian alternatives with their starting INR prices and savings pitch.
+  - **Default Site OG Card** (`/api/og/default.svg`): Global platform banner highlighting zero forex loss, 18% GST input credit, and local data residency.
+- **BaseLayout Open Graph & Twitter Cards Schema**:
+  - Added full Open Graph (`og:type`, `og:site_name`, `og:url`, `og:title`, `og:description`, `og:image`, `og:image:width`, `og:image:height`, `og:locale`) and Twitter Card (`twitter:card="summary_large_image"`, `twitter:site`, `twitter:creator`, `twitter:image`) metadata tags to `src/layouts/BaseLayout.astro`.
+- **Integrated Across Pages**:
+  - Attached dynamic OG routes to `/tools/[slug]`, `/alternatives/[slug]`, and root layouts.
+- **Unit Test Coverage & CI/CD**:
+  - Added unit test suite `tests/unit/og-image.test.ts` (all 17 unit tests passing).
+  - Deployed live to Cloudflare Workers via CI/CD pipeline.
+
