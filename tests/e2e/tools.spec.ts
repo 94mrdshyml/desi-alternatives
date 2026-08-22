@@ -7,9 +7,9 @@ test.describe('Tools & Pages E2E', () => {
     await expect(page.locator('main h1')).toContainText('List your');
   });
 
-  test('restricts admin page for unauthenticated users', async ({ page }) => {
+  test('redirects unauthenticated users away from admin page', async ({ page }) => {
     await page.goto('/admin');
-    await expect(page.locator('main h1')).toContainText('Admin Access Restricted');
+    await expect(page).toHaveURL(/login/);
   });
 
   test('renders programmatic SEO alternative comparison page', async ({ page }) => {
