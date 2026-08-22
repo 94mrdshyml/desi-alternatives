@@ -231,6 +231,34 @@
   - Schema.org structured data (`ItemList` and `FAQPage` JSON-LD) for rich snippet rankings on search engines.
 - **Navigation Integration**: Added "Alternatives Matrix" link to Navbar.
 
+---
+
+## Session 12 — Category & Tool Real-Time Auto-Slugification, Uniqueness Check & D1 Persistence Bugfix
+
+**Date & Time (IST):** 2026-08-22 18:23 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Fixed & Built
+- **Fatal Category & Tool Creation Form Interception**:
+  - Attached full AJAX form submit event listeners to `#admin-create-cat-form` and `#admin-create-tool-form` in `src/pages/admin/catalog.astro`, preventing default page reload without saving.
+  - Connected endpoints directly to `/api/admin/categories` and `/api/admin/tools` with loading states (`Saving...` / `Publishing...`) and in-modal error alert banners.
+- **Real-Time Slug Auto-Generation**:
+  - Implemented automatic slug generation on Category Name and Tool Name input events (`name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')`).
+  - Added dedicated slug input field (`#create-tool-slug-input`) for Indian tools in catalog modal.
+  - Manual override support: Allows users to type custom slugs without being overwritten once modified.
+- **Debounced Real-Time Uniqueness Validation**:
+  - Added `{ action: 'check-slug' }` endpoint handlers in `/api/admin/categories` and `/api/admin/tools`.
+  - Displays instant visual feedback: `✓ Available: /category/[slug]` (green) or `✕ Slug already in use` (red).
+- **Category Edit & Delete Management**:
+  - Integrated modal edit state (`data-edit-category`) that pre-populates category details and sets action to `update`.
+  - Added category deletion action (`data-delete-category`) with confirmation dialog and D1 cascading safety.
+- **Testing & Verification**:
+  - Clean `astro check` diagnostics (0 errors, 0 warnings).
+  - All Vitest unit tests passed (13/13).
+  - Deployed to Cloudflare Workers via CI/CD.
+
+
 
 
 
