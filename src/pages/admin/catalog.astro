@@ -542,17 +542,20 @@ if (db) {
     </div>
   </div>
 
-  <!-- MODAL: ADD INDIAN TOOL -->
+  <!-- MODAL: ADD / EDIT INDIAN TOOL -->
   <div id="create-tool-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
     <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-2xl">
       <div class="flex items-center justify-between pb-3 border-b border-border">
-        <h3 class="text-base font-bold text-foreground">Add New Indian Tool</h3>
+        <h3 id="create-tool-modal-title" class="text-base font-bold text-foreground">Add New Indian Tool</h3>
         <button id="close-tool-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
       </div>
 
       <div id="create-tool-modal-error" class="hidden mt-3 rounded-xl bg-red-50 p-2.5 text-xs text-red-800 border border-red-200"></div>
 
       <form id="admin-create-tool-form" class="mt-4 space-y-4">
+        <input type="hidden" id="create-tool-id" name="id" />
+        <input type="hidden" id="create-tool-action" name="action" value="create" />
+
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label class="block text-xs font-semibold text-foreground">Tool Name *</label>
@@ -594,7 +597,7 @@ if (db) {
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
             <label class="block text-xs font-semibold text-foreground">Category *</label>
-            <select name="categoryId" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
+            <select id="create-tool-category-select" name="categoryId" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
               {allCategoriesList.map((c) => (
                 <option value={c.id}>{c.emoji} {c.name}</option>
               ))}
@@ -602,16 +605,16 @@ if (db) {
           </div>
           <div>
             <label class="block text-xs font-semibold text-foreground">Pricing Model</label>
-            <select name="pricingModel" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
-              <option value="freemium">Freemium</option>
-              <option value="paid">Paid</option>
-              <option value="free">100% Free</option>
-              <option value="contact">Contact for Pricing</option>
+            <select id="create-tool-pricing-model-select" name="pricingModel" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
+              <option value="Freemium">Freemium</option>
+              <option value="Paid">Paid</option>
+              <option value="Free">100% Free</option>
+              <option value="Open-Source">Open-Source</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-semibold text-foreground">Starting Price (INR / mo)</label>
-            <input type="number" name="startingPriceInr" placeholder="0" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <input type="number" id="create-tool-starting-price-input" name="startingPriceInr" placeholder="0" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
         </div>
 
@@ -624,13 +627,13 @@ if (db) {
         <div>
           <label class="block text-xs font-semibold text-foreground mb-1.5">Indian Business & Product Checklist</label>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIndianDataResidency" /> India Data Residency</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasGstInvoice" /> GST Invoices</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasInrPricing" /> Direct INR Billing</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasUpiSupport" /> UPI Payments</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="isOpenSource" /> Open Source</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIstSupport" /> Dedicated IST Support</label>
-            <label class="flex items-center gap-1.5"><input type="checkbox" name="isFeatured" /> Featured on Homepage</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="create-tool-residency-checkbox" name="hasIndianDataResidency" /> India Data Residency</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="create-tool-gst-checkbox" name="hasGstInvoice" /> GST Invoices</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="create-tool-inr-checkbox" name="hasInrPricing" /> Direct INR Billing</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="create-tool-upi-checkbox" name="hasUpiSupport" /> UPI Payments</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="create-tool-oss-checkbox" name="isOpenSource" /> Open Source</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="create-tool-ist-checkbox" name="hasIstSupport" /> Dedicated IST Support</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" id="create-tool-featured-checkbox" name="isFeatured" /> Featured on Homepage</label>
           </div>
         </div>
 
@@ -1057,12 +1060,16 @@ if (db) {
     });
   });
 
-  // Tool Moderation Actions
+  // Tool Moderation Actions (Publish / Unpublish / Delete)
   document.querySelectorAll('[data-tool-action]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const toolId = btn.getAttribute('data-tool-id');
       const action = btn.getAttribute('data-tool-action');
       if (!toolId || !action) return;
+
+      if (action === 'delete') {
+        if (!confirm('Are you sure you want to delete this tool? This action cannot be undone.')) return;
+      }
 
       try {
         const res = await fetch('/api/admin/tools', {
@@ -1070,8 +1077,12 @@ if (db) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ toolId, action }),
         });
-        if (res.ok) window.location.reload();
-        else alert('Failed to perform action');
+        const data = (await res.json()) as any;
+        if (res.ok && data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error || 'Failed to perform action');
+        }
       } catch {
         alert('Network error');
       }
@@ -1145,12 +1156,59 @@ if (db) {
   openToolBtn?.addEventListener('click', () => {
     toolSlugManuallyEdited = false;
     toolForm?.reset();
+    (document.getElementById('create-tool-id') as HTMLInputElement).value = '';
+    (document.getElementById('create-tool-action') as HTMLInputElement).value = 'create';
+    (document.getElementById('create-tool-modal-title') as HTMLElement).textContent = 'Add New Indian Tool';
+    (document.getElementById('create-tool-submit-btn') as HTMLButtonElement).textContent = 'Publish Indian Tool';
     if (toolSlugFeedback) toolSlugFeedback.innerHTML = '';
     document.getElementById('create-tool-modal-error')?.classList.add('hidden');
     toolModal?.classList.remove('hidden');
   });
 
   closeToolBtn?.addEventListener('click', () => toolModal?.classList.add('hidden'));
+
+  // Edit Indian Tool Click Listeners
+  document.querySelectorAll('[data-edit-tool]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const raw = btn.getAttribute('data-edit-tool');
+      if (!raw) return;
+      const t = JSON.parse(raw);
+      toolSlugManuallyEdited = true;
+
+      (document.getElementById('create-tool-id') as HTMLInputElement).value = t.id;
+      (document.getElementById('create-tool-action') as HTMLInputElement).value = 'update';
+      (document.getElementById('create-tool-modal-title') as HTMLElement).textContent = `Edit ${t.name}`;
+      (document.getElementById('create-tool-submit-btn') as HTMLButtonElement).textContent = 'Save Changes';
+
+      if (toolNameInput) toolNameInput.value = t.name || '';
+      if (toolSlugInput) toolSlugInput.value = t.slug || '';
+      (document.getElementById('create-tool-website-input') as HTMLInputElement).value = t.websiteUrl || '';
+      (document.getElementById('create-tool-logo-url-hidden') as HTMLInputElement).value = t.logoUrl || '';
+      (document.getElementById('create-tool-tagline-input') as HTMLInputElement).value = t.tagline || '';
+      (document.getElementById('create-tool-description-input') as HTMLTextAreaElement).value = t.description || '';
+
+      const catSelect = document.getElementById('create-tool-category-select') as HTMLSelectElement | null;
+      if (catSelect) catSelect.value = t.categoryId || '';
+
+      const pricingSelect = document.getElementById('create-tool-pricing-model-select') as HTMLSelectElement | null;
+      if (pricingSelect) pricingSelect.value = t.pricingModel || 'Freemium';
+
+      (document.getElementById('create-tool-starting-price-input') as HTMLInputElement).value =
+        t.startingPriceInr !== null && t.startingPriceInr !== undefined ? String(t.startingPriceInr) : '';
+
+      (document.getElementById('create-tool-residency-checkbox') as HTMLInputElement).checked = Boolean(t.hasIndianDataResidency);
+      (document.getElementById('create-tool-gst-checkbox') as HTMLInputElement).checked = Boolean(t.hasGstInvoice);
+      (document.getElementById('create-tool-inr-checkbox') as HTMLInputElement).checked = Boolean(t.hasInrPricing);
+      (document.getElementById('create-tool-upi-checkbox') as HTMLInputElement).checked = Boolean(t.hasUpiSupport);
+      (document.getElementById('create-tool-oss-checkbox') as HTMLInputElement).checked = Boolean(t.isOpenSource);
+      (document.getElementById('create-tool-ist-checkbox') as HTMLInputElement).checked = Boolean(t.hasIstSupport);
+      (document.getElementById('create-tool-featured-checkbox') as HTMLInputElement).checked = Boolean(t.isFeatured);
+
+      if (toolSlugFeedback) toolSlugFeedback.innerHTML = '';
+      document.getElementById('create-tool-modal-error')?.classList.add('hidden');
+      toolModal?.classList.remove('hidden');
+    });
+  });
 
   // Tool Auto-Fill from Website URL
   toolAutofillBtn?.addEventListener('click', async () => {
@@ -1196,19 +1254,34 @@ if (db) {
     const submitBtn = document.getElementById('create-tool-submit-btn') as HTMLButtonElement;
     const errorDiv = document.getElementById('create-tool-modal-error') as HTMLElement;
     errorDiv.classList.add('hidden');
+
+    const id = (document.getElementById('create-tool-id') as HTMLInputElement).value;
+    const action = (document.getElementById('create-tool-action') as HTMLInputElement).value || 'create';
+
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Publishing...';
+    submitBtn.textContent = action === 'update' ? 'Saving...' : 'Publishing...';
 
     const formData = new FormData(toolForm);
-    const payload: Record<string, any> = { action: 'create' };
-
-    formData.forEach((value, key) => {
-      if (key.startsWith('has') || key.startsWith('is') || key.startsWith('isOpen')) {
-        payload[key] = true;
-      } else {
-        payload[key] = value;
-      }
-    });
+    const payload: Record<string, any> = {
+      id: id || undefined,
+      action,
+      name: formData.get('name'),
+      slug: formData.get('slug'),
+      websiteUrl: formData.get('websiteUrl'),
+      logoUrl: formData.get('logoUrl'),
+      tagline: formData.get('tagline'),
+      description: formData.get('description'),
+      categoryId: formData.get('categoryId'),
+      pricingModel: formData.get('pricingModel'),
+      startingPriceInr: formData.get('startingPriceInr'),
+      hasIndianDataResidency: (document.getElementById('create-tool-residency-checkbox') as HTMLInputElement).checked,
+      hasGstInvoice: (document.getElementById('create-tool-gst-checkbox') as HTMLInputElement).checked,
+      hasInrPricing: (document.getElementById('create-tool-inr-checkbox') as HTMLInputElement).checked,
+      hasUpiSupport: (document.getElementById('create-tool-upi-checkbox') as HTMLInputElement).checked,
+      isOpenSource: (document.getElementById('create-tool-oss-checkbox') as HTMLInputElement).checked,
+      hasIstSupport: (document.getElementById('create-tool-ist-checkbox') as HTMLInputElement).checked,
+      isFeatured: (document.getElementById('create-tool-featured-checkbox') as HTMLInputElement).checked,
+    };
 
     try {
       const res = await fetch('/api/admin/tools', {
@@ -1220,16 +1293,16 @@ if (db) {
       if (res.ok && (data.success || data.toolId)) {
         window.location.reload();
       } else {
-        errorDiv.textContent = data.error || 'Failed to publish tool.';
+        errorDiv.textContent = data.error || 'Failed to save tool.';
         errorDiv.classList.remove('hidden');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Publish Indian Tool';
+        submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Publish Indian Tool';
       }
     } catch {
-      errorDiv.textContent = 'Network error while publishing tool.';
+      errorDiv.textContent = 'Network error while saving tool.';
       errorDiv.classList.remove('hidden');
       submitBtn.disabled = false;
-      submitBtn.textContent = 'Publish Indian Tool';
+      submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Publish Indian Tool';
     }
   });
 
