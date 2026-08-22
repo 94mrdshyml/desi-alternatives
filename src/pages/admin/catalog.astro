@@ -485,8 +485,20 @@ if (db) {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-foreground">Logo URL</label>
-            <input type="url" id="global-logo-input" name="logoUrl" placeholder="https://..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-semibold text-foreground">Logo (Upload or URL)</label>
+              <span id="global-logo-upload-status" class="text-[11px] font-medium text-muted-foreground"></span>
+            </div>
+            <div class="mt-1 flex items-center gap-2">
+              <div class="h-9 w-9 shrink-0 rounded-xl border border-border bg-slate-50 p-1 flex items-center justify-center overflow-hidden">
+                <img id="global-logo-preview" src="https://placehold.co/80x80.png" alt="Logo Preview" class="h-full w-full object-contain" />
+              </div>
+              <input type="url" id="global-logo-input" name="logoUrl" placeholder="https://..." class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+              <label class="shrink-0 inline-flex items-center gap-1 rounded-xl border border-border bg-slate-50 hover:bg-slate-100 px-2.5 py-2 text-xs font-semibold text-foreground cursor-pointer transition">
+                <span>📁</span>
+                <input type="file" id="global-logo-file-input" accept="image/*" class="hidden" />
+              </label>
+            </div>
           </div>
         </div>
 
@@ -584,8 +596,20 @@ if (db) {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold text-foreground">Logo URL</label>
-            <input type="url" id="create-tool-logo-url-hidden" name="logoUrl" placeholder="https://..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-semibold text-foreground">Tool Logo</label>
+              <span id="create-tool-upload-status" class="text-[11px] font-medium text-muted-foreground"></span>
+            </div>
+            <div class="mt-1 flex items-center gap-2">
+              <div class="h-9 w-9 shrink-0 rounded-xl border border-border bg-slate-50 p-1 flex items-center justify-center overflow-hidden">
+                <img id="create-tool-logo-preview" src="https://placehold.co/80x80.png" alt="Logo Preview" class="h-full w-full object-contain" />
+              </div>
+              <input type="url" id="create-tool-logo-url-hidden" name="logoUrl" placeholder="https://..." class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+              <label class="shrink-0 inline-flex items-center gap-1 rounded-xl border border-border bg-slate-50 hover:bg-slate-100 px-2.5 py-2 text-xs font-semibold text-foreground cursor-pointer transition" title="Upload Logo to R2">
+                <span>📁 Upload</span>
+                <input type="file" id="create-tool-logo-file-input" accept="image/*" class="hidden" />
+              </label>
+            </div>
           </div>
         </div>
 
@@ -879,12 +903,61 @@ if (db) {
   const closeGlobalBtn = document.getElementById('close-global-modal');
   const globalForm = document.getElementById('global-tool-form') as HTMLFormElement | null;
   const globalAutofillBtn = document.getElementById('global-autofill-btn') as HTMLButtonElement | null;
+  const globalLogoFileInput = document.getElementById('global-logo-file-input') as HTMLInputElement | null;
+  const globalLogoUrlInput = document.getElementById('global-logo-input') as HTMLInputElement | null;
+  const globalLogoPreview = document.getElementById('global-logo-preview') as HTMLImageElement | null;
+  const globalLogoUploadStatus = document.getElementById('global-logo-upload-status');
+
+  // Handle R2 Logo Upload for Global Tool
+  globalLogoFileInput?.addEventListener('change', async () => {
+    const file = globalLogoFileInput.files?.[0];
+    if (!file) return;
+
+    if (globalLogoUploadStatus) {
+      globalLogoUploadStatus.className = 'text-[11px] font-medium text-amber-600';
+      globalLogoUploadStatus.textContent = 'Uploading...';
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = (await res.json()) as any;
+      if (res.ok && data.url) {
+        if (globalLogoUrlInput) globalLogoUrlInput.value = data.url;
+        if (globalLogoPreview) globalLogoPreview.src = data.url;
+        if (globalLogoUploadStatus) {
+          globalLogoUploadStatus.className = 'text-[11px] font-semibold text-emerald-600';
+          globalLogoUploadStatus.textContent = '✓ Uploaded';
+        }
+      } else {
+        if (globalLogoUploadStatus) {
+          globalLogoUploadStatus.className = 'text-[11px] font-semibold text-red-600';
+          globalLogoUploadStatus.textContent = data.error || 'Upload failed';
+        }
+      }
+    } catch {
+      if (globalLogoUploadStatus) {
+        globalLogoUploadStatus.className = 'text-[11px] font-semibold text-red-600';
+        globalLogoUploadStatus.textContent = 'Network error';
+      }
+    }
+  });
+
+  globalLogoUrlInput?.addEventListener('input', () => {
+    if (globalLogoPreview) {
+      globalLogoPreview.src = globalLogoUrlInput.value.trim() || 'https://placehold.co/80x80.png';
+    }
+  });
 
   openGlobalBtn?.addEventListener('click', () => {
     globalForm?.reset();
     (document.getElementById('global-tool-id') as HTMLInputElement).value = '';
     (document.getElementById('global-tool-action') as HTMLInputElement).value = 'create';
     (document.getElementById('global-modal-title') as HTMLElement).textContent = 'Add Global Giant (Programmatic SEO)';
+    if (globalLogoPreview) globalLogoPreview.src = 'https://placehold.co/80x80.png';
+    if (globalLogoUploadStatus) globalLogoUploadStatus.textContent = '';
     globalModal?.classList.remove('hidden');
   });
 
@@ -931,7 +1004,10 @@ if (db) {
         if (globalSlugInput && (!globalSlugManuallyEdited || !globalSlugInput.value)) {
           globalSlugInput.value = scrapedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         }
-        if (data.logoUrl) (document.getElementById('global-logo-input') as HTMLInputElement).value = data.logoUrl;
+        if (data.logoUrl) {
+          if (globalLogoUrlInput) globalLogoUrlInput.value = data.logoUrl;
+          if (globalLogoPreview) globalLogoPreview.src = data.logoUrl;
+        }
         if (data.tagline) (document.getElementById('global-tagline-input') as HTMLInputElement).value = data.tagline;
         else if (data.description && !(document.getElementById('global-tagline-input') as HTMLInputElement).value) {
           (document.getElementById('global-tagline-input') as HTMLInputElement).value = data.description.slice(0, 100);
@@ -1019,6 +1095,8 @@ if (db) {
       (document.getElementById('global-logo-input') as HTMLInputElement).value = g.logoUrl || '';
       (document.getElementById('global-tagline-input') as HTMLInputElement).value = g.tagline || '';
       (document.getElementById('global-price-input') as HTMLInputElement).value = g.startingPriceUsd || '';
+      if (globalLogoPreview) globalLogoPreview.src = g.logoUrl || 'https://placehold.co/80x80.png';
+      if (globalLogoUploadStatus) globalLogoUploadStatus.textContent = '';
       const catSelect = document.getElementById('global-category-input') as HTMLSelectElement | null;
       if (catSelect) catSelect.value = g.categoryId || '';
 
@@ -1153,6 +1231,54 @@ if (db) {
     checkToolSlug(clean);
   });
 
+  const createToolLogoFileInput = document.getElementById('create-tool-logo-file-input') as HTMLInputElement | null;
+  const createToolLogoUrlInput = document.getElementById('create-tool-logo-url-hidden') as HTMLInputElement | null;
+  const createToolLogoPreview = document.getElementById('create-tool-logo-preview') as HTMLImageElement | null;
+  const createToolUploadStatus = document.getElementById('create-tool-upload-status');
+
+  // Handle R2 Logo Upload for Indian Tool
+  createToolLogoFileInput?.addEventListener('change', async () => {
+    const file = createToolLogoFileInput.files?.[0];
+    if (!file) return;
+
+    if (createToolUploadStatus) {
+      createToolUploadStatus.className = 'text-[11px] font-medium text-amber-600';
+      createToolUploadStatus.textContent = 'Uploading...';
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = (await res.json()) as any;
+      if (res.ok && data.url) {
+        if (createToolLogoUrlInput) createToolLogoUrlInput.value = data.url;
+        if (createToolLogoPreview) createToolLogoPreview.src = data.url;
+        if (createToolUploadStatus) {
+          createToolUploadStatus.className = 'text-[11px] font-semibold text-emerald-600';
+          createToolUploadStatus.textContent = '✓ Uploaded';
+        }
+      } else {
+        if (createToolUploadStatus) {
+          createToolUploadStatus.className = 'text-[11px] font-semibold text-red-600';
+          createToolUploadStatus.textContent = data.error || 'Upload failed';
+        }
+      }
+    } catch {
+      if (createToolUploadStatus) {
+        createToolUploadStatus.className = 'text-[11px] font-semibold text-red-600';
+        createToolUploadStatus.textContent = 'Network error';
+      }
+    }
+  });
+
+  createToolLogoUrlInput?.addEventListener('input', () => {
+    if (createToolLogoPreview) {
+      createToolLogoPreview.src = createToolLogoUrlInput.value.trim() || 'https://placehold.co/80x80.png';
+    }
+  });
+
   openToolBtn?.addEventListener('click', () => {
     toolSlugManuallyEdited = false;
     toolForm?.reset();
@@ -1160,6 +1286,8 @@ if (db) {
     (document.getElementById('create-tool-action') as HTMLInputElement).value = 'create';
     (document.getElementById('create-tool-modal-title') as HTMLElement).textContent = 'Add New Indian Tool';
     (document.getElementById('create-tool-submit-btn') as HTMLButtonElement).textContent = 'Publish Indian Tool';
+    if (createToolLogoPreview) createToolLogoPreview.src = 'https://placehold.co/80x80.png';
+    if (createToolUploadStatus) createToolUploadStatus.textContent = '';
     if (toolSlugFeedback) toolSlugFeedback.innerHTML = '';
     document.getElementById('create-tool-modal-error')?.classList.add('hidden');
     toolModal?.classList.remove('hidden');
@@ -1186,6 +1314,8 @@ if (db) {
       (document.getElementById('create-tool-logo-url-hidden') as HTMLInputElement).value = t.logoUrl || '';
       (document.getElementById('create-tool-tagline-input') as HTMLInputElement).value = t.tagline || '';
       (document.getElementById('create-tool-description-input') as HTMLTextAreaElement).value = t.description || '';
+      if (createToolLogoPreview) createToolLogoPreview.src = t.logoUrl || 'https://placehold.co/80x80.png';
+      if (createToolUploadStatus) createToolUploadStatus.textContent = '';
 
       const catSelect = document.getElementById('create-tool-category-select') as HTMLSelectElement | null;
       if (catSelect) catSelect.value = t.categoryId || '';
@@ -1234,7 +1364,10 @@ if (db) {
             checkToolSlug(slug);
           }
         }
-        if (data.logoUrl) (document.getElementById('create-tool-logo-url-hidden') as HTMLInputElement).value = data.logoUrl;
+        if (data.logoUrl) {
+          if (createToolLogoUrlInput) createToolLogoUrlInput.value = data.logoUrl;
+          if (createToolLogoPreview) createToolLogoPreview.src = data.logoUrl;
+        }
         if (data.tagline) (document.getElementById('create-tool-tagline-input') as HTMLInputElement).value = data.tagline;
         if (data.description) (document.getElementById('create-tool-description-input') as HTMLTextAreaElement).value = data.description;
       } else {
