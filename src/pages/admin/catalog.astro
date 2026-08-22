@@ -734,6 +734,26 @@ if (db) {
 
   closeGlobalBtn?.addEventListener('click', () => globalModal?.classList.add('hidden'));
 
+  // Global Tool Auto-Slugification
+  const globalNameInput = document.getElementById('global-name-input') as HTMLInputElement | null;
+  const globalSlugInput = document.getElementById('global-slug-input') as HTMLInputElement | null;
+  let globalSlugManuallyEdited = false;
+
+  globalNameInput?.addEventListener('input', () => {
+    if (!globalSlugManuallyEdited && globalSlugInput) {
+      globalSlugInput.value = globalNameInput.value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+    }
+  });
+
+  globalSlugInput?.addEventListener('input', () => {
+    globalSlugManuallyEdited = true;
+    globalSlugInput.value = globalSlugInput.value.toLowerCase().trim().replace(/[^a-z0-9-]+/g, '');
+  });
+
   // Global Tool Auto-Fill
   globalAutofillBtn?.addEventListener('click', async () => {
     const urlInput = document.getElementById('global-website-input') as HTMLInputElement;
@@ -749,16 +769,19 @@ if (db) {
     try {
       const res = await fetch(`/api/admin/scrape?url=${encodeURIComponent(targetUrl)}`);
       const data = (await res.json()) as any;
-      if (res.ok && data.name) {
-        (document.getElementById('global-name-input') as HTMLInputElement).value = data.name;
-        (document.getElementById('global-slug-input') as HTMLInputElement).value = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      if (res.ok && (data.name || data.title)) {
+        const scrapedName = data.name || data.title;
+        if (globalNameInput) globalNameInput.value = scrapedName;
+        if (globalSlugInput && (!globalSlugManuallyEdited || !globalSlugInput.value)) {
+          globalSlugInput.value = scrapedName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        }
         if (data.logoUrl) (document.getElementById('global-logo-input') as HTMLInputElement).value = data.logoUrl;
         if (data.tagline) (document.getElementById('global-tagline-input') as HTMLInputElement).value = data.tagline;
-        if (data.description && !(document.getElementById('global-tagline-input') as HTMLInputElement).value) {
+        else if (data.description && !(document.getElementById('global-tagline-input') as HTMLInputElement).value) {
           (document.getElementById('global-tagline-input') as HTMLInputElement).value = data.description.slice(0, 100);
         }
       } else {
-        alert('Auto-fill could not scrape this URL. Please enter details manually.');
+        alert(data?.error || 'Auto-fill could not scrape this URL. Please enter details manually.');
       }
     } catch {
       alert('Network error while scraping metadata.');
