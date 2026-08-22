@@ -273,6 +273,33 @@
   - Derived clean capitalized name (`Notion`), favicon logo (`https://www.google.com/s2/favicons?domain=notion.so&sz=128`), and taglines without crashing.
 - **Auto-Slugification on Global Giant Modal**: Added real-time auto-slugifier syncing name input to slug input on `#global-tool-modal`.
 
+---
+
+## Session 14 — AI JSON Tool Ingestion, Company DNA Origins, Pros/Cons & Multi-Tier Pricing Plans
+
+**Date & Time (IST):** 2026-08-22 18:47 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Fixed & Built
+- **Core Philosophy & Positioning Shift**:
+  - Pivoted from simple price differentiation to celebrating **Indian engineering craft, national pride, homegrown origins, transparent tradeoffs, and sovereign compliance**.
+- **Database Schema Expansion (D1 Migration `0008_greedy_psynapse.sql`)**:
+  - Added company origins & DNA metadata to `desi_tools`: `city`, `state`, `founded_year`, `company_type`, `github_url`, `discord_url`, `pros` (JSON array), `cons` (JSON array).
+  - Created `tool_pricing_plans` table: `id`, `tool_id`, `name`, `currency`, `amount`, `billing_period`, `is_free`, `is_popular`, `description`, `sort_order`.
+- **Backend AI JSON Ingestion API (`/api/admin/tools/import-json`)**:
+  - Accepts single or batch array payloads.
+  - Automatically resolves categories (by slug or name) and global alternative mappings.
+  - Auto-deduplicates slugs and inserts multi-tier pricing plans into `tool_pricing_plans`.
+- **Admin Dashboard UI Enhancement (`/admin/catalog`)**:
+  - Added **"⚡ AI JSON Import"** button in the catalog action header.
+  - Interactive modal with real-time JSON validation feedback, live card preview, 1-click **"📋 Copy AI Prompt"** button, and D1 ingestion.
+- **Tool Detail Page Enhancement (`/tools/[slug]`)**:
+  - Rendered **Origins & Company DNA Badges**: 📍 City, State • 📅 Founded Year • 🏢 Company Type • ⚡ Open Source (with direct GitHub link) • 💬 Community Discord.
+  - Rendered **Editorial Review & Superpowers Grid**: Side-by-side Top Strengths (green) & Honest Tradeoffs / Limitations (amber).
+  - Rendered **Multi-Tier Transparent Pricing Plans Grid** with INR billing and GST ITC badges.
+
+
 
 
 
