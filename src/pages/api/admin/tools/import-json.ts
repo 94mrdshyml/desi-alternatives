@@ -207,7 +207,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         facebookUrl,
         linkedinUrl,
         claimedById: user.id,
-        status: 'published',
+        status: 'draft',
       });
 
       // 10. Insert Pricing Plans

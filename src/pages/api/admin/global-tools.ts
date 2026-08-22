@@ -147,6 +147,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
         })
         .where(eq(globalTools.id, id));
 
+      // Sync mapped competing Indian alternatives
+      if (Array.isArray(body.mappedDesiToolIds)) {
+        await db.delete(toolAlternatives).where(eq(toolAlternatives.globalToolId, id));
+        for (const desiToolId of body.mappedDesiToolIds) {
+          if (desiToolId) {
+            await db.insert(toolAlternatives).values({
+              id: createAlternativeId(),
+              globalToolId: id,
+              desiToolId: String(desiToolId),
+            });
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ success: true, id }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
