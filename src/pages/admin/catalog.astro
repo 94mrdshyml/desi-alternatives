@@ -15,6 +15,7 @@ let allCategoriesList: any[] = [];
 let globalToolsList: any[] = [];
 let toolAlternativeCounts: Record<string, number> = {};
 let globalMappedDesiTools: Record<string, string[]> = {};
+let desiMappedGlobalTools: Record<string, string[]> = {};
 let categoryCounts: Record<string, number> = {};
 let pendingClaimsCount = 0;
 let totalUsersCount = 0;
@@ -62,13 +63,19 @@ if (db) {
     globalToolsList = await db.select().from(globalTools).orderBy(globalTools.name).all();
     const rawAlternatives = await db.select().from(toolAlternatives).all();
 
-    const globalMappedDesiTools: Record<string, string[]> = {};
+    globalMappedDesiTools = {};
+    desiMappedGlobalTools = {};
     for (const alt of rawAlternatives) {
       toolAlternativeCounts[alt.globalToolId] = (toolAlternativeCounts[alt.globalToolId] || 0) + 1;
       if (!globalMappedDesiTools[alt.globalToolId]) {
         globalMappedDesiTools[alt.globalToolId] = [];
       }
       globalMappedDesiTools[alt.globalToolId].push(alt.desiToolId);
+
+      if (!desiMappedGlobalTools[alt.desiToolId]) {
+        desiMappedGlobalTools[alt.desiToolId] = [];
+      }
+      desiMappedGlobalTools[alt.desiToolId].push(alt.globalToolId);
     }
 
     for (const t of allToolsList) {
@@ -287,7 +294,7 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
                     <div class="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
-                        data-edit-tool={JSON.stringify(t)}
+                        data-edit-tool={JSON.stringify({ ...t, mappedGlobalToolIds: desiMappedGlobalTools[t.id] || [] })}
                         class="rounded-lg border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
                       >
                         Edit
@@ -713,6 +720,19 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
           </div>
         </div>
 
+        <!-- Mapped Global Giants Checklist -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground mb-1.5">Competes With / Indian Alternative To (Global Giants)</label>
+          <div class="max-h-36 overflow-y-auto rounded-xl border border-border p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+            {globalToolsList.map((g) => (
+              <label class="flex items-center gap-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                <input type="checkbox" name="globalToolIds" value={g.id} class="tool-mapped-global-checkbox rounded text-primary focus:ring-primary" />
+                <span class="truncate">{g.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
         <button type="submit" id="create-tool-submit-btn" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
           Publish Indian Tool
         </button>
@@ -1067,7 +1087,7 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     const urlInput = document.getElementById('global-website-input') as HTMLInputElement;
     const targetUrl = urlInput?.value?.trim();
     if (!targetUrl) {
-      alert('Please enter a website URL first.');
+      (window as any).showToast?.('Please enter a website URL first.', 'error');
       return;
     }
 
@@ -1091,11 +1111,12 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
         else if (data.description && !(document.getElementById('global-tagline-input') as HTMLInputElement).value) {
           (document.getElementById('global-tagline-input') as HTMLInputElement).value = data.description.slice(0, 100);
         }
+        (window as any).showToast?.('✨ Auto-filled details from website metadata!', 'success');
       } else {
-        alert(data?.error || 'Auto-fill could not scrape this URL. Please enter details manually.');
+        (window as any).showToast?.(data?.error || 'Auto-fill could not scrape this URL. Please enter details manually.', 'error');
       }
     } catch {
-      alert('Network error while scraping metadata.');
+      (window as any).showToast?.('Network error while scraping metadata.', 'error');
     } finally {
       globalAutofillBtn.disabled = false;
       globalAutofillBtn.textContent = '✨ Auto-Fill';
@@ -1144,15 +1165,16 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
       });
 
       if (res.ok) {
-        window.location.reload();
+        (window as any).showToast?.('Global giant saved successfully!', 'success');
+        setTimeout(() => window.location.reload(), 500);
       } else {
         const err = await res.json() as any;
-        alert(err.error || 'Failed to save global tool.');
+        (window as any).showToast?.(err.error || 'Failed to save global tool.', 'error');
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save Global Giant';
       }
     } catch {
-      alert('Network error');
+      (window as any).showToast?.('Network error while saving global tool.', 'error');
       saveBtn.disabled = false;
       saveBtn.textContent = 'Save Global Giant';
     }
@@ -1207,7 +1229,14 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
   document.querySelectorAll('[data-delete-global]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-delete-global');
-      if (!id || !confirm('Are you sure you want to delete this global giant reference?')) return;
+      if (!id) return;
+      const confirmed = await (window as any).showConfirmDialog?.({
+        title: 'Delete Global Giant Anchor',
+        message: 'Are you sure you want to delete this global giant? Any mapped alternative showdowns for it will be removed.',
+        confirmText: 'Delete Global Giant',
+        isDestructive: true,
+      });
+      if (!confirmed) return;
 
       try {
         const res = await fetch('/api/admin/global-tools', {
@@ -1215,10 +1244,14 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'delete', id }),
         });
-        if (res.ok) window.location.reload();
-        else alert('Failed to delete.');
+        if (res.ok) {
+          (window as any).showToast?.('Global giant deleted.', 'success');
+          setTimeout(() => window.location.reload(), 500);
+        } else {
+          (window as any).showToast?.('Failed to delete global giant.', 'error');
+        }
       } catch {
-        alert('Network error.');
+        (window as any).showToast?.('Network error.', 'error');
       }
     });
   });
@@ -1231,7 +1264,13 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
       if (!toolId || !action) return;
 
       if (action === 'delete') {
-        if (!confirm('Are you sure you want to delete this tool? This action cannot be undone.')) return;
+        const confirmed = await (window as any).showConfirmDialog?.({
+          title: 'Delete Indian Tool',
+          message: 'Are you sure you want to delete this tool? This action cannot be undone and will remove it from the directory.',
+          confirmText: 'Delete Tool',
+          isDestructive: true,
+        });
+        if (!confirmed) return;
       }
 
       try {
@@ -1242,12 +1281,16 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
         });
         const data = (await res.json()) as any;
         if (res.ok && data.success) {
-          window.location.reload();
+          (window as any).showToast?.(
+            action === 'publish' ? '✓ Tool approved and published!' : action === 'unpublish' ? 'Tool moved to draft queue.' : 'Tool deleted.',
+            'success'
+          );
+          setTimeout(() => window.location.reload(), 500);
         } else {
-          alert(data.error || 'Failed to perform action');
+          (window as any).showToast?.(data.error || 'Failed to perform action', 'error');
         }
       } catch {
-        alert('Network error');
+        (window as any).showToast?.('Network error.', 'error');
       }
     });
   });
@@ -1374,6 +1417,9 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     if (createToolLogoPreview) createToolLogoPreview.src = 'https://placehold.co/80x80.png';
     if (createToolUploadStatus) createToolUploadStatus.textContent = '';
     if (toolSlugFeedback) toolSlugFeedback.innerHTML = '';
+    document.querySelectorAll<HTMLInputElement>('.tool-mapped-global-checkbox').forEach((cb) => {
+      cb.checked = false;
+    });
     document.getElementById('create-tool-modal-error')?.classList.add('hidden');
     toolModal?.classList.remove('hidden');
   });
@@ -1419,6 +1465,12 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
       (document.getElementById('create-tool-ist-checkbox') as HTMLInputElement).checked = Boolean(t.hasIstSupport);
       (document.getElementById('create-tool-featured-checkbox') as HTMLInputElement).checked = Boolean(t.isFeatured);
 
+      // Sync mapped competing global giants checkboxes
+      const mappedGlobalIds: string[] = Array.isArray(t.mappedGlobalToolIds) ? t.mappedGlobalToolIds : [];
+      document.querySelectorAll<HTMLInputElement>('.tool-mapped-global-checkbox').forEach((cb) => {
+        cb.checked = mappedGlobalIds.includes(cb.value);
+      });
+
       if (toolSlugFeedback) toolSlugFeedback.innerHTML = '';
       document.getElementById('create-tool-modal-error')?.classList.add('hidden');
       toolModal?.classList.remove('hidden');
@@ -1430,7 +1482,7 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     const websiteInput = document.getElementById('create-tool-website-input') as HTMLInputElement | null;
     const url = websiteInput?.value?.trim();
     if (!url) {
-      alert('Please enter a website URL first.');
+      (window as any).showToast?.('Please enter a website URL first.', 'error');
       return;
     }
 
@@ -1455,11 +1507,12 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
         }
         if (data.tagline) (document.getElementById('create-tool-tagline-input') as HTMLInputElement).value = data.tagline;
         if (data.description) (document.getElementById('create-tool-description-input') as HTMLTextAreaElement).value = data.description;
+        (window as any).showToast?.('✨ Auto-filled details from website metadata!', 'success');
       } else {
-        alert('Auto-fill could not scrape this URL. Please enter details manually.');
+        (window as any).showToast?.('Auto-fill could not scrape this URL. Please enter details manually.', 'error');
       }
     } catch {
-      alert('Network error while scraping.');
+      (window as any).showToast?.('Network error while scraping.', 'error');
     } finally {
       toolAutofillBtn.disabled = false;
       toolAutofillBtn.textContent = '✨ Auto-Fill';
@@ -1499,6 +1552,7 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
       isOpenSource: (document.getElementById('create-tool-oss-checkbox') as HTMLInputElement).checked,
       hasIstSupport: (document.getElementById('create-tool-ist-checkbox') as HTMLInputElement).checked,
       isFeatured: (document.getElementById('create-tool-featured-checkbox') as HTMLInputElement).checked,
+      globalToolIds: formData.getAll('globalToolIds'),
     };
 
     try {
@@ -1509,16 +1563,19 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
       });
       const data = (await res.json()) as any;
       if (res.ok && (data.success || data.toolId)) {
-        window.location.reload();
+        (window as any).showToast?.('✓ Tool saved successfully!', 'success');
+        setTimeout(() => window.location.reload(), 500);
       } else {
         errorDiv.textContent = data.error || 'Failed to save tool.';
         errorDiv.classList.remove('hidden');
+        (window as any).showToast?.(data.error || 'Failed to save tool.', 'error');
         submitBtn.disabled = false;
         submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Publish Indian Tool';
       }
     } catch {
       errorDiv.textContent = 'Network error while saving tool.';
       errorDiv.classList.remove('hidden');
+      (window as any).showToast?.('Network error while saving tool.', 'error');
       submitBtn.disabled = false;
       submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Publish Indian Tool';
     }
@@ -1632,7 +1689,14 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-delete-category');
       const name = btn.getAttribute('data-category-name') || 'this category';
-      if (!id || !confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
+      if (!id) return;
+      const confirmed = await (window as any).showConfirmDialog?.({
+        title: `Delete Category: ${name}`,
+        message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+        confirmText: 'Delete Category',
+        isDestructive: true,
+      });
+      if (!confirmed) return;
 
       try {
         const res = await fetch('/api/admin/categories', {
@@ -1642,12 +1706,13 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
         });
         const data = (await res.json()) as any;
         if (res.ok && data.success) {
-          window.location.reload();
+          (window as any).showToast?.('Category deleted.', 'success');
+          setTimeout(() => window.location.reload(), 500);
         } else {
-          alert(data.error || 'Failed to delete category.');
+          (window as any).showToast?.(data.error || 'Failed to delete category.', 'error');
         }
       } catch {
-        alert('Network error while deleting category.');
+        (window as any).showToast?.('Network error while deleting category.', 'error');
       }
     });
   });
@@ -1667,136 +1732,153 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     const description = (document.getElementById('cat-description-input') as HTMLTextAreaElement)?.value?.trim() || '';
     const isFeatured = (document.getElementById('cat-featured-input') as HTMLInputElement)?.checked || false;
 
-    if (!name || !emoji) {
-      errorDiv.textContent = 'Category name and emoji are required.';
+    if (!name || !slug) {
+      errorDiv.textContent = 'Category name and slug are required.';
       errorDiv.classList.remove('hidden');
       return;
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Saving...';
+    submitBtn.textContent = action === 'update' ? 'Saving...' : 'Creating...';
 
     try {
       const res = await fetch('/api/admin/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action, name, emoji, slug, description, isFeatured }),
+        body: JSON.stringify({ id: id || undefined, action, name, emoji, slug, description, isFeatured }),
       });
       const data = (await res.json()) as any;
 
-      if (res.ok && data.success) {
-        window.location.reload();
+      if (res.ok && (data.success || data.categoryId)) {
+        (window as any).showToast?.('Category saved successfully!', 'success');
+        setTimeout(() => window.location.reload(), 500);
       } else {
         errorDiv.textContent = data.error || 'Failed to save category.';
         errorDiv.classList.remove('hidden');
+        (window as any).showToast?.(data.error || 'Failed to save category.', 'error');
         submitBtn.disabled = false;
         submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Create Category';
       }
     } catch {
       errorDiv.textContent = 'Network error while saving category.';
       errorDiv.classList.remove('hidden');
+      (window as any).showToast?.('Network error while saving category.', 'error');
       submitBtn.disabled = false;
       submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Create Category';
     }
   });
 
-  // ==========================================
-  // AI JSON Ingestion Modal Logic
-  // ==========================================
+  // --- TAB SWITCHING: INDIAN TOOLS vs GLOBAL GIANTS vs CATEGORIES vs AI IMPORTER ---
+  const tabButtons = document.querySelectorAll<HTMLButtonElement>('.catalog-tab-btn');
+  const panels = document.querySelectorAll<HTMLElement>('.catalog-panel');
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetPanelId = btn.getAttribute('data-tab-target');
+
+      tabButtons.forEach((b) => {
+        b.className = 'catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium text-muted-foreground hover:bg-slate-100 hover:text-foreground transition cursor-pointer';
+      });
+      btn.className = 'catalog-tab-btn flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-xs font-bold text-foreground shadow-2xs transition cursor-pointer border border-border/80';
+
+      panels.forEach((panel) => {
+        if (panel.id === targetPanelId) {
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      });
+    });
+  });
+
+  // --- AI RESEARCH PROMPT MODAL LOGIC ---
+  const aiPromptModal = document.getElementById('ai-prompt-modal');
+  const openAiPromptBtn = document.getElementById('open-ai-prompt-btn');
+  const closeAiPromptBtn = document.getElementById('close-ai-prompt-modal');
+  const copyAiPromptBtn = document.getElementById('copy-ai-prompt-btn');
+  const openJsonFromPromptBtn = document.getElementById('open-json-modal-from-prompt-btn');
+
+  const AI_RESEARCH_PROMPT = `You are a research analyst for "Desi Alternatives", India's premier indigenous SaaS & Tech directory.
+Research and find high-quality Indian-built SaaS tools, developer tools, AI platforms, or fintech products that serve as genuine alternatives to global market leaders.
+
+Return ONLY a valid JSON array of tool objects conforming strictly to this format:
+
+[
+  {
+    "name": "SigNoz",
+    "slug": "signoz",
+    "websiteUrl": "https://signoz.io",
+    "tagline": "Open-source APM & Observability Platform",
+    "description": "SigNoz is an open-source observability platform native to OpenTelemetry. Monitor metrics, traces, and logs in a unified UI.",
+    "category": "Developer Tools",
+    "pricingModel": "Freemium",
+    "startingPriceInr": 0,
+    "hasIndianDataResidency": true,
+    "hasGstInvoice": true,
+    "hasInrPricing": true,
+    "hasUpiSupport": true,
+    "isOpenSource": true,
+    "hasIstSupport": true,
+    "isSelfHostable": true,
+    "hasFreeTier": true,
+    "company": {
+      "city": "Bengaluru",
+      "state": "Karnataka",
+      "country": "India"
+    },
+    "replacesGlobalTools": ["Datadog", "New Relic", "Dynatrace"],
+    "pros": [
+      "OpenTelemetry native with zero vendor lock-in",
+      "Up to 80% cheaper than Datadog or New Relic",
+      "Full self-hosting and Indian cloud compliance"
+    ],
+    "pricingPlans": [
+      {
+        "name": "Community",
+        "priceMonthlyInr": 0,
+        "billingPeriod": "monthly",
+        "isFreeTier": true,
+        "features": ["Unlimited self-hosted traces", "OpenTelemetry support", "Community Discord"]
+      },
+      {
+        "name": "Cloud Pro",
+        "priceMonthlyInr": 1999,
+        "billingPeriod": "monthly",
+        "isPopular": true,
+        "features": ["Managed ClickHouse cluster", "18% GST Invoice", "Dedicated India Support"]
+      }
+    ]
+  }
+]`;
+
+  openAiPromptBtn?.addEventListener('click', () => aiPromptModal?.classList.remove('hidden'));
+  closeAiPromptBtn?.addEventListener('click', () => aiPromptModal?.classList.add('hidden'));
+
+  // --- BULK JSON IMPORTER LOGIC ---
   const jsonImportModal = document.getElementById('json-import-modal');
   const openJsonImportBtn = document.getElementById('open-json-import-btn');
-  const closeJsonImportBtn = document.getElementById('close-json-import-btn');
+  const closeJsonImportBtn = document.getElementById('close-json-import-modal');
   const cancelJsonImportBtn = document.getElementById('cancel-json-import-btn');
-  const copyAiPromptBtn = document.getElementById('copy-ai-prompt-btn');
   const jsonTextarea = document.getElementById('json-import-textarea') as HTMLTextAreaElement | null;
   const jsonStatusBanner = document.getElementById('json-status-banner');
   const jsonStatusText = document.getElementById('json-status-text');
   const jsonBadge = document.getElementById('json-badge');
   const jsonPreviewContainer = document.getElementById('json-preview-container');
-  const previewCount = document.getElementById('preview-count');
-  const previewCardsList = document.getElementById('preview-cards-list');
-  const jsonImportError = document.getElementById('json-import-error');
+  const previewCount = document.getElementById('json-preview-count');
+  const previewCardsList = document.getElementById('json-preview-cards');
   const submitJsonImportBtn = document.getElementById('submit-json-import-btn') as HTMLButtonElement | null;
+  const jsonImportError = document.getElementById('json-import-error');
 
   let parsedToolsPayload: any[] = [];
 
-  const AI_RESEARCH_PROMPT = `You are an expert researcher for "Desi Alternatives", an Indian software & homegrown engineering directory.
-Given the product name or website URL, research the tool thoroughly and output ONLY valid JSON adhering to this exact schema (no markdown fences, no explanatory text):
-
-{
-  "name": "<Product Name>",
-  "slug": "<lowercase-hyphenated-slug>",
-  "tagline": "<1-sentence value proposition under 100 chars>",
-  "description": "<2-3 sentence overview highlighting engineering craft and capabilities>",
-  "websiteUrl": "<Official website URL>",
-  "logoUrl": "<High-res direct PNG/SVG logo URL or null>",
-  "category": "<One of: developer-tools | billing-finance | productivity | marketing-seo | design-creative | cybersecurity | news-media | games-entertainment | hardware-iot | ai-ml>",
-  "pricingModel": "<Freemium | Paid | Free | Open-Source>",
-  "startingPriceInr": 0,
-  
-  "company": {
-    "city": "<e.g. Bengaluru / Pune / Chennai / Jaipur>",
-    "state": "<e.g. Karnataka / Maharashtra / Tamil Nadu>",
-    "foundedYear": 2021,
-    "companyType": "<Bootstrapped | VC-Funded | Public Ltd | Independent>",
-    "isOpenSource": true,
-    "githubUrl": "<e.g. https://github.com/org/repo or null>",
-    "discordUrl": "<e.g. https://discord.gg/... or null>"
-  },
-
-  "socials": {
-    "twitterHandle": "<username without @ or null>",
-    "linkedinUrl": "<https://linkedin.com/company/... or null>",
-    "youtubeUrl": "<https://youtube.com/@... or null>",
-    "instagramHandle": "<username or null>",
-    "facebookUrl": "<https://facebook.com/... or null>"
-  },
-
-  "compliance": {
-    "hasIndianDataResidency": true,
-    "hasGstInvoice": true,
-    "hasInrPricing": true,
-    "hasUpiSupport": true,
-    "hasIstSupport": true,
-    "isSelfHostable": true,
-    "hasFreeTier": true,
-    "isFeatured": true
-  },
-
-  "pros": [
-    "<Strength 1: Highlighting engineering excellence, speed, or unique architecture>",
-    "<Strength 2: Direct founder/IST support or responsiveness>",
-    "<Strength 3: Native India compliance / data residency / UPI / GST savings>",
-    "<Strength 4: Feature advantage>",
-    "<Strength 5: Cost or operational efficiency>"
-  ],
-
-  "cons": [
-    "<Honest Limitation 1: Early-stage tradeoff or feature work-in-progress>",
-    "<Honest Limitation 2: Ecosystem/plugin comparison vs 10-year incumbents>",
-    "<Honest Limitation 3: Specific edge case consideration>"
-  ],
-
-  "pricingPlans": [
-    {
-      "name": "<Free Community / Starter / Pro / Enterprise>",
-      "currency": "INR",
-      "amount": 0,
-      "billingPeriod": "monthly",
-      "isFree": true,
-      "isPopular": false,
-      "description": "<Brief summary of plan inclusions and limits>"
-    }
-  ],
-
-  "replacesGlobalTools": ["<global-slug-e.g-datadog>", "<slack>", "<notion>"]
-}`;
-
-  openJsonImportBtn?.addEventListener('click', () => {
+  const openJsonModal = () => {
+    aiPromptModal?.classList.add('hidden');
     jsonImportModal?.classList.remove('hidden');
-    jsonImportError?.classList.add('hidden');
-    validateJsonInput();
-  });
+    jsonTextarea?.focus();
+  };
+
+  openJsonImportBtn?.addEventListener('click', openJsonModal);
+  openJsonFromPromptBtn?.addEventListener('click', openJsonModal);
 
   const closeJsonModal = () => {
     jsonImportModal?.classList.add('hidden');
@@ -1811,11 +1893,12 @@ Given the product name or website URL, research the tool thoroughly and output O
       await navigator.clipboard.writeText(AI_RESEARCH_PROMPT);
       const originalText = copyAiPromptBtn.innerHTML;
       copyAiPromptBtn.innerHTML = '<span>✓ Copied Prompt!</span>';
+      (window as any).showToast?.('Copied AI Research Prompt to clipboard!', 'success');
       setTimeout(() => {
         copyAiPromptBtn.innerHTML = originalText;
       }, 2000);
     } catch {
-      alert('Failed to copy to clipboard.');
+      (window as any).showToast?.('Failed to copy to clipboard.', 'error');
     }
   });
 
@@ -1835,7 +1918,6 @@ Given the product name or website URL, research the tool thoroughly and output O
     }
 
     try {
-      // Clean possible Markdown triple backtick wrappers if user copied from chat
       let cleaned = rawText;
       if (cleaned.startsWith('```')) {
         cleaned = cleaned.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '');
@@ -1857,7 +1939,6 @@ Given the product name or website URL, research the tool thoroughly and output O
 
       parsedToolsPayload = tools;
 
-      // Update Live Status
       if (jsonStatusBanner) jsonStatusBanner.className = 'rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs flex items-center justify-between';
       if (jsonStatusText) jsonStatusText.innerHTML = `<span class="text-emerald-900 font-medium">✓ Ready to Import: <strong>${tools.length}</strong> tool${tools.length > 1 ? 's' : ''} detected.</span>`;
       if (jsonBadge) {
@@ -1866,7 +1947,6 @@ Given the product name or website URL, research the tool thoroughly and output O
         jsonBadge.classList.remove('hidden');
       }
 
-      // Render Preview Cards
       if (jsonPreviewContainer && previewCardsList && previewCount) {
         previewCount.textContent = `${tools.length} item${tools.length > 1 ? 's' : ''}`;
         previewCardsList.innerHTML = tools
@@ -1936,13 +2016,14 @@ Given the product name or website URL, research the tool thoroughly and output O
       const data = (await res.json()) as any;
 
       if (res.ok && data.success) {
-        alert(`🎉 Successfully imported ${data.count} tool(s) and pricing plans to D1!`);
-        window.location.reload();
+        (window as any).showToast?.(`🎉 Successfully imported ${data.count} tool(s) to Approval Queue!`, 'success');
+        setTimeout(() => window.location.reload(), 800);
       } else {
         if (jsonImportError) {
           jsonImportError.textContent = data.error || 'Failed to import JSON tools.';
           jsonImportError.classList.remove('hidden');
         }
+        (window as any).showToast?.(data.error || 'Failed to import JSON tools.', 'error');
         submitJsonImportBtn.disabled = false;
         submitJsonImportBtn.textContent = 'Import & Publish to D1';
       }
@@ -1951,6 +2032,7 @@ Given the product name or website URL, research the tool thoroughly and output O
         jsonImportError.textContent = 'Network error while importing tools.';
         jsonImportError.classList.remove('hidden');
       }
+      (window as any).showToast?.('Network error while importing tools.', 'error');
       submitJsonImportBtn.disabled = false;
       submitJsonImportBtn.textContent = 'Import & Publish to D1';
     }

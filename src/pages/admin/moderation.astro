@@ -286,10 +286,14 @@ if (db) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ claimId, action }),
         });
-        if (res.ok) window.location.reload();
-        else alert('Failed to review claim.');
+        if (res.ok) {
+          (window as any).showToast?.('Claim updated successfully.', 'success');
+          setTimeout(() => window.location.reload(), 500);
+        } else {
+          (window as any).showToast?.('Failed to review claim.', 'error');
+        }
       } catch {
-        alert('Network error.');
+        (window as any).showToast?.('Network error.', 'error');
       }
     });
   });
@@ -307,10 +311,14 @@ if (db) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ targetUserId, action }),
         });
-        if (res.ok) window.location.reload();
-        else alert('Failed to update user role.');
+        if (res.ok) {
+          (window as any).showToast?.('User role updated successfully.', 'success');
+          setTimeout(() => window.location.reload(), 500);
+        } else {
+          (window as any).showToast?.('Failed to update user role.', 'error');
+        }
       } catch {
-        alert('Network error.');
+        (window as any).showToast?.('Network error.', 'error');
       }
     });
   });

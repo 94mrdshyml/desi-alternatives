@@ -222,6 +222,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
         })
         .where(eq(desiTools.id, id));
 
+      // Sync mapped competing global giants
+      if (Array.isArray(body.globalToolIds)) {
+        await db.delete(toolAlternatives).where(eq(toolAlternatives.desiToolId, id));
+        for (const gtId of body.globalToolIds) {
+          if (gtId) {
+            await db.insert(toolAlternatives).values({
+              id: createAlternativeId(),
+              globalToolId: String(gtId),
+              desiToolId: id,
+            });
+          }
+        }
+      }
+
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -238,19 +252,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response(JSON.stringify({ success: true, isFeatured: !tool.isFeatured }), { status: 200 });
     }
 
-    // 4. Toggle Status (Publish / Unpublish)
-    if (action === 'toggleStatus') {
+    // 4. Publish / Unpublish / Toggle Status
+    if (action === 'publish' || action === 'unpublish' || action === 'toggleStatus') {
       const tool = await db.select().from(desiTools).where(eq(desiTools.id, toolId)).get();
       if (!tool) {
         return new Response(JSON.stringify({ error: 'Tool not found' }), { status: 404 });
       }
-      const nextStatus = tool.status === 'published' ? 'draft' : 'published';
+      const nextStatus = action === 'publish' ? 'published' : action === 'unpublish' ? 'draft' : (tool.status === 'published' ? 'draft' : 'published');
       await db.update(desiTools).set({ status: nextStatus }).where(eq(desiTools.id, toolId));
       return new Response(JSON.stringify({ success: true, status: nextStatus }), { status: 200 });
     }
 
     // 5. Delete Tool
     if (action === 'delete') {
+      await db.delete(toolAlternatives).where(eq(toolAlternatives.desiToolId, toolId));
       await db.delete(desiTools).where(eq(desiTools.id, toolId));
       return new Response(JSON.stringify({ success: true }), { status: 200 });
     }

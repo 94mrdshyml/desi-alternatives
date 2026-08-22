@@ -232,7 +232,7 @@ if (db) {
   sendTestBtn?.addEventListener('click', async () => {
     const toEmail = testTargetInput?.value?.trim();
     if (!toEmail) {
-      alert('Please enter a recipient email.');
+      (window as any).showToast?.('Please enter a recipient email.', 'error');
       return;
     }
 
