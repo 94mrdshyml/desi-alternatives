@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import ToolCard from '@/components/ToolCard.astro';
 import SearchDialog from '@/components/SearchDialog';
+import CostSavingsCalculator from '@/components/CostSavingsCalculator';
 import { eq } from 'drizzle-orm';
 import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
 
@@ -17,6 +18,7 @@ let currentGlobalTool: any = null;
 let allGlobalTools: any[] = [];
 let mappedTools: any[] = [];
 let allToolsList: any[] = [];
+let altMetadataMap: Record<string, { whyBetter: string | null; migrationComplexity: string | null }> = {};
 
 if (db) {
   try {
@@ -42,6 +44,7 @@ if (db) {
         categoryId: desiTools.categoryId,
         categorySlug: categories.slug,
         categoryName: categories.name,
+        categoryEmoji: categories.icon,
         hasGstInvoice: desiTools.hasGstInvoice,
         hasIndianDataResidency: desiTools.hasIndianDataResidency,
         hasInrPricing: desiTools.hasInrPricing,
@@ -62,6 +65,8 @@ if (db) {
       .select({
         globalToolId: toolAlternatives.globalToolId,
         desiToolId: toolAlternatives.desiToolId,
+        whyBetter: toolAlternatives.whyBetter,
+        migrationComplexity: toolAlternatives.migrationComplexity,
         globalName: globalTools.name,
         globalSlug: globalTools.slug,
       })
@@ -79,6 +84,10 @@ if (db) {
 
         if (currentGlobalTool && alt.globalToolId === currentGlobalTool.id) {
           globalToDesiIds.add(alt.desiToolId);
+          altMetadataMap[alt.desiToolId] = {
+            whyBetter: alt.whyBetter || null,
+            migrationComplexity: alt.migrationComplexity || null,
+          };
         }
       }
     }
@@ -108,7 +117,7 @@ if (!currentGlobalTool) {
     logoUrl: null,
     tagline: null,
     features: null,
-    startingPriceUsd: null,
+    startingPriceUsd: 30,
     foreignPainPoints: null,
   };
 }
@@ -137,131 +146,134 @@ const searchableTools = allToolsList.map((t) => ({
 }));
 
 // SEO Metadata
-const pageTitle = `Top Indian Alternatives to ${currentGlobalTool.name} (2026) — Desi Alternatives`;
-const pageDescription = `Looking for Indian alternatives to ${currentGlobalTool.name}? Compare top homegrown Indian products with domestic data residency, ₹ INR / UPI pricing, and 18% GST invoices.`;
+const pageTitle = `Top Indian Alternatives to ${currentGlobalTool.name} in 2026 — Desi Alternatives`;
+const pageDescription = `Looking for sovereign Indian alternatives to ${currentGlobalTool.name}? Compare top homegrown software with ₹ INR pricing, 18% GST invoices, zero forex markups, and local data residency in India.`;
 
-// JSON-LD Schema
-const schemaData = {
-  '@context': 'https://schema.org',
-  '@type': 'ItemList',
-  name: `Best Indian Alternatives to ${currentGlobalTool.name}`,
-  description: pageDescription,
-  itemListElement: mappedTools.map((tool, idx) => ({
-    '@type': 'ListItem',
-    position: idx + 1,
-    item: {
-      '@type': 'SoftwareApplication',
-      name: tool.name,
-      applicationCategory: tool.categoryName || 'BusinessApplication',
-      operatingSystem: 'Web, Cloud',
-      offers: {
-        '@type': 'Offer',
-        price: tool.startingPriceInr || 0,
-        priceCurrency: 'INR',
+// Average Indian starting price
+const lowestDesiPrice = mappedTools.length > 0 
+  ? Math.min(...mappedTools.map((t) => t.startingPriceInr || 800))
+  : 800;
+
+// Schema.org Structured Data
+const jsonLdData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `Best Indian Alternatives to ${currentGlobalTool.name}`,
+    description: pageDescription,
+    itemListElement: mappedTools.map((tool, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      item: {
+        '@type': 'SoftwareApplication',
+        name: tool.name,
+        applicationCategory: tool.categoryName || 'BusinessApplication',
+        operatingSystem: 'Web, Cloud',
+        offers: {
+          '@type': 'Offer',
+          price: tool.startingPriceInr || 0,
+          priceCurrency: 'INR',
+        },
+        url: `https://da.mrdshyml.xyz/tools/${tool.slug}`,
       },
-      url: `https://desialternatives.in/tools/${tool.slug}`,
-    },
-  })),
-};
+    })),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: [
+      {
+        '@type': 'Question',
+        name: `Why should Indian startups look for alternatives to ${currentGlobalTool.name}?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Foreign tools like ${currentGlobalTool.name} bill in USD with unpredictable forex currency fluctuations, 3.5% credit card foreign transaction fees, and lack 18% GST Input Tax Credit invoices. Indian alternatives offer fixed ₹ INR billing, local data residency, and dedicated IST support.`,
+        },
+      },
+      {
+        '@type': 'Question',
+        name: `Are Indian alternatives to ${currentGlobalTool.name} compliant with Indian DPDP Act?`,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: `Yes, homegrown Indian alternatives store and process customer data inside domestic Indian cloud data centers (e.g. AWS Mumbai, Azure Pune, GCP Delhi) ensuring full compliance with India's Digital Personal Data Protection (DPDP) Act.`,
+        },
+      },
+    ],
+  },
+];
 ---
 
 <BaseLayout title={pageTitle} description={pageDescription}>
   <Navbar />
   <SearchDialog client:idle tools={searchableTools} />
 
-  <!-- Inject Schema.org JSON-LD for Programmatic SEO -->
-  <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaData)} />
+  <!-- Inject Schema.org JSON-LD -->
+  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLdData)} />
 
   <main class="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
     <!-- Breadcrumb Navigation -->
     <nav class="mb-6 flex items-center gap-2 text-xs text-muted-foreground" aria-label="Breadcrumb">
       <a href="/" class="hover:text-foreground transition">Home</a>
       <span>/</span>
-      <span class="text-foreground/80 font-medium">Alternatives</span>
+      <a href="/alternatives" class="hover:text-foreground transition">Alternatives</a>
       <span>/</span>
       <span class="text-primary font-bold">{currentGlobalTool.name}</span>
     </nav>
 
-    <!-- Header Section -->
+    <!-- Hero Header -->
     <div class="mx-auto max-w-3xl text-center">
-      <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-800 shadow-2xs">
+      <div class="mb-3 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-900 shadow-2xs">
         <span>🇮🇳</span>
-        <span>Indian Alternatives Matrix</span>
+        <span>Sovereign Alternative Matrix</span>
       </div>
 
-      <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl text-foreground">
+      <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
         Indian Alternatives to <span class="font-serif-editorial italic text-primary">{currentGlobalTool.name}</span>
       </h1>
 
       <p class="mt-4 text-xs sm:text-sm leading-relaxed text-muted-foreground">
         {currentGlobalTool.tagline ? `${currentGlobalTool.tagline}. ` : ''}
-        Avoid 3.5% credit card forex markups, recurring mandate failures, and foreign data centers.
-        Discover homegrown Indian software offering ₹ INR pricing, GST tax invoices, and local support.
+        Avoid recurring card mandate failures, 3.5% foreign currency conversion markups, and foreign cloud hosting.
+        Discover homegrown Indian software offering ₹ INR pricing, GST tax invoices, and local IST support.
       </p>
 
       {parsedGlobalFeatures.length > 0 && (
         <div class="mt-4 flex flex-wrap items-center justify-center gap-1.5">
           <span class="text-xs text-muted-foreground font-semibold">Key Capabilities:</span>
           {parsedGlobalFeatures.map((feat) => (
-            <span class="rounded-full border border-border bg-card px-2.5 py-0.5 text-xs font-medium text-foreground shadow-2xs">
+            <span class="rounded-full border border-border bg-white px-2.5 py-0.5 text-xs font-medium text-foreground shadow-2xs">
               {feat}
             </span>
           ))}
           {currentGlobalTool.startingPriceUsd && (
             <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 shadow-2xs">
-              Starting from ${currentGlobalTool.startingPriceUsd}/mo
+              Starting from ${currentGlobalTool.startingPriceUsd}/mo USD
             </span>
           )}
         </div>
       )}
     </div>
 
-    <!-- Savings & Compliance Callout Banner -->
-    <div class="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-      <div class="rounded-2xl border border-border bg-card p-4 shadow-2xs">
-        <div class="flex items-center gap-2.5">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-900 font-bold text-sm">
-            ₹
-          </div>
-          <div>
-            <h3 class="text-xs font-bold text-foreground">Zero Forex Fees</h3>
-            <p class="text-[11px] text-muted-foreground">Save 3.5% foreign transaction markup on every invoice.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="rounded-2xl border border-border bg-card p-4 shadow-2xs">
-        <div class="flex items-center gap-2.5">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-900 font-bold text-sm">
-            🧾
-          </div>
-          <div>
-            <h3 class="text-xs font-bold text-foreground">18% GST Input Credit</h3>
-            <p class="text-[11px] text-muted-foreground">Claim full GST ITC to lower your business operating tax.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="rounded-2xl border border-border bg-card p-4 shadow-2xs">
-        <div class="flex items-center gap-2.5">
-          <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-900 font-bold text-sm">
-            🛡️
-          </div>
-          <div>
-            <h3 class="text-xs font-bold text-foreground">India Data Residency</h3>
-            <p class="text-[11px] text-muted-foreground">Hosted in AWS / GCP India regions (RBI & DPDP compliant).</p>
-          </div>
-        </div>
-      </div>
+    <!-- Interactive Cost Savings Calculator -->
+    <div class="mt-10">
+      <CostSavingsCalculator
+        client:load
+        globalToolName={currentGlobalTool.name}
+        globalStartingPriceUsd={currentGlobalTool.startingPriceUsd || 35}
+        desiStartingPriceInr={lowestDesiPrice}
+      />
     </div>
 
+    <!-- Friction Points of Foreign SaaS -->
     {parsedGlobalPainPoints.length > 0 && (
-      <div class="mt-6 rounded-2xl border border-red-200/80 bg-red-50/50 p-4">
+      <div class="mt-8 rounded-2xl border border-red-200/80 bg-red-50/50 p-5">
         <h4 class="text-xs font-bold text-red-900 flex items-center gap-1.5">
-          <span>⚠️</span>
-          <span>Common Friction Points with {currentGlobalTool.name} for Indian Tech Companies:</span>
+          <svg class="h-4 w-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <span>Common Friction Points with {currentGlobalTool.name} for Indian Engineering Teams:</span>
         </h4>
-        <ul class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-red-800">
+        <ul class="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-red-800">
           {parsedGlobalPainPoints.map((pain) => (
             <li class="flex items-start gap-1.5">
               <span class="text-red-500 font-bold">✕</span>
@@ -272,22 +284,22 @@ const schemaData = {
       </div>
     )}
 
-    <!-- Comparison Matrix Table -->
-    <div class="mt-10">
-      <div class="flex items-center justify-between pb-3">
+    <!-- Direct Comparison Feature Matrix -->
+    <div class="mt-12">
+      <div class="flex items-center justify-between pb-4">
         <div>
-          <h2 class="text-base font-bold text-foreground">
+          <h2 class="text-lg font-bold text-foreground">
             Direct Comparison: {currentGlobalTool.name} vs Indian Alternatives
           </h2>
-          <p class="text-xs text-muted-foreground">How homegrown tools compare against foreign subscription software</p>
+          <p class="text-xs text-muted-foreground">Compliance and technical advantages of homegrown software</p>
         </div>
       </div>
 
-      <div class="overflow-hidden rounded-2xl border border-border bg-card shadow-xs">
+      <div class="overflow-hidden rounded-2xl border border-border bg-white shadow-xs">
         <table class="w-full text-left text-xs">
-          <thead class="border-b border-border bg-secondary/50">
+          <thead class="border-b border-border bg-slate-50">
             <tr>
-              <th class="py-3 px-4 font-semibold text-foreground">Compliance & Features</th>
+              <th class="py-3 px-4 font-semibold text-foreground">Compliance & Feature Factor</th>
               <th class="py-3 px-4 font-semibold text-muted-foreground">{currentGlobalTool.name} (Global)</th>
               <th class="py-3 px-4 font-bold text-primary">Desi Alternatives (India)</th>
             </tr>
@@ -295,18 +307,18 @@ const schemaData = {
           <tbody class="divide-y divide-border">
             <tr class="hover:bg-slate-50/50">
               <td class="py-3 px-4 font-medium text-foreground">🇮🇳 Physical Data Residency</td>
-              <td class="py-3 px-4 text-muted-foreground">US / EU regions only</td>
-              <td class="py-3 px-4 font-semibold text-emerald-700">AWS / GCP / Azure India Data Centers</td>
+              <td class="py-3 px-4 text-muted-foreground">Foreign data centers (US / EU)</td>
+              <td class="py-3 px-4 font-semibold text-emerald-700">AWS / GCP / Azure India Data Centers (DPDP Ready)</td>
             </tr>
             <tr class="hover:bg-slate-50/50">
-              <td class="py-3 px-4 font-medium text-foreground">🧾 Tax Invoicing & Compliance</td>
-              <td class="py-3 px-4 text-muted-foreground">Foreign invoice (No GST ITC)</td>
-              <td class="py-3 px-4 font-semibold text-emerald-700">Full 18% GST Input Tax Invoices</td>
+              <td class="py-3 px-4 font-medium text-foreground">🧾 Tax Invoicing & GST</td>
+              <td class="py-3 px-4 text-muted-foreground">Foreign cross-border invoice (No GST ITC)</td>
+              <td class="py-3 px-4 font-semibold text-emerald-700">Full 18% GST Input Tax Credit (ITC) Invoices</td>
             </tr>
             <tr class="hover:bg-slate-50/50">
               <td class="py-3 px-4 font-medium text-foreground">💳 Currency & Payment Methods</td>
-              <td class="py-3 px-4 text-muted-foreground">USD only (+ 3.5% forex fees)</td>
-              <td class="py-3 px-4 font-semibold text-emerald-700">₹ INR direct via UPI, NetBanking & Cards</td>
+              <td class="py-3 px-4 text-muted-foreground">USD only (+ 3.5% card conversion markup)</td>
+              <td class="py-3 px-4 font-semibold text-emerald-700">Fixed ₹ INR billing via UPI, NetBanking & Corporate Cards</td>
             </tr>
             <tr class="hover:bg-slate-50/50">
               <td class="py-3 px-4 font-medium text-foreground">⏰ Customer Support Timezone</td>
@@ -315,8 +327,8 @@ const schemaData = {
             </tr>
             <tr class="hover:bg-slate-50/50">
               <td class="py-3 px-4 font-medium text-foreground">🌐 Open Source & Self-Hostable</td>
-              <td class="py-3 px-4 text-muted-foreground">Proprietary closed-source cloud</td>
-              <td class="py-3 px-4 font-semibold text-emerald-700">Self-hostable & AGPL/MIT options available</td>
+              <td class="py-3 px-4 text-muted-foreground">Proprietary closed cloud platform</td>
+              <td class="py-3 px-4 font-semibold text-emerald-700">Self-hostable & AGPL/MIT open-source options</td>
             </tr>
           </tbody>
         </table>
@@ -324,41 +336,144 @@ const schemaData = {
     </div>
 
     <!-- Ranked Indian Alternatives Tools Grid -->
-    <div class="mt-12">
+    <div class="mt-14">
       <div class="flex items-center justify-between pb-4">
         <div>
-          <h2 class="text-base font-bold text-foreground">
+          <h2 class="text-xl font-bold text-foreground">
             Ranked Indian Alternatives ({mappedTools.length})
           </h2>
-          <p class="text-xs text-muted-foreground">Curated homegrown Indian products replacing {currentGlobalTool.name}</p>
+          <p class="text-xs text-muted-foreground">Homegrown products ready to replace {currentGlobalTool.name}</p>
         </div>
       </div>
 
       {mappedTools.length === 0 ? (
-        <div class="rounded-2xl border border-dashed border-border py-16 text-center">
+        <div class="rounded-2xl border border-dashed border-border py-16 text-center bg-white">
           <p class="text-sm font-semibold text-foreground">No mapped alternatives to {currentGlobalTool.name} yet.</p>
           <p class="mt-1 text-xs text-muted-foreground">Are you building an Indian software product that replaces {currentGlobalTool.name}?</p>
           <a
             href="/submit"
-            class="mt-4 inline-flex items-center rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition"
+            class="mt-4 inline-flex items-center rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
           >
             Submit an Indian Alternative
           </a>
         </div>
       ) : (
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {mappedTools.map((tool) => (
-            <ToolCard tool={tool} />
-          ))}
+        <div class="space-y-6">
+          {mappedTools.map((tool, index) => {
+            const meta = altMetadataMap[tool.id];
+            return (
+              <div class="rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-4">
+                  <div class="flex items-center gap-3.5">
+                    <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-700">
+                      #{index + 1}
+                    </span>
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-border bg-slate-50 p-1.5 overflow-hidden">
+                      {tool.logoUrl ? (
+                        <img src={tool.logoUrl} alt={tool.name} class="h-full w-full object-contain" />
+                      ) : (
+                        <span class="text-sm font-bold text-foreground">{tool.name.slice(0, 2).toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <a href={`/tools/${tool.slug}`} class="text-lg font-bold text-foreground hover:text-primary transition">
+                          {tool.name}
+                        </a>
+                        <span class="rounded-md bg-secondary px-2 py-0.5 text-[11px] font-semibold text-secondary-foreground">
+                          {tool.pricingModel}
+                        </span>
+                        {tool.hasFreeTier && (
+                          <span class="rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
+                            Free tier
+                          </span>
+                        )}
+                      </div>
+                      <p class="text-xs text-muted-foreground">{tool.tagline}</p>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2 shrink-0">
+                    <a
+                      href={`/tools/${tool.slug}`}
+                      class="rounded-xl border border-border bg-white px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-50 transition shadow-2xs"
+                    >
+                      View Review & Details
+                    </a>
+                    <a
+                      href={tool.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary-hover transition shadow-2xs"
+                    >
+                      <span>Visit Website</span>
+                      <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+
+                <!-- Why Better Callout -->
+                <div class="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div class="sm:col-span-2 rounded-xl bg-slate-50 p-3">
+                    <p class="font-semibold text-foreground">Why choose {tool.name} over {currentGlobalTool.name}?</p>
+                    <p class="mt-1 text-muted-foreground leading-relaxed">
+                      {meta?.whyBetter || tool.description || `${tool.name} provides local data processing, direct ₹ INR billing, and seamless customer support.`}
+                    </p>
+                  </div>
+
+                  <div class="rounded-xl bg-emerald-50/60 border border-emerald-100 p-3">
+                    <p class="font-semibold text-emerald-900">Pricing Advantage</p>
+                    <p class="mt-1 text-xs text-emerald-800">
+                      {tool.startingPriceInr !== null
+                        ? tool.startingPriceInr === 0
+                          ? 'Free Tier Available'
+                          : `From ₹${tool.startingPriceInr.toLocaleString('en-IN')}/month`
+                        : 'Custom Indian Enterprise Pricing'}
+                    </p>
+                    <p class="mt-1 text-[11px] text-emerald-700">✓ 18% GST Input Credit Included</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
 
-    <!-- Competitor Quick Switcher Bar -->
+    <!-- Frequently Asked Questions -->
+    <div class="mt-16 rounded-2xl border border-border bg-white p-6 sm:p-8 shadow-xs">
+      <h2 class="text-lg font-bold text-foreground">Frequently Asked Questions</h2>
+      <div class="mt-5 space-y-4 text-xs">
+        <div class="border-b border-border/80 pb-3">
+          <h3 class="font-bold text-foreground text-sm">Why should Indian companies look for alternatives to {currentGlobalTool.name}?</h3>
+          <p class="mt-1.5 text-muted-foreground leading-relaxed">
+            Foreign tools bill in USD with unpredictable forex currency fluctuations, 3.5% credit card foreign transaction fees, and lack 18% GST Input Tax Credit invoices. Indian alternatives offer fixed ₹ INR billing, local data residency, and dedicated IST support.
+          </p>
+        </div>
+
+        <div class="border-b border-border/80 pb-3">
+          <h3 class="font-bold text-foreground text-sm">Are Indian alternatives compliant with India's DPDP Act?</h3>
+          <p class="mt-1.5 text-muted-foreground leading-relaxed">
+            Yes. Homegrown Indian alternatives store and process customer data inside domestic Indian cloud data centers (e.g. AWS Mumbai, Azure Pune, GCP Delhi) ensuring full compliance with India's Digital Personal Data Protection (DPDP) regulations and RBI data localization guidelines.
+          </p>
+        </div>
+
+        <div>
+          <h3 class="font-bold text-foreground text-sm">How easy is it to migrate from {currentGlobalTool.name}?</h3>
+          <p class="mt-1.5 text-muted-foreground leading-relaxed">
+            Most Indian alternative tools support standard export/import protocols, OpenTelemetry pipelines, or automated migration assistants to make transitioning from foreign SaaS seamless.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other Global Tools Quick Links -->
     {allGlobalTools.length > 0 && (
-      <div class="mt-16 rounded-2xl border border-border bg-card p-6 shadow-2xs">
+      <div class="mt-12 rounded-2xl border border-border bg-white p-6 shadow-2xs">
         <h3 class="text-xs font-bold text-foreground uppercase tracking-wider text-muted-foreground">
-          Compare Other Global Software
+          Compare Other Global SaaS Products
         </h3>
         <div class="mt-3 flex flex-wrap gap-2">
           {allGlobalTools.map((gt) => (

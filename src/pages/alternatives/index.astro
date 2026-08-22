@@ -1,0 +1,175 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import SearchDialog from '@/components/SearchDialog';
+import { eq } from 'drizzle-orm';
+import { globalTools, toolAlternatives, desiTools, categories } from '@/lib/server/db/schema';
+
+const db = Astro.locals.db;
+
+let allGlobalTools: any[] = [];
+let allToolsList: any[] = [];
+let globalToolCounts: Record<string, number> = {};
+
+if (db) {
+  try {
+    allGlobalTools = await db.select().from(globalTools).all();
+
+    const rawTools = await db
+      .select({
+        id: desiTools.id,
+        slug: desiTools.slug,
+        name: desiTools.name,
+        tagline: desiTools.tagline,
+        categoryId: desiTools.categoryId,
+        categoryName: categories.name,
+      })
+      .from(desiTools)
+      .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+      .where(eq(desiTools.status, 'published'))
+      .all();
+
+    allToolsList = rawTools;
+
+    const rawAlternatives = await db.select().from(toolAlternatives).all();
+    for (const alt of rawAlternatives) {
+      if (alt.globalToolId) {
+        globalToolCounts[alt.globalToolId] = (globalToolCounts[alt.globalToolId] || 0) + 1;
+      }
+    }
+  } catch (e) {
+    console.error('Error fetching global tools directory:', e);
+  }
+}
+
+const searchableTools = allToolsList.map((t) => ({
+  id: t.id,
+  slug: t.slug,
+  name: t.name,
+  tagline: t.tagline,
+  categoryName: t.categoryName,
+  alternatives: [],
+}));
+
+const pageTitle = 'Indian Alternatives Matrix — Homegrown Software vs Global SaaS';
+const pageDescription = 'Compare top Indian software alternatives to foreign SaaS products like Datadog, Slack, Retool, Notion, and Jira. Save on forex fees with 18% GST input credit and local data residency.';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <Navbar />
+  <SearchDialog client:idle tools={searchableTools} />
+
+  <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
+    <!-- Hero Header -->
+    <div class="mx-auto max-w-3xl text-center">
+      <div class="mb-3 inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-900 shadow-2xs">
+        <span>🇮🇳</span>
+        <span>Sovereign SaaS Replacement Directory</span>
+      </div>
+
+      <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+        Indian Alternatives to <span class="font-serif-editorial italic text-primary">Global SaaS</span>
+      </h1>
+
+      <p class="mt-4 text-sm leading-relaxed text-muted-foreground sm:text-base">
+        Tired of USD price hikes, 3.5% credit card forex markups, and foreign data centers?
+        Explore vetted homegrown Indian alternatives designed for high performance, INR billing, and DPDP compliance.
+      </p>
+    </div>
+
+    <!-- Key Reasons to Switch Pillars -->
+    <div class="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 font-bold text-amber-900 text-sm">
+          ₹
+        </div>
+        <h3 class="mt-3 text-sm font-bold text-foreground">Zero Forex Loss</h3>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Pay in fixed INR via UPI, NetBanking, and corporate cards without 3.5% currency conversion fees.
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 font-bold text-emerald-900 text-sm">
+          🧾
+        </div>
+        <h3 class="mt-3 text-sm font-bold text-foreground">18% GST Input Credit</h3>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Every Indian SaaS invoice includes GSTIN details so your accounting team can claim 100% tax credit.
+        </p>
+      </div>
+
+      <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 font-bold text-blue-900 text-sm">
+          🛡️
+        </div>
+        <h3 class="mt-3 text-sm font-bold text-foreground">India Data Sovereignty</h3>
+        <p class="mt-1 text-xs text-muted-foreground">
+          Host and process sensitive customer data inside Indian cloud regions (Mumbai / Hyderabad).
+        </p>
+      </div>
+    </div>
+
+    <!-- Global Tools Alternatives Directory Grid -->
+    <div class="mt-14">
+      <div class="flex items-center justify-between pb-6 border-b border-border">
+        <div>
+          <h2 class="text-xl font-bold text-foreground">Global Software Directory</h2>
+          <p class="text-xs text-muted-foreground">Select a global tool to compare its top Indian alternatives</p>
+        </div>
+        <span class="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-foreground">
+          {allGlobalTools.length} Global Tools
+        </span>
+      </div>
+
+      <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {allGlobalTools.map((tool) => {
+          const count = globalToolCounts[tool.id] || 0;
+          return (
+            <a
+              href={`/alternatives/${tool.slug}`}
+              class="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-5 shadow-2xs hover:border-primary/50 hover:shadow-md transition duration-200"
+            >
+              <div>
+                <div class="flex items-center justify-between">
+                  <span class="rounded-lg bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold text-slate-700">
+                    {tool.category || 'Software'}
+                  </span>
+                  <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
+                    <span>{count}</span>
+                    <span>{count === 1 ? 'Desi Alternative' : 'Desi Alternatives'}</span>
+                  </span>
+                </div>
+
+                <h3 class="mt-3 text-lg font-bold text-foreground group-hover:text-primary transition">
+                  {tool.name}
+                </h3>
+
+                <p class="mt-1 text-xs text-muted-foreground line-clamp-2">
+                  {tool.tagline || `Discover Indian alternatives to ${tool.name} with local INR pricing.`}
+                </p>
+              </div>
+
+              <div class="mt-5 flex items-center justify-between border-t border-border/80 pt-3 text-xs">
+                {tool.startingPriceUsd ? (
+                  <span class="text-muted-foreground font-medium">
+                    From <strong class="text-foreground">${tool.startingPriceUsd}</strong>/mo USD
+                  </span>
+                ) : (
+                  <span class="text-muted-foreground">Compare features</span>
+                )}
+
+                <span class="inline-flex items-center gap-1 font-semibold text-primary group-hover:translate-x-0.5 transition-transform">
+                  <span>View Alternatives</span>
+                  <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </span>
+              </div>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </main>
+</BaseLayout>
