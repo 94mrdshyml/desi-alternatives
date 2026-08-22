@@ -177,11 +177,14 @@
   - Lightweight (<1KB) tracker `src/components/AnalyticsTracker.astro` mounted globally in `BaseLayout.astro`.
   - Ingestion endpoint `POST /api/analytics/collect` executing via non-blocking `ctx.waitUntil()`.
   - Event interceptors capturing Pageviews, Outbound Website Clicks (`data-outbound-tool`), and Sovereign Badge Clicks (`data-badge-type`).
-- **Admin Analytics Dashboard (`/admin#analytics`)**:
-  - Added 5th tab `📊 Analytics Intelligence` in admin center.
-  - Displays Impressions, Cookieless Unique Visitors, Outbound Leads Delivered (CTR %), Top High-Intent Indian Tools, Domestic Tech Hub Distribution (Bengaluru, NCR, Mumbai, Hyderabad, Chennai), Device/Browser breakdown, and Buyer Intent Signals.
-- **Unit Testing**:
-  - Comprehensive parser and daily hasher tests in `tests/unit/analytics.test.ts` (10/10 passing).
+### How We Built It
+- Configured Cloudflare Analytics Engine dataset `desi_analytics` in `wrangler.jsonc` and `src/env.d.ts`.
+- Implemented `src/lib/server/analytics.ts` for automated SHA-256 daily salt rotation and edge telemetry parsing.
+- Built non-blocking beacon ingestion at `src/pages/api/analytics/collect.ts` and client tracker `src/components/AnalyticsTracker.astro`.
+- Integrated Section 5 Analytics Intelligence tab with live metrics into `src/pages/admin/index.astro`.
+- Verified type safety (`bun run typecheck`) and unit tests (`bun run test:unit` 10/10 passed).
+- CI/CD workflow run `32500023219` deployed successfully to Cloudflare Workers.
+
 
 
 
