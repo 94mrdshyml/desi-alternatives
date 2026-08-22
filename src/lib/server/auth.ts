@@ -5,6 +5,7 @@ import { admin, emailOTP } from 'better-auth/plugins';
 import { createDb } from './db';
 import * as schema from './db/schema';
 import { generateId } from './id';
+import { eq } from 'drizzle-orm';
 import { sendOtpEmail } from './email';
 
 export function createAuth(
@@ -28,11 +29,25 @@ export function createAuth(
       otpLength: 6,
       expiresIn: 600, // 10 minutes in seconds
       async sendVerificationOTP({ email, otp, type }) {
+        let fromName = 'Desi Alternatives';
+        let fromEmail = 'auth@desialternatives.in';
+        try {
+          const settings = await db.select().from(schema.siteSettings).where(eq(schema.siteSettings.id, 'general')).get();
+          if (settings) {
+            if (settings.fromName) fromName = settings.fromName;
+            if (settings.fromEmail) fromEmail = settings.fromEmail;
+          }
+        } catch {
+          // fallback to defaults
+        }
+
         await sendOtpEmail({
           apiKey: env.RESEND_API_KEY,
           to: email,
           otp,
           type,
+          fromName,
+          fromEmail,
         });
       },
     }),

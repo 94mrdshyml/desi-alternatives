@@ -208,6 +208,26 @@
 - **Testing & Verification**:
   - Added unit test `tests/unit/email.test.ts` verifying React Email template rendering and dev console dispatching (12/12 unit tests passing).
 
+---
+
+## Session 10 — Admin Settings Tab & Resend Email Sender Configuration
+
+**Date & Time (IST):** 2026-08-22 16:03 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built
+- **Database Schema**: Added `site_settings` table in `src/lib/server/db/schema.ts` (with generated migration `0006_bent_puff_adder.sql`) to persist `fromName` and `fromEmail`.
+- **Dynamic Resend Email Dispatcher**: Updated `src/lib/server/email.ts` and `src/lib/server/auth.ts` to dynamically fetch and inject `fromName` and `fromEmail` formatted per Resend specs (`"${fromName} <${fromEmail}>"`).
+- **Admin Settings API**: Created `src/pages/api/admin/settings.ts` with authenticated `GET` and `POST` handlers for platform settings.
+- **Admin Control Center UI**:
+  - Added 6th tab button `⚙️ Platform Settings` (`/admin#settings`).
+  - Added Section 6 (`#tab-panel-settings`) with Resend Email Sender Identity card, input fields for `fromName` (default: `Desi Alternatives`) and `fromEmail` (default: `auth@desialternatives.in`), Resend DKIM/SPF domain guidance, and AJAX live save feedback.
+- **Testing & Verification**:
+  - Added unit test in `tests/unit/email.test.ts` for configurable sender identity (13/13 unit tests passing).
+  - Verified 0 typecheck errors with `bun run typecheck`.
+
+
 
 
 

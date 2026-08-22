@@ -43,6 +43,13 @@
       "when": 1787257966652,
       "tag": "0005_worthless_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1787394613971,
+      "tag": "0006_bent_puff_adder",
+      "breakpoints": true
     }
   ]
 }

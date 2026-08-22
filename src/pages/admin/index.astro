@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
-import { categories, claimsQueue, desiTools, globalTools, users } from '@/lib/server/db/schema';
+import { categories, claimsQueue, desiTools, globalTools, users, siteSettings } from '@/lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user;
@@ -16,6 +16,8 @@ let globalToolsList: any[] = [];
 let totalToolsCount = 0;
 let totalAdminsCount = 0;
 let categoryCounts: Record<string, number> = {};
+let fromName = 'Desi Alternatives';
+let fromEmail = 'auth@desialternatives.in';
 
 if (db && user && user.role === 'admin') {
   try {
@@ -106,6 +108,13 @@ if (db && user && user.role === 'admin') {
       if (t.categoryId) {
         categoryCounts[t.categoryId] = (categoryCounts[t.categoryId] || 0) + 1;
       }
+    }
+
+    // 5. Site Settings
+    const settingsRow = await db.select().from(siteSettings).where(eq(siteSettings.id, 'general')).get();
+    if (settingsRow) {
+      fromName = settingsRow.fromName;
+      fromEmail = settingsRow.fromEmail;
     }
   } catch (e) {
     console.error('Failed to load admin dashboard:', e);
@@ -271,6 +280,19 @@ if (db && user && user.role === 'admin') {
               <span class="tab-badge rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
                 Live
               </span>
+            </button>
+
+            <!-- Menu Item 6: Platform Settings -->
+            <button
+              type="button"
+              data-tab-target="settings"
+              class="admin-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 font-medium border border-transparent"
+            >
+              <svg class="h-3.5 w-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span>Settings</span>
             </button>
           </nav>
         </div>
@@ -782,6 +804,96 @@ if (db && user && user.role === 'admin') {
                 <div class="flex justify-between"><span>🇮🇳 India Hosting Inquiries</span><span class="font-bold text-emerald-700">18.4%</span></div>
                 <div class="flex justify-between"><span>🌐 Open Source Repos</span><span class="font-bold text-purple-700">7.6%</span></div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 6: Platform Settings (Tab: settings) -->
+        <section id="tab-panel-settings" class="tab-panel hidden mt-6">
+          <div class="max-w-3xl space-y-6">
+            <div>
+              <h3 class="text-base font-bold text-foreground">Platform Settings</h3>
+              <p class="text-xs text-muted-foreground">Manage global service integrations, sender identity, and system configurations.</p>
+            </div>
+
+            <!-- Card 1: Resend Email Delivery Settings -->
+            <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+              <div class="flex items-center gap-3 pb-4 border-b border-border">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-50 text-primary border border-amber-200">
+                  <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h4 class="text-sm font-bold text-foreground">Resend Email Sender Identity</h4>
+                  <p class="text-xs text-muted-foreground">Configure the outgoing From Name and From Email for OTPs, claim notifications, and magic links.</p>
+                </div>
+              </div>
+
+              <form id="admin-settings-form" class="mt-5 space-y-4">
+                <div id="settings-status-alert" class="hidden rounded-xl p-3 text-xs"></div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="settings-from-name" class="block text-xs font-semibold text-foreground">
+                      From Name *
+                    </label>
+                    <input
+                      type="text"
+                      id="settings-from-name"
+                      name="fromName"
+                      required
+                      value={fromName}
+                      placeholder="Desi Alternatives"
+                      class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                    />
+                    <p class="mt-1 text-[11px] text-muted-foreground">
+                      The display name recipients see in their email inbox (e.g. <code>Desi Alternatives</code>).
+                    </p>
+                  </div>
+
+                  <div>
+                    <label for="settings-from-email" class="block text-xs font-semibold text-foreground">
+                      From Email *
+                    </label>
+                    <input
+                      type="email"
+                      id="settings-from-email"
+                      name="fromEmail"
+                      required
+                      value={fromEmail}
+                      placeholder="auth@desialternatives.in"
+                      class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                    />
+                    <p class="mt-1 text-[11px] text-muted-foreground">
+                      Must be a verified sending domain in Resend (e.g. <code>auth@yourdomain.com</code> or <code>onboarding@resend.dev</code> for testing).
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Resend Documentation Info Box -->
+                <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-900">
+                  <div class="flex items-start gap-2">
+                    <span class="text-sm shrink-0">💡</span>
+                    <div class="space-y-1">
+                      <p class="font-semibold">Resend Sender Best Practices:</p>
+                      <p class="text-[11px] text-amber-800 leading-relaxed">
+                        Emails are formatted as <code>From Name &lt;From Email&gt;</code>. Ensure your domain's DKIM, SPF, and DMARC DNS records are verified in your Resend Dashboard to maximize inbox delivery rates and prevent spam classification.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="submit"
+                    id="save-settings-btn"
+                    class="rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer disabled:opacity-50"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </section>
@@ -1581,7 +1693,7 @@ if (db && user && user.role === 'admin') {
 
   // Tab Navigation Logic
   function switchTab(targetTab: string) {
-    const validTabs = ['tools', 'categories', 'users', 'claims', 'analytics'];
+    const validTabs = ['tools', 'categories', 'users', 'claims', 'analytics', 'settings'];
     const activeTab = validTabs.includes(targetTab) ? targetTab : 'tools';
 
     // Update panels
@@ -1645,5 +1757,59 @@ if (db && user && user.role === 'admin') {
   window.addEventListener('hashchange', () => {
     const hash = window.location.hash.replace('#', '');
     if (hash) switchTab(hash);
+  });
+
+  // Admin Settings Form Handler
+  const settingsForm = document.getElementById('admin-settings-form') as HTMLFormElement | null;
+  const settingsAlert = document.getElementById('settings-status-alert');
+  const saveSettingsBtn = document.getElementById('save-settings-btn') as HTMLButtonElement | null;
+
+  settingsForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!saveSettingsBtn) return;
+    saveSettingsBtn.disabled = true;
+    saveSettingsBtn.textContent = 'Saving...';
+
+    if (settingsAlert) {
+      settingsAlert.classList.add('hidden');
+      settingsAlert.textContent = '';
+      settingsAlert.className = 'hidden rounded-xl p-3 text-xs';
+    }
+
+    const formData = new FormData(settingsForm);
+    const fromName = formData.get('fromName') as string;
+    const fromEmail = formData.get('fromEmail') as string;
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromName, fromEmail }),
+      });
+
+      const data = (await res.json()) as any;
+      if (res.ok && data.success) {
+        if (settingsAlert) {
+          settingsAlert.textContent = '✓ Platform settings saved successfully!';
+          settingsAlert.className = 'rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-medium';
+          settingsAlert.classList.remove('hidden');
+        }
+      } else {
+        if (settingsAlert) {
+          settingsAlert.textContent = data.error || 'Failed to save settings.';
+          settingsAlert.className = 'rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 font-medium';
+          settingsAlert.classList.remove('hidden');
+        }
+      }
+    } catch {
+      if (settingsAlert) {
+        settingsAlert.textContent = 'Network error while saving settings.';
+        settingsAlert.className = 'rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 font-medium';
+        settingsAlert.classList.remove('hidden');
+      }
+    } finally {
+      saveSettingsBtn.disabled = false;
+      saveSettingsBtn.textContent = 'Save Changes';
+    }
   });
 </script>

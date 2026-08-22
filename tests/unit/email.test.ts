@@ -22,4 +22,16 @@ describe('React Email & Resend OTP Dispatcher', () => {
 
     expect(result.success).toBe(true);
   });
+
+  it('accepts configurable fromName and fromEmail settings', async () => {
+    const result = await sendOtpEmail({
+      to: 'founder@postman.com',
+      otp: '992812',
+      type: 'sign-in',
+      fromName: 'Desi Alternatives Team',
+      fromEmail: 'notifications@desialternatives.in',
+    });
+
+    expect(result.success).toBe(true);
+  });
 });

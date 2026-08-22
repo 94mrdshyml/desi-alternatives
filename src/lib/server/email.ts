@@ -7,6 +7,8 @@ export interface SendOtpEmailParams {
   to: string;
   otp: string;
   type?: 'sign-in' | 'email-verification' | 'forget-password' | string;
+  fromName?: string;
+  fromEmail?: string;
 }
 
 export async function sendOtpEmail({
@@ -14,6 +16,8 @@ export async function sendOtpEmail({
   to,
   otp,
   type = 'sign-in',
+  fromName = 'Desi Alternatives',
+  fromEmail = 'auth@desialternatives.in',
 }: SendOtpEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const emailHtml = await render(React.createElement(OtpVerificationEmail, { otp, type }));
@@ -22,7 +26,7 @@ export async function sendOtpEmail({
     // Local dev fallback when Resend API key is omitted
     if (!apiKey) {
       console.log('====================================================');
-      console.log(`[AUTH-OTP DEV CONSOLE] To: ${to} | 6-DIGIT CODE: ${otp} | Type: ${type}`);
+      console.log(`[AUTH-OTP DEV CONSOLE] To: ${to} | 6-DIGIT CODE: ${otp} | Sender: ${fromName} <${fromEmail}>`);
       console.log('====================================================');
       return { success: true, id: 'dev-mock-id' };
     }
@@ -34,7 +38,7 @@ export async function sendOtpEmail({
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: 'Desi Alternatives <auth@desialternatives.in>',
+        from: `${fromName} <${fromEmail}>`,
         to: [to],
         subject,
         html: emailHtml,

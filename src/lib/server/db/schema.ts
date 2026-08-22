@@ -179,3 +179,15 @@ export const editsQueue = sqliteTable('edits_queue', {
   submittedAt: text('submitted_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   reviewedAt: text('reviewed_at'),
 });
+
+// ==========================================
+// 7. SITE & EMAIL SETTINGS
+// ==========================================
+
+export const siteSettings = sqliteTable('site_settings', {
+  id: text('id').primaryKey(), // 'general'
+  fromName: text('from_name').default('Desi Alternatives').notNull(),
+  fromEmail: text('from_email').default('auth@desialternatives.in').notNull(),
+  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
