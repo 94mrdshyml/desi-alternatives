@@ -336,22 +336,44 @@
 
 ---
 
-## Session 17 — Dynamic Open Graph (OG) Image Generation & Social Previews
+---
 
-**Date & Time (IST):** 2026-08-22 19:47 IST
+## Session 18 — WASM PNG Edge OG Rendering, Bi-directional Tool Mapping, Approval Queue & Native UI Dialogs
+
+**Date & Time (IST):** 2026-08-23 01:15 IST
 **Status:** Completed
 **Branch:** `main`
 
-### What We Fixed & Built
-- **Dynamic Edge OG SVG Generators (1200x630 Social Cards)**:
-  - **Tool Detail OG Card** (`/api/og/tool/[slug].svg`): Dynamically renders tool name, tagline, city/state origin badge, sovereign badges (GST, INR, OSS, India cloud), starting price, and brand accents.
-  - **Programmatic Comparison OG Card** (`/api/og/alternative/[slug].svg`): Dynamically renders Foreign USD price comparison vs. top 3 mapped Indian alternatives with their starting INR prices and savings pitch.
-  - **Default Site OG Card** (`/api/og/default.svg`): Global platform banner highlighting zero forex loss, 18% GST input credit, and local data residency.
-- **BaseLayout Open Graph & Twitter Cards Schema**:
-  - Added full Open Graph (`og:type`, `og:site_name`, `og:url`, `og:title`, `og:description`, `og:image`, `og:image:width`, `og:image:height`, `og:locale`) and Twitter Card (`twitter:card="summary_large_image"`, `twitter:site`, `twitter:creator`, `twitter:image`) metadata tags to `src/layouts/BaseLayout.astro`.
-- **Integrated Across Pages**:
-  - Attached dynamic OG routes to `/tools/[slug]`, `/alternatives/[slug]`, and root layouts.
-- **Unit Test Coverage & CI/CD**:
-  - Added unit test suite `tests/unit/og-image.test.ts` (all 17 unit tests passing).
-  - Deployed live to Cloudflare Workers via CI/CD pipeline.
+### What We Built & Fixed
+
+1. **Dynamic Open Graph (OG) WASM PNG Edge Rendering (`@resvg/resvg-wasm`)**:
+   - Built a lightweight, Cloudflare Worker-native SVG-to-PNG WASM rasterizer (`src/lib/server/og-renderer.ts`).
+   - Created dynamic PNG endpoints:
+     - `/api/og/tool/[slug].png` (Tool detail card with brand typography, categories, city/state origin badge, and compliance pills).
+     - `/api/og/alternative/[slug].png` (Alternative showdown card comparing foreign USD prices against top Indian alternatives).
+     - `/api/og/default.png` (Default directory social card).
+   - Updated `src/layouts/BaseLayout.astro`, `src/pages/tools/[slug].astro`, and `src/pages/alternatives/[slug].astro` to serve direct `image/png` binaries for complete compatibility with Facebook, LinkedIn, Twitter/X, and WhatsApp scrapers.
+
+2. **Bi-directional Alternative Mapping Matrix**:
+   - **Global Giant Modal (`/admin/catalog`)**: Selecting Indian alternatives when creating or updating a Global Giant persists mappings in `toolAlternatives` and pre-selects checkboxes on modal edit.
+   - **Indian Tool Modal (`/admin/catalog`)**: Added a **"Competes With / Indian Alternative To (Global Giants)"** multi-select checklist directly into the Indian Tool Add/Edit modal.
+   - Updated `src/pages/api/admin/tools.ts` and `src/pages/api/admin/global-tools.ts` to synchronize `toolAlternatives` in D1 automatically on create and update.
+
+3. **Approval Queue for AI JSON Tool Imports**:
+   - Changed `src/pages/api/admin/tools/import-json.ts` so imported tools default to `status: 'draft'` instead of being published immediately.
+   - Added a status filter tab bar in `/admin/catalog` (**All**, **Published**, **Approval Queue / Drafts** with an amber pending counter badge).
+   - Added quick **`✓ Approve & Publish`** action buttons on draft rows and updated backend action handlers (`publish`, `unpublish`, `toggleStatus`) in `src/pages/api/admin/tools.ts`.
+
+4. **Logo URL Validation Fix for Cloudflare R2**:
+   - Replaced restrictive HTML5 `type="url"` with `type="text"` on logo inputs across Indian Tool and Global Giant modals so relative R2 asset paths (e.g. `/api/assets/logos/...`) pass browser form validation without "Please enter a URL" errors.
+
+5. **Native UI Dialogs & Toast Notifications Overhaul**:
+   - Built a global **Toast Notification** system (`showToast(message, type)`) in `AdminLayout.astro` featuring animated glassmorphic alerts (Success, Error, Info).
+   - Built a branded **Custom Confirmation Modal** (`showConfirmDialog({ title, message, confirmText, isDestructive })`) in `AdminLayout.astro` returning promises for non-blocking confirmation workflows.
+   - Completely eliminated all browser-native `window.alert()` and `window.confirm()` popups across the entire admin dashboard (`catalog.astro`, `moderation.astro`, `settings.astro`).
+
+### Verification & Deployment
+- Full test suite passed: 17 unit tests, TypeScript typechecking (`astro check`), and Astro production build.
+- Pushed to `main` and verified automated CI/CD deployment to Cloudflare Workers.
+
 
