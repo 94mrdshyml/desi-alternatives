@@ -184,7 +184,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
       sendCodeBtn.textContent = 'Sending 6-digit code...';
 
       try {
-        const res = await authClient.emailOTP.sendVerificationOtp({
+        const res = await authClient.emailOtp.sendVerificationOtp({
           email,
           type: 'sign-in',
         });
@@ -233,7 +233,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
       resendBtn.textContent = 'Sending...';
 
       try {
-        const res = await authClient.emailOTP.sendVerificationOtp({
+        const res = await authClient.emailOtp.sendVerificationOtp({
           email: currentEmail,
           type: 'sign-in',
         });
