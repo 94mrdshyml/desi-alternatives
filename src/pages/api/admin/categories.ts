@@ -18,6 +18,29 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body = (await request.json()) as any;
     const { action, id, name, slug, emoji, description, isFeatured } = body;
 
+    // Real-time Slug Uniqueness Check Endpoint
+    if (action === 'check-slug') {
+      const checkSlug = (slug || '').trim().toLowerCase();
+      if (!checkSlug) {
+        return new Response(JSON.stringify({ available: false, error: 'Slug is empty' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const existing = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.slug, checkSlug))
+        .get();
+
+      const available = !existing || (id && existing.id === id);
+      return new Response(JSON.stringify({ available, slug: checkSlug }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'create') {
       if (!name || !emoji) {
         return new Response(JSON.stringify({ error: 'Name and emoji are required.' }), {
@@ -26,15 +49,40 @@ export const POST: APIRoute = async ({ request, locals }) => {
         });
       }
 
-      const generatedSlug = slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const generatedSlug = (slug || name)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      if (!generatedSlug) {
+        return new Response(JSON.stringify({ error: 'Valid category slug could not be generated.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const existing = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.slug, generatedSlug))
+        .get();
+
+      if (existing) {
+        return new Response(JSON.stringify({ error: `Slug "${generatedSlug}" is already in use by another category.` }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
       const newId = createCategoryId();
 
       await db.insert(categories).values({
         id: newId,
-        name,
+        name: name.trim(),
         slug: generatedSlug,
-        emoji,
-        description: description || '',
+        emoji: emoji.trim(),
+        description: description ? description.trim() : '',
         isFeatured: Boolean(isFeatured),
       });
 

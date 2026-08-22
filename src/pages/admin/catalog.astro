@@ -408,13 +408,24 @@ if (db) {
                     )}
                   </td>
                   <td class="py-3 px-4 text-right">
-                    <button
-                      type="button"
-                      data-edit-category={JSON.stringify(c)}
-                      class="rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
-                    >
-                      Edit
-                    </button>
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        data-edit-category={JSON.stringify(c)}
+                        class="rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        data-delete-category={c.id}
+                        data-category-name={c.name}
+                        class="rounded-lg border border-red-200 px-2 py-1 text-[11px] font-medium text-red-600 hover:bg-red-50 transition cursor-pointer"
+                        title="Delete Category"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -531,12 +542,22 @@ if (db) {
         <button id="close-tool-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
       </div>
 
+      <div id="create-tool-modal-error" class="hidden mt-3 rounded-xl bg-red-50 p-2.5 text-xs text-red-800 border border-red-200"></div>
+
       <form id="admin-create-tool-form" class="mt-4 space-y-4">
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label class="block text-xs font-semibold text-foreground">Tool Name *</label>
             <input type="text" id="create-tool-name-input" name="name" required placeholder="e.g. SigNoz" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Tool Slug *</label>
+            <input type="text" id="create-tool-slug-input" name="slug" required placeholder="signoz" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary font-mono" />
+            <div id="create-tool-slug-feedback" class="mt-1 text-[11px] font-mono"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <div class="flex items-center justify-between">
               <label class="block text-xs font-semibold text-foreground">Website URL *</label>
@@ -550,6 +571,11 @@ if (db) {
             </div>
             <input type="url" id="create-tool-website-input" name="websiteUrl" required placeholder="https://signoz.io" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Logo URL</label>
+            <input type="url" id="create-tool-logo-url-hidden" name="logoUrl" placeholder="https://..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
         </div>
 
         <div>
@@ -557,11 +583,7 @@ if (db) {
           <input type="text" id="create-tool-tagline-input" name="tagline" required placeholder="Open-source APM & Observability platform" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
         </div>
 
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <div>
-            <label class="block text-xs font-semibold text-foreground">Logo URL</label>
-            <input type="url" id="create-tool-logo-url-hidden" name="logoUrl" placeholder="https://..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
-          </div>
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div>
             <label class="block text-xs font-semibold text-foreground">Category *</label>
             <select name="categoryId" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
@@ -570,9 +592,6 @@ if (db) {
               ))}
             </select>
           </div>
-        </div>
-
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <label class="block text-xs font-semibold text-foreground">Pricing Model</label>
             <select name="pricingModel" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
@@ -596,7 +615,7 @@ if (db) {
         <!-- Indian Product Checklist -->
         <div>
           <label class="block text-xs font-semibold text-foreground mb-1.5">Indian Business & Product Checklist</label>
-          <div class="grid grid-cols-2 gap-2 text-xs">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
             <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIndianDataResidency" /> India Data Residency</label>
             <label class="flex items-center gap-1.5"><input type="checkbox" name="hasGstInvoice" /> GST Invoices</label>
             <label class="flex items-center gap-1.5"><input type="checkbox" name="hasInrPricing" /> Direct INR Billing</label>
@@ -607,45 +626,55 @@ if (db) {
           </div>
         </div>
 
-        <button type="submit" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
+        <button type="submit" id="create-tool-submit-btn" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
           Publish Indian Tool
         </button>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: ADD CATEGORY -->
+  <!-- MODAL: ADD / EDIT CATEGORY -->
   <div id="create-cat-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
     <div class="relative w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-2xl">
       <div class="flex items-center justify-between pb-3 border-b border-border">
-        <h3 class="text-base font-bold text-foreground">Create Category</h3>
+        <h3 id="cat-modal-title" class="text-base font-bold text-foreground">Create Category</h3>
         <button id="close-cat-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
       </div>
 
+      <div id="cat-modal-error" class="hidden mt-3 rounded-xl bg-red-50 p-2.5 text-xs text-red-800 border border-red-200"></div>
+
       <form id="admin-create-cat-form" class="mt-4 space-y-4">
+        <input type="hidden" id="cat-id" name="id" />
+        <input type="hidden" id="cat-action" name="action" value="create" />
+
         <div>
           <label class="block text-xs font-semibold text-foreground">Category Name *</label>
-          <input type="text" name="name" required placeholder="Developer Tools" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          <input type="text" id="cat-name-input" name="name" required placeholder="e.g. Developer Tools, Newsletters" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
         </div>
+
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="block text-xs font-semibold text-foreground">Emoji Icon *</label>
-            <input type="text" name="emoji" required placeholder="⚡" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <input type="text" id="cat-emoji-input" name="emoji" required placeholder="⚡" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-foreground">Slug</label>
-            <input type="text" name="slug" placeholder="developer-tools" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+            <label class="block text-xs font-semibold text-foreground">Slug *</label>
+            <input type="text" id="cat-slug-input" name="slug" required placeholder="developer-tools" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary font-mono" />
+            <div id="cat-slug-feedback" class="mt-1 text-[11px] font-mono"></div>
           </div>
         </div>
+
         <div>
           <label class="block text-xs font-semibold text-foreground">Description</label>
-          <textarea name="description" rows="2" placeholder="Brief description..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
+          <textarea id="cat-description-input" name="description" rows="2" placeholder="Brief category description..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
         </div>
+
         <label class="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
-          <input type="checkbox" name="isFeatured" />
+          <input type="checkbox" id="cat-featured-input" name="isFeatured" />
           <span>Feature on top filters</span>
         </label>
-        <button type="submit" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
+
+        <button type="submit" id="cat-submit-btn" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
           Create Category
         </button>
       </form>
@@ -873,17 +902,334 @@ if (db) {
     });
   });
 
-  // Indian Tool Modal
+  // --- INDIAN TOOL MODAL & REAL-TIME SLUG LOGIC ---
   const toolModal = document.getElementById('create-tool-modal');
   const openToolBtn = document.getElementById('open-create-tool-btn');
   const closeToolBtn = document.getElementById('close-tool-modal');
-  openToolBtn?.addEventListener('click', () => toolModal?.classList.remove('hidden'));
+  const toolForm = document.getElementById('admin-create-tool-form') as HTMLFormElement | null;
+  const toolNameInput = document.getElementById('create-tool-name-input') as HTMLInputElement | null;
+  const toolSlugInput = document.getElementById('create-tool-slug-input') as HTMLInputElement | null;
+  const toolSlugFeedback = document.getElementById('create-tool-slug-feedback');
+  const toolAutofillBtn = document.getElementById('create-tool-autofill-btn') as HTMLButtonElement | null;
+  let toolSlugManuallyEdited = false;
+  let toolSlugTimer: any = null;
+
+  function checkToolSlug(slug: string) {
+    clearTimeout(toolSlugTimer);
+    if (!slug) {
+      if (toolSlugFeedback) toolSlugFeedback.innerHTML = '';
+      return;
+    }
+    if (toolSlugFeedback) {
+      toolSlugFeedback.className = 'mt-1 text-[11px] font-mono text-muted-foreground';
+      toolSlugFeedback.textContent = 'Checking availability...';
+    }
+    toolSlugTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/admin/tools', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'check-slug', slug }),
+        });
+        const data = (await res.json()) as any;
+        if (toolSlugFeedback) {
+          if (data.available) {
+            toolSlugFeedback.className = 'mt-1 text-[11px] font-mono text-emerald-600 font-semibold';
+            toolSlugFeedback.textContent = `✓ Available: /tools/${data.slug}`;
+          } else {
+            toolSlugFeedback.className = 'mt-1 text-[11px] font-mono text-red-600 font-semibold';
+            toolSlugFeedback.textContent = `✕ Slug "${data.slug}" already in use`;
+          }
+        }
+      } catch {
+        if (toolSlugFeedback) toolSlugFeedback.textContent = '';
+      }
+    }, 300);
+  }
+
+  toolNameInput?.addEventListener('input', () => {
+    if (!toolSlugManuallyEdited && toolSlugInput) {
+      const generated = toolNameInput.value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      toolSlugInput.value = generated;
+      checkToolSlug(generated);
+    }
+  });
+
+  toolSlugInput?.addEventListener('input', () => {
+    toolSlugManuallyEdited = true;
+    const clean = toolSlugInput.value.toLowerCase().trim().replace(/[^a-z0-9-]+/g, '');
+    toolSlugInput.value = clean;
+    checkToolSlug(clean);
+  });
+
+  openToolBtn?.addEventListener('click', () => {
+    toolSlugManuallyEdited = false;
+    toolForm?.reset();
+    if (toolSlugFeedback) toolSlugFeedback.innerHTML = '';
+    document.getElementById('create-tool-modal-error')?.classList.add('hidden');
+    toolModal?.classList.remove('hidden');
+  });
+
   closeToolBtn?.addEventListener('click', () => toolModal?.classList.add('hidden'));
 
-  // Category Modal
+  // Tool Auto-Fill from Website URL
+  toolAutofillBtn?.addEventListener('click', async () => {
+    const websiteInput = document.getElementById('create-tool-website-input') as HTMLInputElement | null;
+    const url = websiteInput?.value?.trim();
+    if (!url) {
+      alert('Please enter a website URL first.');
+      return;
+    }
+
+    toolAutofillBtn.disabled = true;
+    toolAutofillBtn.textContent = 'Scraping...';
+
+    try {
+      const res = await fetch(`/api/admin/scrape?url=${encodeURIComponent(url)}`);
+      const data = (await res.json()) as any;
+      if (res.ok && data.name) {
+        if (toolNameInput && !toolNameInput.value) {
+          toolNameInput.value = data.name;
+          if (!toolSlugManuallyEdited && toolSlugInput) {
+            const slug = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            toolSlugInput.value = slug;
+            checkToolSlug(slug);
+          }
+        }
+        if (data.logoUrl) (document.getElementById('create-tool-logo-url-hidden') as HTMLInputElement).value = data.logoUrl;
+        if (data.tagline) (document.getElementById('create-tool-tagline-input') as HTMLInputElement).value = data.tagline;
+        if (data.description) (document.getElementById('create-tool-description-input') as HTMLTextAreaElement).value = data.description;
+      } else {
+        alert('Auto-fill could not scrape this URL. Please enter details manually.');
+      }
+    } catch {
+      alert('Network error while scraping.');
+    } finally {
+      toolAutofillBtn.disabled = false;
+      toolAutofillBtn.textContent = '✨ Auto-Fill';
+    }
+  });
+
+  // Tool Form Submit
+  toolForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById('create-tool-submit-btn') as HTMLButtonElement;
+    const errorDiv = document.getElementById('create-tool-modal-error') as HTMLElement;
+    errorDiv.classList.add('hidden');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Publishing...';
+
+    const formData = new FormData(toolForm);
+    const payload: Record<string, any> = { action: 'create' };
+
+    formData.forEach((value, key) => {
+      if (key.startsWith('has') || key.startsWith('is') || key.startsWith('isOpen')) {
+        payload[key] = true;
+      } else {
+        payload[key] = value;
+      }
+    });
+
+    try {
+      const res = await fetch('/api/admin/tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = (await res.json()) as any;
+      if (res.ok && (data.success || data.toolId)) {
+        window.location.reload();
+      } else {
+        errorDiv.textContent = data.error || 'Failed to publish tool.';
+        errorDiv.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Publish Indian Tool';
+      }
+    } catch {
+      errorDiv.textContent = 'Network error while publishing tool.';
+      errorDiv.classList.remove('hidden');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Publish Indian Tool';
+    }
+  });
+
+  // --- CATEGORY MODAL & REAL-TIME SLUG LOGIC ---
   const catModal = document.getElementById('create-cat-modal');
   const openCatBtn = document.getElementById('open-create-cat-btn');
   const closeCatBtn = document.getElementById('close-cat-modal');
-  openCatBtn?.addEventListener('click', () => catModal?.classList.remove('hidden'));
+  const catForm = document.getElementById('admin-create-cat-form') as HTMLFormElement | null;
+  const catNameInput = document.getElementById('cat-name-input') as HTMLInputElement | null;
+  const catSlugInput = document.getElementById('cat-slug-input') as HTMLInputElement | null;
+  const catSlugFeedback = document.getElementById('cat-slug-feedback');
+  let catSlugManuallyEdited = false;
+  let catSlugTimer: any = null;
+
+  function checkCatSlug(slug: string, id?: string) {
+    clearTimeout(catSlugTimer);
+    if (!slug) {
+      if (catSlugFeedback) catSlugFeedback.innerHTML = '';
+      return;
+    }
+    if (catSlugFeedback) {
+      catSlugFeedback.className = 'mt-1 text-[11px] font-mono text-muted-foreground';
+      catSlugFeedback.textContent = 'Checking availability...';
+    }
+    catSlugTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/admin/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'check-slug', slug, id }),
+        });
+        const data = (await res.json()) as any;
+        if (catSlugFeedback) {
+          if (data.available) {
+            catSlugFeedback.className = 'mt-1 text-[11px] font-mono text-emerald-600 font-semibold';
+            catSlugFeedback.textContent = `✓ Available: /category/${data.slug}`;
+          } else {
+            catSlugFeedback.className = 'mt-1 text-[11px] font-mono text-red-600 font-semibold';
+            catSlugFeedback.textContent = `✕ Slug "${data.slug}" already in use`;
+          }
+        }
+      } catch {
+        if (catSlugFeedback) catSlugFeedback.textContent = '';
+      }
+    }, 300);
+  }
+
+  catNameInput?.addEventListener('input', () => {
+    if (!catSlugManuallyEdited && catSlugInput) {
+      const generated = catNameInput.value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      catSlugInput.value = generated;
+      const catId = (document.getElementById('cat-id') as HTMLInputElement)?.value;
+      checkCatSlug(generated, catId);
+    }
+  });
+
+  catSlugInput?.addEventListener('input', () => {
+    catSlugManuallyEdited = true;
+    const clean = catSlugInput.value.toLowerCase().trim().replace(/[^a-z0-9-]+/g, '');
+    catSlugInput.value = clean;
+    const catId = (document.getElementById('cat-id') as HTMLInputElement)?.value;
+    checkCatSlug(clean, catId);
+  });
+
+  openCatBtn?.addEventListener('click', () => {
+    catSlugManuallyEdited = false;
+    catForm?.reset();
+    (document.getElementById('cat-id') as HTMLInputElement).value = '';
+    (document.getElementById('cat-action') as HTMLInputElement).value = 'create';
+    (document.getElementById('cat-modal-title') as HTMLElement).textContent = 'Create Category';
+    (document.getElementById('cat-submit-btn') as HTMLButtonElement).textContent = 'Create Category';
+    if (catSlugFeedback) catSlugFeedback.innerHTML = '';
+    document.getElementById('cat-modal-error')?.classList.add('hidden');
+    catModal?.classList.remove('hidden');
+  });
+
   closeCatBtn?.addEventListener('click', () => catModal?.classList.add('hidden'));
+
+  // Edit Category
+  document.querySelectorAll('[data-edit-category]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const raw = btn.getAttribute('data-edit-category');
+      if (!raw) return;
+      const c = JSON.parse(raw);
+      catSlugManuallyEdited = true;
+
+      (document.getElementById('cat-id') as HTMLInputElement).value = c.id;
+      (document.getElementById('cat-action') as HTMLInputElement).value = 'update';
+      (document.getElementById('cat-modal-title') as HTMLElement).textContent = `Edit ${c.name}`;
+      (document.getElementById('cat-submit-btn') as HTMLButtonElement).textContent = 'Save Changes';
+      if (catNameInput) catNameInput.value = c.name || '';
+      if (catSlugInput) catSlugInput.value = c.slug || '';
+      (document.getElementById('cat-emoji-input') as HTMLInputElement).value = c.emoji || '';
+      (document.getElementById('cat-description-input') as HTMLTextAreaElement).value = c.description || '';
+      (document.getElementById('cat-featured-input') as HTMLInputElement).checked = Boolean(c.isFeatured);
+
+      if (catSlugFeedback) catSlugFeedback.innerHTML = '';
+      document.getElementById('cat-modal-error')?.classList.add('hidden');
+      catModal?.classList.remove('hidden');
+    });
+  });
+
+  // Delete Category
+  document.querySelectorAll('[data-delete-category]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-delete-category');
+      const name = btn.getAttribute('data-category-name') || 'this category';
+      if (!id || !confirm(`Are you sure you want to delete "${name}"? This action cannot be undone.`)) return;
+
+      try {
+        const res = await fetch('/api/admin/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', id }),
+        });
+        const data = (await res.json()) as any;
+        if (res.ok && data.success) {
+          window.location.reload();
+        } else {
+          alert(data.error || 'Failed to delete category.');
+        }
+      } catch {
+        alert('Network error while deleting category.');
+      }
+    });
+  });
+
+  // Category Form Submit
+  catForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const submitBtn = document.getElementById('cat-submit-btn') as HTMLButtonElement;
+    const errorDiv = document.getElementById('cat-modal-error') as HTMLElement;
+    errorDiv.classList.add('hidden');
+
+    const id = (document.getElementById('cat-id') as HTMLInputElement).value;
+    const action = (document.getElementById('cat-action') as HTMLInputElement).value || 'create';
+    const name = catNameInput?.value?.trim() || '';
+    const emoji = (document.getElementById('cat-emoji-input') as HTMLInputElement)?.value?.trim() || '';
+    const slug = catSlugInput?.value?.trim() || '';
+    const description = (document.getElementById('cat-description-input') as HTMLTextAreaElement)?.value?.trim() || '';
+    const isFeatured = (document.getElementById('cat-featured-input') as HTMLInputElement)?.checked || false;
+
+    if (!name || !emoji) {
+      errorDiv.textContent = 'Category name and emoji are required.';
+      errorDiv.classList.remove('hidden');
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
+
+    try {
+      const res = await fetch('/api/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action, name, emoji, slug, description, isFeatured }),
+      });
+      const data = (await res.json()) as any;
+
+      if (res.ok && data.success) {
+        window.location.reload();
+      } else {
+        errorDiv.textContent = data.error || 'Failed to save category.';
+        errorDiv.classList.remove('hidden');
+        submitBtn.disabled = false;
+        submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Create Category';
+      }
+    } catch {
+      errorDiv.textContent = 'Network error while saving category.';
+      errorDiv.classList.remove('hidden');
+      submitBtn.disabled = false;
+      submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Create Category';
+    }
+  });
 </script>

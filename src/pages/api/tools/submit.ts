@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { desiTools, toolAlternatives } from '@/lib/server/db/schema';
 import { createToolId, createAlternativeId } from '@/lib/server/id';
+import { eq } from 'drizzle-orm';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const db = locals.db;
@@ -59,15 +60,30 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     }
 
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    let baseSlug = (body.slug || name)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
+    if (!baseSlug) {
+      baseSlug = `tool-${Date.now().toString(36)}`;
+    }
+
+    let slug = baseSlug;
+    const existing = await db.select().from(desiTools).where(eq(desiTools.slug, slug)).get();
+    if (existing) {
+      slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
+    }
+
     const toolId = createToolId();
 
     await db.insert(desiTools).values({
       id: toolId,
       slug,
-      name,
-      tagline,
-      description: description || tagline,
+      name: name.trim(),
+      tagline: tagline.trim(),
+      description: description ? description.trim() : tagline.trim(),
       websiteUrl,
       logoUrl: logoUrl || `https://logo.clearbit.com/${new URL(websiteUrl).hostname}`,
       primaryColor: '#D97706',

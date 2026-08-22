@@ -18,10 +18,34 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body = (await request.json()) as any;
     const { toolId, action } = body;
 
+    // 0. Check Tool Slug Uniqueness Endpoint
+    if (action === 'check-slug') {
+      const checkSlug = (body.slug || '').trim().toLowerCase();
+      if (!checkSlug) {
+        return new Response(JSON.stringify({ available: false, error: 'Slug is empty' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const existing = await db
+        .select()
+        .from(desiTools)
+        .where(eq(desiTools.slug, checkSlug))
+        .get();
+
+      const available = !existing || (toolId && existing.id === toolId);
+      return new Response(JSON.stringify({ available, slug: checkSlug }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     // 1. Create Tool (Direct Publish)
     if (action === 'create') {
       const {
         name,
+        slug: userProvidedSlug,
         tagline,
         description,
         websiteUrl,
@@ -54,15 +78,40 @@ export const POST: APIRoute = async ({ request, locals }) => {
         );
       }
 
-      const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const generatedSlug = (userProvidedSlug || name)
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+
+      if (!generatedSlug) {
+        return new Response(
+          JSON.stringify({ error: 'Valid tool slug could not be generated.' }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const existing = await db
+        .select()
+        .from(desiTools)
+        .where(eq(desiTools.slug, generatedSlug))
+        .get();
+
+      if (existing) {
+        return new Response(
+          JSON.stringify({ error: `Slug "${generatedSlug}" is already in use by another tool.` }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
       const newToolId = createToolId();
 
       await db.insert(desiTools).values({
         id: newToolId,
-        slug,
-        name,
-        tagline,
-        description: description || tagline,
+        slug: generatedSlug,
+        name: name.trim(),
+        tagline: tagline.trim(),
+        description: description ? description.trim() : tagline.trim(),
         websiteUrl,
         logoUrl: logoUrl || `https://logo.clearbit.com/${new URL(websiteUrl).hostname}`,
         primaryColor: primaryColor || '#D97706',
@@ -99,7 +148,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       }
 
-      return new Response(JSON.stringify({ success: true, toolId: newToolId, slug }), {
+      return new Response(JSON.stringify({ success: true, toolId: newToolId, slug: generatedSlug }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
