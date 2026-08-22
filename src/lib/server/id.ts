@@ -15,6 +15,7 @@ export const ID_PREFIXES = {
   session: 'sess_',
   verification: 'ver_',
   account: 'acc_',
+  pricingPlan: 'plan_',
 } as const;
 
 export type IdPrefixKey = keyof typeof ID_PREFIXES;
@@ -33,3 +34,4 @@ export const createUserId = () => generateId(ID_PREFIXES.user);
 export const createSessionId = () => generateId(ID_PREFIXES.session);
 export const createVerificationId = () => generateId(ID_PREFIXES.verification);
 export const createAccountId = () => generateId(ID_PREFIXES.account);
+export const createPricingPlanId = () => generateId(ID_PREFIXES.pricingPlan);

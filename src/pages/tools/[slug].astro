@@ -2,8 +2,8 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import SearchDialog from '@/components/SearchDialog';
-import { eq } from 'drizzle-orm';
-import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
+import { eq, asc } from 'drizzle-orm';
+import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans } from '@/lib/server/db/schema';
 
 const db = Astro.locals.db;
 const { slug } = Astro.params;
@@ -14,6 +14,9 @@ if (!slug || !db) {
 
 let toolResult: any = null;
 let alternatives: any[] = [];
+let pricingPlans: any[] = [];
+let parsedPros: string[] = [];
+let parsedCons: string[] = [];
 let searchableTools: any[] = [];
 
 try {
@@ -44,6 +47,14 @@ try {
       startingPriceInr: desiTools.startingPriceInr,
       claimedById: desiTools.claimedById,
       status: desiTools.status,
+      city: desiTools.city,
+      state: desiTools.state,
+      foundedYear: desiTools.foundedYear,
+      companyType: desiTools.companyType,
+      githubUrl: desiTools.githubUrl,
+      discordUrl: desiTools.discordUrl,
+      pros: desiTools.pros,
+      cons: desiTools.cons,
       twitterHandle: desiTools.twitterHandle,
       instagramHandle: desiTools.instagramHandle,
       youtubeUrl: desiTools.youtubeUrl,
@@ -70,6 +81,23 @@ try {
       .all();
 
     alternatives = rawAlternatives;
+
+    // 3. Fetch tool pricing plans
+    pricingPlans = await db
+      .select()
+      .from(toolPricingPlans)
+      .where(eq(toolPricingPlans.toolId, toolResult.id))
+      .orderBy(asc(toolPricingPlans.sortOrder))
+      .all();
+
+    // 4. Parse pros & cons JSON arrays
+    try {
+      if (toolResult.pros) parsedPros = JSON.parse(toolResult.pros);
+    } catch {}
+
+    try {
+      if (toolResult.cons) parsedCons = JSON.parse(toolResult.cons);
+    } catch {}
   }
 } catch (e) {
   console.error('Error fetching tool details:', e);
@@ -181,6 +209,59 @@ const brandColor = toolResult.primaryColor || '#D97706';
                 {toolResult.tagline}
               </p>
 
+              <!-- Company Origins & DNA Badges -->
+              {(toolResult.city || toolResult.foundedYear || toolResult.companyType || toolResult.isOpenSource || toolResult.githubUrl || toolResult.discordUrl) && (
+                <div class="mt-2.5 flex flex-wrap items-center gap-1.5 text-xs">
+                  {toolResult.city && (
+                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700">
+                      <span>📍</span>
+                      <span>{toolResult.city}{toolResult.state ? `, ${toolResult.state}` : ''}</span>
+                    </span>
+                  )}
+                  {toolResult.foundedYear && (
+                    <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 font-medium text-slate-700">
+                      <span>📅</span>
+                      <span>Est. {toolResult.foundedYear}</span>
+                    </span>
+                  )}
+                  {toolResult.companyType && (
+                    <span class="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 font-medium text-amber-900 border border-amber-200">
+                      <span>🏢</span>
+                      <span>{toolResult.companyType}</span>
+                    </span>
+                  )}
+                  {toolResult.isOpenSource && (
+                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 font-bold text-emerald-800 border border-emerald-200">
+                      <span>⚡</span>
+                      <span>Open Source</span>
+                    </span>
+                  )}
+                  {toolResult.githubUrl && (
+                    <a
+                      href={toolResult.githubUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 rounded-full bg-slate-900 px-2.5 py-0.5 font-medium text-white hover:bg-slate-800 transition"
+                    >
+                      <svg class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                        <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                      </svg>
+                      <span>GitHub</span>
+                    </a>
+                  )}
+                  {toolResult.discordUrl && (
+                    <a
+                      href={toolResult.discordUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 font-medium text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition"
+                    >
+                      <span>💬 Community</span>
+                    </a>
+                  )}
+                </div>
+              )}
+
               <!-- Social Media Links Row -->
               <div class="mt-3.5 flex flex-wrap items-center gap-2">
                 {toolResult.twitterHandle && (
@@ -288,7 +369,7 @@ const brandColor = toolResult.primaryColor || '#D97706';
 
     <!-- Main Content Layout -->
     <div class="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-      <!-- Left Column (2 Cols): Description & Comparison -->
+      <!-- Left Column (2 Cols): Description, Pros/Cons, Pricing, Comparison -->
       <div class="space-y-8 lg:col-span-2">
         <!-- Overview Section -->
         <section class="rounded-2xl border border-border bg-white p-6 shadow-xs">
@@ -297,6 +378,110 @@ const brandColor = toolResult.primaryColor || '#D97706';
             {toolResult.description}
           </p>
         </section>
+
+        <!-- Honest Pros & Superpowers / Considerations & Limitations -->
+        {(parsedPros.length > 0 || parsedCons.length > 0) && (
+          <section class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+            <h2 class="text-base font-bold text-foreground">Editorial Review & Superpowers</h2>
+            <p class="mt-1 text-xs text-muted-foreground">Honest insights into why Indian teams choose {toolResult.name}, along with current tradeoffs.</p>
+
+            <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <!-- Pros Column -->
+              {parsedPros.length > 0 && (
+                <div class="rounded-xl border border-emerald-200/80 bg-emerald-50/40 p-4">
+                  <div class="flex items-center gap-2 text-emerald-900 font-bold text-xs uppercase tracking-wider">
+                    <span>✨</span>
+                    <span>Top Strengths & Superpowers</span>
+                  </div>
+                  <ul class="mt-3 space-y-2.5 text-xs text-foreground/90">
+                    {parsedPros.map((pro) => (
+                      <li class="flex items-start gap-2">
+                        <span class="text-emerald-600 font-bold shrink-0 mt-0.5">✓</span>
+                        <span class="leading-relaxed">{pro}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <!-- Cons Column -->
+              {parsedCons.length > 0 && (
+                <div class="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
+                  <div class="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+                    <span>⚠️</span>
+                    <span>Honest Tradeoffs & Considerations</span>
+                  </div>
+                  <ul class="mt-3 space-y-2.5 text-xs text-foreground/90">
+                    {parsedCons.map((con) => (
+                      <li class="flex items-start gap-2">
+                        <span class="text-amber-600 font-bold shrink-0 mt-0.5">•</span>
+                        <span class="leading-relaxed">{con}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        <!-- Multi-Tier Pricing Plans Grid -->
+        {pricingPlans.length > 0 && (
+          <section class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-base font-bold text-foreground">Transparent Pricing Plans</h2>
+                <p class="mt-0.5 text-xs text-muted-foreground">Direct ₹ INR billing with 18% GST input credit eligibility.</p>
+              </div>
+              <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+                18% GST ITC Included
+              </span>
+            </div>
+
+            <div class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {pricingPlans.map((plan) => (
+                <div class={`relative rounded-xl border p-4.5 flex flex-col justify-between transition ${plan.isPopular ? 'border-primary bg-amber-50/30 shadow-xs' : 'border-border bg-white hover:border-slate-300'}`}>
+                  {plan.isPopular && (
+                    <span class="absolute -top-2.5 right-3 rounded-full bg-primary px-2.5 py-0.5 text-[10px] font-bold text-primary-foreground uppercase tracking-wider shadow-2xs">
+                      Popular
+                    </span>
+                  )}
+                  <div>
+                    <h3 class="text-sm font-bold text-foreground">{plan.name}</h3>
+                    <div class="mt-2 flex items-baseline gap-1">
+                      {plan.isFree || plan.amount === 0 ? (
+                        <span class="text-2xl font-extrabold text-foreground">Free</span>
+                      ) : plan.amount !== null ? (
+                        <>
+                          <span class="text-sm font-medium text-foreground">₹</span>
+                          <span class="text-2xl font-extrabold text-foreground">{plan.amount.toLocaleString('en-IN')}</span>
+                          <span class="text-xs text-muted-foreground">/{plan.billingPeriod}</span>
+                        </>
+                      ) : (
+                        <span class="text-lg font-bold text-foreground">Custom Quote</span>
+                      )}
+                    </div>
+                    {plan.description && (
+                      <p class="mt-2.5 text-xs text-muted-foreground leading-relaxed">
+                        {plan.description}
+                      </p>
+                    )}
+                  </div>
+                  <div class="mt-4 pt-3 border-t border-border/60">
+                    <a
+                      href={toolResult.websiteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class={`w-full text-center block rounded-lg py-1.5 text-xs font-semibold transition ${plan.isPopular ? 'bg-primary text-primary-foreground hover:bg-primary-hover' : 'border border-border bg-white text-foreground hover:bg-slate-50'}`}
+                    >
+                      {plan.isFree || plan.amount === 0 ? 'Get Started Free' : 'Choose Plan'}
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <!-- Direct Alternative Comparison -->
         {alternatives.length > 0 && (

@@ -106,6 +106,14 @@ if (db) {
       <div class="flex items-center gap-2">
         <button
           type="button"
+          id="open-json-import-btn"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-amber-700 transition cursor-pointer"
+        >
+          <span>⚡ AI JSON Import</span>
+        </button>
+
+        <button
+          type="button"
           id="open-create-tool-btn"
           class="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
         >
@@ -678,6 +686,151 @@ if (db) {
           Create Category
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- 4. AI JSON Ingestion Modal -->
+  <div
+    id="json-import-modal"
+    class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 backdrop-blur-xs p-4"
+  >
+    <div class="w-full max-w-3xl rounded-2xl border border-border bg-white p-6 shadow-xl max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-border/80 pb-4 shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-900 font-bold">
+            ⚡
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-foreground">AI JSON Tool Importer</h2>
+            <p class="text-xs text-muted-foreground">Paste AI-generated JSON payloads for instant D1 catalog ingestion</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="copy-ai-prompt-btn"
+            class="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-slate-100 transition cursor-pointer"
+            title="Copy prompt instructions to give to ChatGPT / Claude"
+          >
+            <span>📋 Copy AI Prompt</span>
+          </button>
+          <button
+            type="button"
+            id="close-json-import-btn"
+            class="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition cursor-pointer"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Content Body -->
+      <div class="mt-4 space-y-4 overflow-y-auto pr-1 flex-1">
+        <!-- Live Status Bar -->
+        <div
+          id="json-status-banner"
+          class="rounded-xl border border-border bg-secondary/50 p-3 text-xs flex items-center justify-between"
+        >
+          <span id="json-status-text" class="text-muted-foreground">
+            Paste a valid JSON tool object or array of tools below.
+          </span>
+          <span id="json-badge" class="font-bold text-[10px] uppercase tracking-wider hidden"></span>
+        </div>
+
+        <!-- Textarea -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground mb-1.5">JSON Payload</label>
+          <textarea
+            id="json-import-textarea"
+            rows="10"
+            class="w-full rounded-xl border border-border bg-slate-900 text-emerald-400 font-mono text-xs p-3.5 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary shadow-inner"
+            placeholder='{
+  "name": "SigNoz",
+  "slug": "signoz",
+  "tagline": "Open-source observability alternative to Datadog",
+  "description": "SigNoz is a full-stack open-source application performance monitoring platform...",
+  "websiteUrl": "https://signoz.io",
+  "category": "developer-tools",
+  "company": {
+    "city": "Bengaluru",
+    "state": "Karnataka",
+    "foundedYear": 2021,
+    "companyType": "VC-Funded",
+    "isOpenSource": true,
+    "githubUrl": "https://github.com/SigNoz/signoz"
+  },
+  "compliance": {
+    "hasIndianDataResidency": true,
+    "hasGstInvoice": true,
+    "hasInrPricing": true,
+    "hasUpiSupport": true,
+    "hasIstSupport": true,
+    "isSelfHostable": true
+  },
+  "pros": [
+    "Native OpenTelemetry instrumentation with zero vendor lock-in",
+    "Blazing fast columnar queries powered by ClickHouse storage"
+  ],
+  "cons": [
+    "Steeper self-hosting learning curve for non-Kubernetes teams"
+  ],
+  "pricingPlans": [
+    {
+      "name": "Community Open Source",
+      "currency": "INR",
+      "amount": 0,
+      "billingPeriod": "lifetime",
+      "isFree": true,
+      "description": "100% free forever self-hosted via Docker or Kubernetes."
+    },
+    {
+      "name": "SigNoz Cloud Pro",
+      "currency": "INR",
+      "amount": 1600,
+      "billingPeriod": "monthly",
+      "description": "Fully managed cloud hosting with 30 days retention."
+    }
+  ],
+  "replacesGlobalTools": ["datadog", "new-relic"]
+}'
+          ></textarea>
+        </div>
+
+        <!-- Live Parsed Preview Box -->
+        <div id="json-preview-container" class="hidden rounded-xl border border-border bg-slate-50/80 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Payload Preview</h4>
+            <span id="preview-count" class="text-xs font-semibold text-primary"></span>
+          </div>
+
+          <div id="preview-cards-list" class="space-y-2.5 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Error Message Alert -->
+        <div id="json-import-error" class="hidden rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800"></div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="mt-5 pt-4 border-t border-border flex items-center justify-end gap-2.5 shrink-0">
+        <button
+          type="button"
+          id="cancel-json-import-btn"
+          class="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-50 transition cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="submit-json-import-btn"
+          disabled
+          class="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+        >
+          Import & Publish to D1
+        </button>
+      </div>
     </div>
   </div>
 </AdminLayout>
@@ -1253,6 +1406,262 @@ if (db) {
       errorDiv.classList.remove('hidden');
       submitBtn.disabled = false;
       submitBtn.textContent = action === 'update' ? 'Save Changes' : 'Create Category';
+    }
+  });
+
+  // ==========================================
+  // AI JSON Ingestion Modal Logic
+  // ==========================================
+  const jsonImportModal = document.getElementById('json-import-modal');
+  const openJsonImportBtn = document.getElementById('open-json-import-btn');
+  const closeJsonImportBtn = document.getElementById('close-json-import-btn');
+  const cancelJsonImportBtn = document.getElementById('cancel-json-import-btn');
+  const copyAiPromptBtn = document.getElementById('copy-ai-prompt-btn');
+  const jsonTextarea = document.getElementById('json-import-textarea') as HTMLTextAreaElement | null;
+  const jsonStatusBanner = document.getElementById('json-status-banner');
+  const jsonStatusText = document.getElementById('json-status-text');
+  const jsonBadge = document.getElementById('json-badge');
+  const jsonPreviewContainer = document.getElementById('json-preview-container');
+  const previewCount = document.getElementById('preview-count');
+  const previewCardsList = document.getElementById('preview-cards-list');
+  const jsonImportError = document.getElementById('json-import-error');
+  const submitJsonImportBtn = document.getElementById('submit-json-import-btn') as HTMLButtonElement | null;
+
+  let parsedToolsPayload: any[] = [];
+
+  const AI_RESEARCH_PROMPT = `You are an expert researcher for "Desi Alternatives", an Indian software & homegrown engineering directory.
+Given the product name or website URL, research the tool thoroughly and output ONLY valid JSON adhering to this exact schema (no markdown fences, no explanatory text):
+
+{
+  "name": "<Product Name>",
+  "slug": "<lowercase-hyphenated-slug>",
+  "tagline": "<1-sentence value proposition under 100 chars>",
+  "description": "<2-3 sentence overview highlighting engineering craft and capabilities>",
+  "websiteUrl": "<Official website URL>",
+  "logoUrl": "<High-res direct PNG/SVG logo URL or null>",
+  "category": "<One of: developer-tools | billing-finance | productivity | marketing-seo | design-creative | cybersecurity | news-media | games-entertainment | hardware-iot | ai-ml>",
+  "pricingModel": "<Freemium | Paid | Free | Open-Source>",
+  "startingPriceInr": 0,
+  
+  "company": {
+    "city": "<e.g. Bengaluru / Pune / Chennai / Jaipur>",
+    "state": "<e.g. Karnataka / Maharashtra / Tamil Nadu>",
+    "foundedYear": 2021,
+    "companyType": "<Bootstrapped | VC-Funded | Public Ltd | Independent>",
+    "isOpenSource": true,
+    "githubUrl": "<e.g. https://github.com/org/repo or null>",
+    "discordUrl": "<e.g. https://discord.gg/... or null>"
+  },
+
+  "socials": {
+    "twitterHandle": "<username without @ or null>",
+    "linkedinUrl": "<https://linkedin.com/company/... or null>",
+    "youtubeUrl": "<https://youtube.com/@... or null>",
+    "instagramHandle": "<username or null>",
+    "facebookUrl": "<https://facebook.com/... or null>"
+  },
+
+  "compliance": {
+    "hasIndianDataResidency": true,
+    "hasGstInvoice": true,
+    "hasInrPricing": true,
+    "hasUpiSupport": true,
+    "hasIstSupport": true,
+    "isSelfHostable": true,
+    "hasFreeTier": true,
+    "isFeatured": true
+  },
+
+  "pros": [
+    "<Strength 1: Highlighting engineering excellence, speed, or unique architecture>",
+    "<Strength 2: Direct founder/IST support or responsiveness>",
+    "<Strength 3: Native India compliance / data residency / UPI / GST savings>",
+    "<Strength 4: Feature advantage>",
+    "<Strength 5: Cost or operational efficiency>"
+  ],
+
+  "cons": [
+    "<Honest Limitation 1: Early-stage tradeoff or feature work-in-progress>",
+    "<Honest Limitation 2: Ecosystem/plugin comparison vs 10-year incumbents>",
+    "<Honest Limitation 3: Specific edge case consideration>"
+  ],
+
+  "pricingPlans": [
+    {
+      "name": "<Free Community / Starter / Pro / Enterprise>",
+      "currency": "INR",
+      "amount": 0,
+      "billingPeriod": "monthly",
+      "isFree": true,
+      "isPopular": false,
+      "description": "<Brief summary of plan inclusions and limits>"
+    }
+  ],
+
+  "replacesGlobalTools": ["<global-slug-e.g-datadog>", "<slack>", "<notion>"]
+}`;
+
+  openJsonImportBtn?.addEventListener('click', () => {
+    jsonImportModal?.classList.remove('hidden');
+    jsonImportError?.classList.add('hidden');
+    validateJsonInput();
+  });
+
+  const closeJsonModal = () => {
+    jsonImportModal?.classList.add('hidden');
+  };
+
+  closeJsonImportBtn?.addEventListener('click', closeJsonModal);
+  cancelJsonImportBtn?.addEventListener('click', closeJsonModal);
+
+  // Copy AI Prompt
+  copyAiPromptBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(AI_RESEARCH_PROMPT);
+      const originalText = copyAiPromptBtn.innerHTML;
+      copyAiPromptBtn.innerHTML = '<span>✓ Copied Prompt!</span>';
+      setTimeout(() => {
+        copyAiPromptBtn.innerHTML = originalText;
+      }, 2000);
+    } catch {
+      alert('Failed to copy to clipboard.');
+    }
+  });
+
+  // Live JSON Validator & Preview Generator
+  function validateJsonInput() {
+    const rawText = jsonTextarea?.value?.trim();
+    jsonImportError?.classList.add('hidden');
+
+    if (!rawText) {
+      parsedToolsPayload = [];
+      if (jsonStatusBanner) jsonStatusBanner.className = 'rounded-xl border border-border bg-secondary/50 p-3 text-xs flex items-center justify-between';
+      if (jsonStatusText) jsonStatusText.textContent = 'Paste a valid JSON tool object or array of tools above.';
+      if (jsonBadge) jsonBadge.classList.add('hidden');
+      jsonPreviewContainer?.classList.add('hidden');
+      if (submitJsonImportBtn) submitJsonImportBtn.disabled = true;
+      return;
+    }
+
+    try {
+      // Clean possible Markdown triple backtick wrappers if user copied from chat
+      let cleaned = rawText;
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '');
+      }
+
+      const parsed = JSON.parse(cleaned);
+      let tools: any[] = [];
+      if (Array.isArray(parsed)) {
+        tools = parsed;
+      } else if (Array.isArray(parsed?.tools)) {
+        tools = parsed.tools;
+      } else if (parsed && typeof parsed === 'object' && parsed.name) {
+        tools = [parsed];
+      }
+
+      if (!tools.length) {
+        throw new Error('JSON is valid syntax, but does not contain tool objects with a "name" property.');
+      }
+
+      parsedToolsPayload = tools;
+
+      // Update Live Status
+      if (jsonStatusBanner) jsonStatusBanner.className = 'rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs flex items-center justify-between';
+      if (jsonStatusText) jsonStatusText.innerHTML = `<span class="text-emerald-900 font-medium">✓ Ready to Import: <strong>${tools.length}</strong> tool${tools.length > 1 ? 's' : ''} detected.</span>`;
+      if (jsonBadge) {
+        jsonBadge.textContent = 'Valid JSON';
+        jsonBadge.className = 'font-bold text-[10px] uppercase tracking-wider text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded-md';
+        jsonBadge.classList.remove('hidden');
+      }
+
+      // Render Preview Cards
+      if (jsonPreviewContainer && previewCardsList && previewCount) {
+        previewCount.textContent = `${tools.length} item${tools.length > 1 ? 's' : ''}`;
+        previewCardsList.innerHTML = tools
+          .map((t, i) => {
+            const name = t.name || `Tool #${i + 1}`;
+            const city = t.company?.city || t.city || 'India';
+            const cat = t.category || 'General';
+            const plansCount = Array.isArray(t.pricingPlans) ? t.pricingPlans.length : 0;
+            const prosCount = Array.isArray(t.pros) ? t.pros.length : 0;
+            const replaces = Array.isArray(t.replacesGlobalTools) ? t.replacesGlobalTools.join(', ') : 'None';
+
+            return `
+              <div class="rounded-lg border border-border bg-white p-3 text-xs flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-foreground text-sm">${name}</span>
+                    <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">📍 ${city}</span>
+                    <span class="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">${cat}</span>
+                  </div>
+                  <p class="text-muted-foreground text-[11px]">${t.tagline || 'No tagline'}</p>
+                  <div class="flex items-center gap-3 text-[10px] text-muted-foreground pt-1">
+                    <span>💵 ${plansCount} Pricing Tier${plansCount === 1 ? '' : 's'}</span>
+                    <span>✨ ${prosCount} Superpower${prosCount === 1 ? '' : 's'}</span>
+                    <span>🔄 Replaces: <strong class="text-foreground">${replaces}</strong></span>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+
+        jsonPreviewContainer.classList.remove('hidden');
+      }
+
+      if (submitJsonImportBtn) submitJsonImportBtn.disabled = false;
+    } catch (err: any) {
+      parsedToolsPayload = [];
+      if (jsonStatusBanner) jsonStatusBanner.className = 'rounded-xl border border-red-200 bg-red-50 p-3 text-xs flex items-center justify-between';
+      if (jsonStatusText) jsonStatusText.innerHTML = `<span class="text-red-800 font-medium">✕ JSON Error: ${err.message}</span>`;
+      if (jsonBadge) {
+        jsonBadge.textContent = 'Invalid';
+        jsonBadge.className = 'font-bold text-[10px] uppercase tracking-wider text-red-800 bg-red-200 px-2 py-0.5 rounded-md';
+        jsonBadge.classList.remove('hidden');
+      }
+      jsonPreviewContainer?.classList.add('hidden');
+      if (submitJsonImportBtn) submitJsonImportBtn.disabled = true;
+    }
+  }
+
+  jsonTextarea?.addEventListener('input', validateJsonInput);
+
+  // Submit Ingestion
+  submitJsonImportBtn?.addEventListener('click', async () => {
+    if (!parsedToolsPayload.length) return;
+
+    submitJsonImportBtn.disabled = true;
+    submitJsonImportBtn.textContent = 'Importing to D1...';
+    if (jsonImportError) jsonImportError.classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/admin/tools/import-json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsedToolsPayload),
+      });
+
+      const data = (await res.json()) as any;
+
+      if (res.ok && data.success) {
+        alert(`🎉 Successfully imported ${data.count} tool(s) and pricing plans to D1!`);
+        window.location.reload();
+      } else {
+        if (jsonImportError) {
+          jsonImportError.textContent = data.error || 'Failed to import JSON tools.';
+          jsonImportError.classList.remove('hidden');
+        }
+        submitJsonImportBtn.disabled = false;
+        submitJsonImportBtn.textContent = 'Import & Publish to D1';
+      }
+    } catch {
+      if (jsonImportError) {
+        jsonImportError.textContent = 'Network error while importing tools.';
+        jsonImportError.classList.remove('hidden');
+      }
+      submitJsonImportBtn.disabled = false;
+      submitJsonImportBtn.textContent = 'Import & Publish to D1';
     }
   });
 </script>

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 import {
   createUserId,
@@ -11,6 +11,7 @@ import {
   createAlternativeId,
   createClaimId,
   createEditId,
+  createPricingPlanId,
 } from '../id';
 
 // ==========================================
@@ -139,6 +140,18 @@ export const desiTools = sqliteTable('desi_tools', {
   status: text('status', { enum: ['draft', 'published', 'archived'] }).default('published').notNull(),
   isFeatured: integer('is_featured', { mode: 'boolean' }).default(false).notNull(),
 
+  // Company Origins & DNA Metadata
+  city: text('city'), // e.g. "Bengaluru", "Pune", "Chennai", "Jaipur"
+  state: text('state'), // e.g. "Karnataka", "Maharashtra", "Tamil Nadu"
+  foundedYear: integer('founded_year'), // e.g. 2021
+  companyType: text('company_type'), // e.g. "Bootstrapped", "VC-Funded", "Public Ltd", "Independent"
+  githubUrl: text('github_url'),
+  discordUrl: text('discord_url'),
+
+  // Editorial Pros & Superpowers / Limitations (JSON array of strings)
+  pros: text('pros'), // JSON array of top 5 pros
+  cons: text('cons'), // JSON array of top 5 cons
+
   // Social Profile Handles / Links
   twitterHandle: text('twitter_handle'),
   instagramHandle: text('instagram_handle'),
@@ -151,7 +164,25 @@ export const desiTools = sqliteTable('desi_tools', {
 });
 
 // ==========================================
-// 5. TOOL TO GLOBAL ALTERNATIVES (M:N)
+// 5. MULTI-TIER TOOL PRICING PLANS
+// ==========================================
+
+export const toolPricingPlans = sqliteTable('tool_pricing_plans', {
+  id: text('id').primaryKey().$defaultFn(createPricingPlanId),
+  toolId: text('tool_id').notNull().references(() => desiTools.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(), // e.g. "Community Open Source", "Pro", "Enterprise"
+  currency: text('currency').default('INR').notNull(),
+  amount: real('amount'), // null for custom / contact for pricing
+  billingPeriod: text('billing_period').default('monthly').notNull(), // 'monthly', 'yearly', 'lifetime', 'custom'
+  isFree: integer('is_free', { mode: 'boolean' }).default(false).notNull(),
+  isPopular: integer('is_popular', { mode: 'boolean' }).default(false).notNull(),
+  description: text('description'),
+  sortOrder: integer('sort_order').default(0).notNull(),
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// ==========================================
+// 6. TOOL TO GLOBAL ALTERNATIVES (M:N)
 // ==========================================
 
 export const toolAlternatives = sqliteTable('tool_alternatives', {
