@@ -5,12 +5,26 @@ import AnalyticsTracker from '@/components/AnalyticsTracker.astro';
 interface Props {
   title?: string;
   description?: string;
+  ogImage?: string;
+  ogType?: 'website' | 'article' | 'product';
+  canonicalUrl?: string;
+  twitterCreator?: string;
 }
 
 const {
   title = 'Desi Alternatives — Indian Alternatives to Global Giants',
   description = 'Discover Indian software, developer tools, hardware, games, newsletters, and agencies built to replace global giants with INR pricing, UPI support, and GST invoicing.',
+  ogImage = '/api/og/default.svg',
+  ogType = 'website',
+  twitterCreator = '@desialts',
 } = Astro.props;
+
+const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : (Astro.url.origin || 'https://desialternatives.in');
+const canonicalUrl = Astro.props.canonicalUrl || new URL(Astro.url.pathname, siteUrl).toString();
+
+const absoluteOgImage = ogImage.startsWith('http')
+  ? ogImage
+  : new URL(ogImage.startsWith('/') ? ogImage : `/${ogImage}`, siteUrl).toString();
 ---
 
 <!doctype html>
@@ -20,7 +34,29 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Open Graph Protocol (Facebook, LinkedIn, Discord, Telegram, WhatsApp) -->
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="Desi Alternatives" />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={absoluteOgImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
+    <meta property="og:locale" content="en_IN" />
+
+    <!-- Twitter Cards (X) -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@desialts" />
+    <meta name="twitter:creator" content={twitterCreator} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={absoluteOgImage} />
+    <meta name="twitter:image:alt" content={title} />
 
     <!-- Google Fonts: Source Serif 4 & Instrument Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

@@ -114,6 +114,8 @@ const brandColor = toolResult.primaryColor || '#D97706';
 <BaseLayout
   title={`${toolResult.name} — Indian Alternative to ${alternatives.map((a: any) => a.name).join(', ') || 'Global Giants'}`}
   description={`${toolResult.name}: ${toolResult.tagline}. Indian alternative to global giants with INR billing, GST compliance, and local data residency.`}
+  ogImage={`/api/og/tool/${toolResult.slug}.svg`}
+  ogType="product"
 >
   <Navbar />
   <SearchDialog client:idle tools={searchableTools} />
