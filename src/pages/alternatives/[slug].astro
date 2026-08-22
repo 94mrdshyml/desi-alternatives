@@ -198,7 +198,7 @@ const jsonLdData = [
 <BaseLayout
   title={pageTitle}
   description={pageDescription}
-  ogImage={currentGlobalTool.logoUrl && !currentGlobalTool.logoUrl.endsWith('.ico') ? currentGlobalTool.logoUrl : '/og-default.png'}
+  ogImage="/og-default.png"
 >
   <Navbar />
   <SearchDialog client:idle tools={searchableTools} />
