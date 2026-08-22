@@ -17,7 +17,7 @@ export async function sendOtpEmail({
   otp,
   type = 'sign-in',
   fromName = 'Desi Alternatives',
-  fromEmail = 'auth@desialternatives.in',
+  fromEmail = 'team@letter.mrdshyml.xyz',
 }: SendOtpEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const emailHtml = await render(React.createElement(OtpVerificationEmail, { otp, type }));

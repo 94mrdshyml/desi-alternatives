@@ -30,7 +30,7 @@ export function createAuth(
       expiresIn: 600, // 10 minutes in seconds
       async sendVerificationOTP({ email, otp, type }) {
         let fromName = 'Desi Alternatives';
-        let fromEmail = 'auth@desialternatives.in';
+        let fromEmail = 'team@letter.mrdshyml.xyz';
         try {
           const settings = await db.select().from(schema.siteSettings).where(eq(schema.siteSettings.id, 'general')).get();
           if (settings) {

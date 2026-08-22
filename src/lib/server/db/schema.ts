@@ -187,7 +187,7 @@ export const editsQueue = sqliteTable('edits_queue', {
 export const siteSettings = sqliteTable('site_settings', {
   id: text('id').primaryKey(), // 'general'
   fromName: text('from_name').default('Desi Alternatives').notNull(),
-  fromEmail: text('from_email').default('auth@desialternatives.in').notNull(),
+  fromEmail: text('from_email').default('team@letter.mrdshyml.xyz').notNull(),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 

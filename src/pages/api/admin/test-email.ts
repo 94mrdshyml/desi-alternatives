@@ -29,7 +29,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     let fromName = 'Desi Alternatives';
-    let fromEmail = 'auth@desialternatives.in';
+    let fromEmail = 'team@letter.mrdshyml.xyz';
 
     if (db) {
       try {

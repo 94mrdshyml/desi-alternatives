@@ -25,7 +25,7 @@ export const GET: APIRoute = async ({ locals }) => {
     return new Response(
       JSON.stringify({
         fromName: settings?.fromName || 'Desi Alternatives',
-        fromEmail: settings?.fromEmail || 'auth@desialternatives.in',
+        fromEmail: settings?.fromEmail || 'team@letter.mrdshyml.xyz',
       }),
       {
         status: 200,
@@ -54,7 +54,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const body = (await request.json()) as any;
     const fromName = String(body?.fromName || '').trim() || 'Desi Alternatives';
-    const fromEmail = String(body?.fromEmail || '').trim() || 'auth@desialternatives.in';
+    const fromEmail = String(body?.fromEmail || '').trim() || 'team@letter.mrdshyml.xyz';
 
     // Simple email validation regex
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fromEmail)) {
