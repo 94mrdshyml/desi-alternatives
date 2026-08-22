@@ -318,7 +318,18 @@
   - Added confirmation safety alerts before deleting tools or global giant anchors.
   - Verified all 14 unit tests, TypeScript typechecking, and automated Cloudflare Workers deployment.
 
+---
 
+## Session 16 — R2 Logo Upload Restoration & Live Logo Preview
 
+**Date & Time (IST):** 2026-08-22 19:01 IST
+**Status:** Completed
+**Branch:** `main`
 
-
+### What We Fixed & Built
+- **Logo Upload to Cloudflare R2 (`/admin/catalog`)**:
+  - Restored the **"📁 Upload"** file button in both `#create-tool-modal` (Indian tools) and `#global-tool-modal` (Global giants).
+  - Integrated multipart upload handler uploading directly to `/api/upload` (backed by R2 bucket `desi-assets`).
+  - Added live upload progress indicators (`"Uploading..."` -> `"✓ Uploaded"`).
+- **Interactive Logo Preview Thumbnail**:
+  - Added dynamic logo preview box in both modals that reacts in real-time to file uploads, URL changes, scraping auto-fill, and tool editing.
