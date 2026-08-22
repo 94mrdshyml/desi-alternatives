@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 interface CostSavingsCalculatorProps {
   globalToolName: string;
@@ -19,7 +19,6 @@ export default function CostSavingsCalculator({
   // USD Rate and Overhead calculations
   const usdToInr = 87; // Current USD to INR benchmark
   const forexMarkupPercent = 0.035; // 3.5% foreign transaction fee on Indian credit cards
-  const gstRate = 0.18; // 18% GST
 
   // Monthly foreign cost calculation
   const foreignMonthlyUsd = teamSize * baseUsdPerUser;
@@ -30,7 +29,6 @@ export default function CostSavingsCalculator({
 
   // Monthly Indian cost calculation
   const desiMonthlyInr = teamSize * baseInrPerUser;
-  const desiGst = desiMonthlyInr * gstRate; // 18% GST (claimable as Input Tax Credit)
   const desiNetMonthly = desiMonthlyInr; // Net cost to business because GST is claimable
   const desiAnnualTotal = desiNetMonthly * 12;
 

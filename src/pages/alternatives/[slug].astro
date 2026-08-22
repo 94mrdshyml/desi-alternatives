@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
-import ToolCard from '@/components/ToolCard.astro';
 import SearchDialog from '@/components/SearchDialog';
 import CostSavingsCalculator from '@/components/CostSavingsCalculator';
 import { eq } from 'drizzle-orm';
@@ -18,7 +17,6 @@ let currentGlobalTool: any = null;
 let allGlobalTools: any[] = [];
 let mappedTools: any[] = [];
 let allToolsList: any[] = [];
-let altMetadataMap: Record<string, { whyBetter: string | null; migrationComplexity: string | null }> = {};
 
 if (db) {
   try {
@@ -44,7 +42,7 @@ if (db) {
         categoryId: desiTools.categoryId,
         categorySlug: categories.slug,
         categoryName: categories.name,
-        categoryEmoji: categories.icon,
+        categoryEmoji: categories.emoji,
         hasGstInvoice: desiTools.hasGstInvoice,
         hasIndianDataResidency: desiTools.hasIndianDataResidency,
         hasInrPricing: desiTools.hasInrPricing,
@@ -65,8 +63,6 @@ if (db) {
       .select({
         globalToolId: toolAlternatives.globalToolId,
         desiToolId: toolAlternatives.desiToolId,
-        whyBetter: toolAlternatives.whyBetter,
-        migrationComplexity: toolAlternatives.migrationComplexity,
         globalName: globalTools.name,
         globalSlug: globalTools.slug,
       })
@@ -84,10 +80,6 @@ if (db) {
 
         if (currentGlobalTool && alt.globalToolId === currentGlobalTool.id) {
           globalToDesiIds.add(alt.desiToolId);
-          altMetadataMap[alt.desiToolId] = {
-            whyBetter: alt.whyBetter || null,
-            migrationComplexity: alt.migrationComplexity || null,
-          };
         }
       }
     }
@@ -360,7 +352,6 @@ const jsonLdData = [
       ) : (
         <div class="space-y-6">
           {mappedTools.map((tool, index) => {
-            const meta = altMetadataMap[tool.id];
             return (
               <div class="rounded-2xl border border-border bg-white p-5 sm:p-6 shadow-xs">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-4">
@@ -419,7 +410,7 @@ const jsonLdData = [
                   <div class="sm:col-span-2 rounded-xl bg-slate-50 p-3">
                     <p class="font-semibold text-foreground">Why choose {tool.name} over {currentGlobalTool.name}?</p>
                     <p class="mt-1 text-muted-foreground leading-relaxed">
-                      {meta?.whyBetter || tool.description || `${tool.name} provides local data processing, direct ₹ INR billing, and seamless customer support.`}
+                      {tool.description || `${tool.name} provides local data processing, direct ₹ INR billing, and seamless customer support.`}
                     </p>
                   </div>
 
