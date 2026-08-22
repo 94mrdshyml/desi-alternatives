@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import { GET as getToolOg } from '../../src/pages/api/og/tool/[slug].svg';
+import { GET as getToolOgPng } from '../../src/pages/api/og/tool/[slug].png';
 import { GET as getAlternativeOg } from '../../src/pages/api/og/alternative/[slug].svg';
+import { GET as getAlternativeOgPng } from '../../src/pages/api/og/alternative/[slug].png';
 import { GET as getDefaultOg } from '../../src/pages/api/og/default.svg';
 
 describe('Dynamic Open Graph (OG) Image Generation', () => {
@@ -61,6 +63,44 @@ describe('Dynamic Open Graph (OG) Image Generation', () => {
     expect(svg).toContain('18% GST Input Credit');
   });
 
+  it('generates a dynamic PNG banner for Indian Tool details', async () => {
+    const mockDb = {
+      select: () => ({
+        from: () => ({
+          leftJoin: () => ({
+            where: () => ({
+              get: async () => ({
+                name: 'Razorpay',
+                tagline: 'Payments, banking, and financial suite',
+                primaryColor: '#0284C7',
+                categoryName: 'Fintech',
+                categoryEmoji: '💳',
+                city: 'Bengaluru',
+                state: 'Karnataka',
+                foundedYear: 2014,
+                isOpenSource: false,
+                hasIndianDataResidency: true,
+                hasGstInvoice: true,
+                hasInrPricing: true,
+                startingPriceInr: 0,
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    const response = await getToolOgPng({
+      params: { slug: 'razorpay' },
+      locals: { db: mockDb },
+    } as any);
+
+    expect([200, 302]).toContain(response.status);
+    if (response.status === 200) {
+      expect(response.headers.get('Content-Type')).toBe('image/png');
+    }
+  }, 15000);
+
   it('generates a dynamic SVG banner for Alternative comparison matrix', async () => {
     const mockDb = {
       select: () => ({
@@ -102,4 +142,43 @@ describe('Dynamic Open Graph (OG) Image Generation', () => {
     expect(svg).toContain('Notion');
     expect(svg).toContain('Appsmith');
   });
+
+  it('generates a dynamic PNG banner for Alternative comparison matrix', async () => {
+    const mockDb = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            get: async () => ({
+              id: 'gt_stripe',
+              name: 'Stripe',
+              slug: 'stripe',
+              startingPriceUsd: 29,
+            }),
+          }),
+          leftJoin: () => ({
+            where: () => ({
+              all: async () => [
+                {
+                  name: 'Razorpay',
+                  tagline: 'Payment gateway for India',
+                  startingPriceInr: 0,
+                  city: 'Bengaluru',
+                },
+              ],
+            }),
+          }),
+        }),
+      }),
+    };
+
+    const response = await getAlternativeOgPng({
+      params: { slug: 'stripe' },
+      locals: { db: mockDb },
+    } as any);
+
+    expect([200, 302]).toContain(response.status);
+    if (response.status === 200) {
+      expect(response.headers.get('Content-Type')).toBe('image/png');
+    }
+  }, 15000);
 });

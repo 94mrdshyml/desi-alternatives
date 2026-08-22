@@ -198,7 +198,7 @@ const jsonLdData = [
 <BaseLayout
   title={pageTitle}
   description={pageDescription}
-  ogImage="/og-default.png"
+  ogImage={`/api/og/alternative/${currentGlobalTool.slug}.png`}
 >
   <Navbar />
   <SearchDialog client:idle tools={searchableTools} />
