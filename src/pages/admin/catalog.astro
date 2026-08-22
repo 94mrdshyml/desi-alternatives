@@ -1,0 +1,889 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { categories, desiTools, globalTools, toolAlternatives, users, claimsQueue } from '@/lib/server/db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+const db = Astro.locals.db;
+
+if (!user || user.role !== 'admin') {
+  return Astro.redirect('/login');
+}
+
+let allToolsList: any[] = [];
+let allCategoriesList: any[] = [];
+let globalToolsList: any[] = [];
+let toolAlternativeCounts: Record<string, number> = {};
+let categoryCounts: Record<string, number> = {};
+let pendingClaimsCount = 0;
+let totalUsersCount = 0;
+
+if (db) {
+  try {
+    // 1. All Indian Directory Tools
+    allToolsList = await db
+      .select({
+        id: desiTools.id,
+        name: desiTools.name,
+        slug: desiTools.slug,
+        tagline: desiTools.tagline,
+        description: desiTools.description,
+        websiteUrl: desiTools.websiteUrl,
+        logoUrl: desiTools.logoUrl,
+        primaryColor: desiTools.primaryColor,
+        categoryId: desiTools.categoryId,
+        categoryName: categories.name,
+        categoryEmoji: categories.emoji,
+        pricingModel: desiTools.pricingModel,
+        startingPriceInr: desiTools.startingPriceInr,
+        hasIndianDataResidency: desiTools.hasIndianDataResidency,
+        hasGstInvoice: desiTools.hasGstInvoice,
+        hasInrPricing: desiTools.hasInrPricing,
+        hasUpiSupport: desiTools.hasUpiSupport,
+        isOpenSource: desiTools.isOpenSource,
+        hasIstSupport: desiTools.hasIstSupport,
+        isSelfHostable: desiTools.isSelfHostable,
+        hasFreeTier: desiTools.hasFreeTier,
+        isFeatured: desiTools.isFeatured,
+        status: desiTools.status,
+        claimedById: desiTools.claimedById,
+        createdAt: desiTools.createdAt,
+      })
+      .from(desiTools)
+      .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+      .orderBy(desc(desiTools.createdAt))
+      .all();
+
+    // 2. All Categories
+    allCategoriesList = await db.select().from(categories).orderBy(categories.name).all();
+
+    // 3. All Global Tools & Mapped Counts
+    globalToolsList = await db.select().from(globalTools).orderBy(globalTools.name).all();
+    const rawAlternatives = await db.select().from(toolAlternatives).all();
+
+    for (const alt of rawAlternatives) {
+      toolAlternativeCounts[alt.globalToolId] = (toolAlternativeCounts[alt.globalToolId] || 0) + 1;
+    }
+
+    for (const t of allToolsList) {
+      if (t.categoryId) {
+        categoryCounts[t.categoryId] = (categoryCounts[t.categoryId] || 0) + 1;
+      }
+    }
+
+    // Pending Claims & Total Users for Sidebar Badges
+    const claims = await db.select().from(claimsQueue).where(eq(claimsQueue.status, 'pending')).all();
+    pendingClaimsCount = claims.length;
+    const usersList = await db.select().from(users).all();
+    totalUsersCount = usersList.length;
+  } catch (e) {
+    console.error('Failed to load admin catalog:', e);
+  }
+}
+---
+
+<AdminLayout
+  title="Catalog & Tools — Admin Control Center"
+  currentSection="catalog"
+  counts={{
+    tools: allToolsList.length,
+    globalTools: globalToolsList.length,
+    categories: allCategoriesList.length,
+    claims: pendingClaimsCount,
+    users: totalUsersCount,
+  }}
+>
+  <div class="space-y-6">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">Catalog & Tools</h1>
+        <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          Manage Indian homegrown software, global alternative references for Programmatic SEO, and taxonomy categories.
+        </p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="open-create-tool-btn"
+          class="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Add Indian Tool</span>
+        </button>
+
+        <button
+          type="button"
+          id="open-create-global-btn"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-3.5 py-2 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+        >
+          <span>🌐 Add Global Giant</span>
+        </button>
+
+        <button
+          type="button"
+          id="open-create-cat-btn"
+          class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-3.5 py-2 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+        >
+          <span>🏷️ Add Category</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sub-Tabs Navigation Segment -->
+    <div class="rounded-2xl border border-border bg-card p-1.5 shadow-2xs">
+      <nav class="flex items-center gap-1.5 overflow-x-auto" aria-label="Catalog Sub-Tabs">
+        <!-- Tab 1: Indian Tools -->
+        <button
+          type="button"
+          data-catalog-tab="indian-tools"
+          class="catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer bg-white text-foreground shadow-xs border border-border"
+        >
+          <span>🇮🇳 Indian Tools</span>
+          <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+            {allToolsList.length}
+          </span>
+        </button>
+
+        <!-- Tab 2: Global Giants -->
+        <button
+          type="button"
+          data-catalog-tab="global-giants"
+          class="catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent"
+        >
+          <span>🌐 Global Giants (Programmatic SEO)</span>
+          <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+            {globalToolsList.length}
+          </span>
+        </button>
+
+        <!-- Tab 3: Categories -->
+        <button
+          type="button"
+          data-catalog-tab="categories"
+          class="catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent"
+        >
+          <span>🏷️ Categories Taxonomy</span>
+          <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+            {allCategoriesList.length}
+          </span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- PANEL 1: INDIAN TOOLS MANAGEMENT -->
+    <section id="catalog-panel-indian-tools" class="catalog-panel space-y-4">
+      <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-border bg-secondary/50">
+              <tr>
+                <th class="py-3 px-4 font-semibold text-foreground">Tool & Info</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Category</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Pricing</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Status</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Compliance Badges</th>
+                <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {allToolsList.map((t) => (
+                <tr class="hover:bg-slate-50/50 transition">
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-3">
+                      <img src={t.logoUrl} alt={t.name} class="h-8 w-8 rounded-lg object-contain bg-slate-50 border border-border/60 p-0.5" />
+                      <div>
+                        <div class="flex items-center gap-1.5">
+                          <a href={`/tools/${t.slug}`} target="_blank" class="font-bold text-foreground hover:text-primary transition">
+                            {t.name}
+                          </a>
+                          {t.isFeatured && (
+                            <span class="rounded bg-amber-100 px-1 py-0.2 text-[9px] font-bold text-amber-800">Featured</span>
+                          )}
+                        </div>
+                        <p class="text-[11px] text-muted-foreground line-clamp-1 max-w-xs">{t.tagline}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4 font-medium text-foreground">
+                    <span class="inline-flex items-center gap-1">
+                      <span>{t.categoryEmoji || '⚡'}</span>
+                      <span>{t.categoryName || 'Uncategorized'}</span>
+                    </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span class="font-semibold text-foreground">
+                      {t.startingPriceInr !== null ? (t.startingPriceInr === 0 ? 'Free tier' : `₹${t.startingPriceInr}/mo`) : 'Custom'}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      t.status === 'published' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                    }`}>
+                      {t.status}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4">
+                    <div class="flex items-center gap-1">
+                      {t.hasIndianDataResidency && <span class="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] text-blue-700" title="India Hosting">🇮🇳 Data</span>}
+                      {t.hasGstInvoice && <span class="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700" title="18% GST Invoice">🧾 GST</span>}
+                      {t.hasInrPricing && <span class="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-800" title="INR Billing">₹ INR</span>}
+                      {t.hasUpiSupport && <span class="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] text-purple-700" title="UPI Support">⚡ UPI</span>}
+                    </div>
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <div class="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        data-edit-tool={JSON.stringify(t)}
+                        class="rounded-lg border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        data-tool-action={t.status === 'published' ? 'unpublish' : 'publish'}
+                        data-tool-id={t.id}
+                        class="rounded-lg border border-border px-2 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        {t.status === 'published' ? 'Unpublish' : 'Publish'}
+                      </button>
+                      <button
+                        type="button"
+                        data-tool-action="delete"
+                        data-tool-id={t.id}
+                        class="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-medium text-red-700 hover:bg-red-100 transition cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 2: GLOBAL GIANTS & PROGRAMMATIC SEO -->
+    <section id="catalog-panel-global-giants" class="catalog-panel hidden space-y-4">
+      <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
+        <div class="flex items-start gap-2.5">
+          <span class="text-base">🚀</span>
+          <div>
+            <h4 class="font-bold">Programmatic SEO Comparison Anchors</h4>
+            <p class="mt-0.5 text-amber-800 leading-relaxed">
+              Global giants are <strong>not listed directly in the directory</strong>. They generate dynamic SEO landing pages targeting high-intent search terms (e.g. <code>/alternatives/notion</code>, <code>/alternatives/datadog</code>).
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-border bg-secondary/50">
+              <tr>
+                <th class="py-3 px-4 font-semibold text-foreground">Global Giant</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Target Programmatic URL</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Starting USD</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Mapped Indian Tools</th>
+                <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {globalToolsList.map((g) => {
+                const mappedCount = toolAlternativeCounts[g.id] || 0;
+                let featuresList: string[] = [];
+                try {
+                  featuresList = g.features ? JSON.parse(g.features) : [];
+                } catch {}
+
+                return (
+                  <tr class="hover:bg-slate-50/50 transition">
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-3">
+                        <img src={g.logoUrl || `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(g.websiteUrl || 'https://google.com')}&size=128`} alt={g.name} class="h-8 w-8 rounded-lg object-contain bg-slate-50 border border-border/60 p-0.5" />
+                        <div>
+                          <div class="font-bold text-foreground">{g.name}</div>
+                          <p class="text-[11px] text-muted-foreground line-clamp-1 max-w-xs">{g.tagline || g.websiteUrl}</p>
+                          {featuresList.length > 0 && (
+                            <div class="mt-1 flex flex-wrap gap-1">
+                              {featuresList.slice(0, 3).map((f) => (
+                                <span class="rounded bg-secondary px-1.5 py-0.2 text-[9px] text-foreground font-medium">{f}</span>
+                              ))}
+                              {featuresList.length > 3 && (
+                                <span class="text-[9px] text-muted-foreground">+{featuresList.length - 3}</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <a
+                        href={`/alternatives/${g.slug}`}
+                        target="_blank"
+                        class="inline-flex items-center gap-1 font-mono text-primary hover:underline font-semibold"
+                      >
+                        <span>/alternatives/{g.slug}</span>
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                      </a>
+                    </td>
+                    <td class="py-3 px-4 font-semibold text-foreground">
+                      {g.startingPriceUsd ? `$${g.startingPriceUsd}/mo` : 'N/A'}
+                    </td>
+                    <td class="py-3 px-4">
+                      <span class={`rounded-full px-2.5 py-0.5 text-xs font-bold ${
+                        mappedCount > 0 ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}>
+                        {mappedCount} Indian {mappedCount === 1 ? 'tool' : 'tools'} mapped
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <div class="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          data-edit-global={JSON.stringify(g)}
+                          class="rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          data-delete-global={g.id}
+                          class="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-700 hover:bg-red-100 transition cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- PANEL 3: CATEGORIES TAXONOMY -->
+    <section id="catalog-panel-categories" class="catalog-panel hidden space-y-4">
+      <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-border bg-secondary/50">
+              <tr>
+                <th class="py-3 px-4 font-semibold text-foreground">Icon & Category</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Slug</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Description</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Tools Count</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Top Filter</th>
+                <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {allCategoriesList.map((c) => (
+                <tr class="hover:bg-slate-50/50 transition">
+                  <td class="py-3 px-4 font-bold text-foreground">
+                    <span class="inline-flex items-center gap-2">
+                      <span class="text-lg">{c.emoji}</span>
+                      <span>{c.name}</span>
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 font-mono text-muted-foreground">{c.slug}</td>
+                  <td class="py-3 px-4 text-muted-foreground line-clamp-1 max-w-xs">{c.description || '—'}</td>
+                  <td class="py-3 px-4 font-semibold text-foreground">{categoryCounts[c.id] || 0}</td>
+                  <td class="py-3 px-4">
+                    {c.isFeatured ? (
+                      <span class="rounded bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">Yes</span>
+                    ) : (
+                      <span class="text-muted-foreground">No</span>
+                    )}
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    <button
+                      type="button"
+                      data-edit-category={JSON.stringify(c)}
+                      class="rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL: ADD / EDIT GLOBAL GIANT -->
+  <div id="global-tool-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-border">
+        <h3 id="global-modal-title" class="text-base font-bold text-foreground">Add Global Giant (Programmatic SEO)</h3>
+        <button id="close-global-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
+      </div>
+
+      <form id="global-tool-form" class="mt-4 space-y-4">
+        <input type="hidden" id="global-tool-id" name="id" />
+        <input type="hidden" id="global-tool-action" name="action" value="create" />
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Website URL *</label>
+            <div class="mt-1 flex items-center gap-1.5">
+              <input type="url" id="global-website-input" name="websiteUrl" required placeholder="https://notion.so" class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+              <button
+                type="button"
+                id="global-autofill-btn"
+                class="shrink-0 rounded-xl bg-amber-50 border border-amber-200 px-2.5 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100 transition cursor-pointer"
+                title="Auto-fill metadata and logo"
+              >
+                ✨ Auto-Fill
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Global Giant Name *</label>
+            <input type="text" id="global-name-input" name="name" required placeholder="Notion" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Programmatic Slug * (URL: /alternatives/[slug])</label>
+            <input type="text" id="global-slug-input" name="slug" required placeholder="notion" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary font-mono" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Logo URL</label>
+            <input type="url" id="global-logo-input" name="logoUrl" placeholder="https://..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Tagline / Summary</label>
+          <input type="text" id="global-tagline-input" name="tagline" placeholder="All-in-one workspace for notes, docs, and databases" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Starting Price (USD / mo)</label>
+            <input type="number" id="global-price-input" name="startingPriceUsd" placeholder="10" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Category</label>
+            <select id="global-category-input" name="categoryId" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
+              <option value="">Select Category</option>
+              {allCategoriesList.map((c) => (
+                <option value={c.id}>{c.emoji} {c.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Features (comma-separated tags)</label>
+          <input type="text" id="global-features-input" name="features" placeholder="Docs & Wikis, Databases, Kanban, AI Assistant" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Foreign Pain Points (one per line)</label>
+          <textarea id="global-painpoints-input" name="foreignPainPoints" rows="2" placeholder="3.5% foreign card markup&#10;No 18% GST input tax credit&#10;Data hosted in US-East" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
+        </div>
+
+        <!-- Mapped Indian Alternatives Checklist -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground mb-1.5">Map Competing Indian Alternatives</label>
+          <div class="max-h-36 overflow-y-auto rounded-xl border border-border p-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+            {allToolsList.map((t) => (
+              <label class="flex items-center gap-1.5 p-1 rounded hover:bg-slate-50 cursor-pointer">
+                <input type="checkbox" name="mappedDesiToolIds" value={t.id} class="global-mapped-checkbox rounded text-primary focus:ring-primary" />
+                <span class="truncate">{t.name}</span>
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <button type="submit" id="save-global-tool-btn" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
+          Save Global Giant
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD INDIAN TOOL -->
+  <div id="create-tool-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-border">
+        <h3 class="text-base font-bold text-foreground">Add New Indian Tool</h3>
+        <button id="close-tool-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
+      </div>
+
+      <form id="admin-create-tool-form" class="mt-4 space-y-4">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Tool Name *</label>
+            <input type="text" id="create-tool-name-input" name="name" required placeholder="e.g. SigNoz" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="block text-xs font-semibold text-foreground">Website URL *</label>
+              <button
+                type="button"
+                id="create-tool-autofill-btn"
+                class="text-[11px] font-semibold text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer"
+              >
+                ✨ <span>Auto-Fill</span>
+              </button>
+            </div>
+            <input type="url" id="create-tool-website-input" name="websiteUrl" required placeholder="https://signoz.io" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Tagline *</label>
+          <input type="text" id="create-tool-tagline-input" name="tagline" required placeholder="Open-source APM & Observability platform" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Logo URL</label>
+            <input type="url" id="create-tool-logo-url-hidden" name="logoUrl" placeholder="https://..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Category *</label>
+            <select name="categoryId" required class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
+              {allCategoriesList.map((c) => (
+                <option value={c.id}>{c.emoji} {c.name}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Pricing Model</label>
+            <select name="pricingModel" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary">
+              <option value="freemium">Freemium</option>
+              <option value="paid">Paid</option>
+              <option value="free">100% Free</option>
+              <option value="contact">Contact for Pricing</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Starting Price (INR / mo)</label>
+            <input type="number" name="startingPriceInr" placeholder="0" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Description</label>
+          <textarea id="create-tool-description-input" name="description" rows="2" placeholder="Full product description..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
+        </div>
+
+        <!-- Indian Product Checklist -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground mb-1.5">Indian Business & Product Checklist</label>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIndianDataResidency" /> India Data Residency</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasGstInvoice" /> GST Invoices</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasInrPricing" /> Direct INR Billing</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasUpiSupport" /> UPI Payments</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="isOpenSource" /> Open Source</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="hasIstSupport" /> Dedicated IST Support</label>
+            <label class="flex items-center gap-1.5"><input type="checkbox" name="isFeatured" /> Featured on Homepage</label>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
+          Publish Indian Tool
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD CATEGORY -->
+  <div id="create-cat-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
+    <div class="relative w-full max-w-md rounded-2xl border border-border bg-white p-6 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-border">
+        <h3 class="text-base font-bold text-foreground">Create Category</h3>
+        <button id="close-cat-modal" class="text-muted-foreground hover:text-foreground cursor-pointer text-sm">✕</button>
+      </div>
+
+      <form id="admin-create-cat-form" class="mt-4 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Category Name *</label>
+          <input type="text" name="name" required placeholder="Developer Tools" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Emoji Icon *</label>
+            <input type="text" name="emoji" required placeholder="⚡" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-foreground">Slug</label>
+            <input type="text" name="slug" placeholder="developer-tools" class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-foreground">Description</label>
+          <textarea name="description" rows="2" placeholder="Brief description..." class="mt-1 w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"></textarea>
+        </div>
+        <label class="flex items-center gap-2 text-xs font-medium text-foreground cursor-pointer">
+          <input type="checkbox" name="isFeatured" />
+          <span>Feature on top filters</span>
+        </label>
+        <button type="submit" class="w-full rounded-xl bg-primary py-2.5 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer">
+          Create Category
+        </button>
+      </form>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  // Sub-Tab Switcher
+  function switchCatalogTab(tabId: string) {
+    const validTabs = ['indian-tools', 'global-giants', 'categories'];
+    const activeTab = validTabs.includes(tabId) ? tabId : 'indian-tools';
+
+    document.querySelectorAll('.catalog-panel').forEach((p) => {
+      if (p.id === `catalog-panel-${activeTab}`) p.classList.remove('hidden');
+      else p.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.catalog-tab-btn').forEach((btn) => {
+      const target = btn.getAttribute('data-catalog-tab');
+      if (target === activeTab) {
+        btn.className = 'catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer bg-white text-foreground shadow-xs border border-border';
+      } else {
+        btn.className = 'catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent';
+      }
+    });
+
+    if (window.location.hash.replace('#', '') !== activeTab) {
+      history.replaceState(null, '', `#${activeTab}`);
+    }
+  }
+
+  const initialHash = window.location.hash.replace('#', '');
+  if (initialHash) switchCatalogTab(initialHash);
+
+  document.querySelectorAll('.catalog-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-catalog-tab');
+      if (target) switchCatalogTab(target);
+    });
+  });
+
+  // Global Tool Modal Handlers
+  const globalModal = document.getElementById('global-tool-modal');
+  const openGlobalBtn = document.getElementById('open-create-global-btn');
+  const closeGlobalBtn = document.getElementById('close-global-modal');
+  const globalForm = document.getElementById('global-tool-form') as HTMLFormElement | null;
+  const globalAutofillBtn = document.getElementById('global-autofill-btn') as HTMLButtonElement | null;
+
+  openGlobalBtn?.addEventListener('click', () => {
+    globalForm?.reset();
+    (document.getElementById('global-tool-id') as HTMLInputElement).value = '';
+    (document.getElementById('global-tool-action') as HTMLInputElement).value = 'create';
+    (document.getElementById('global-modal-title') as HTMLElement).textContent = 'Add Global Giant (Programmatic SEO)';
+    globalModal?.classList.remove('hidden');
+  });
+
+  closeGlobalBtn?.addEventListener('click', () => globalModal?.classList.add('hidden'));
+
+  // Global Tool Auto-Fill
+  globalAutofillBtn?.addEventListener('click', async () => {
+    const urlInput = document.getElementById('global-website-input') as HTMLInputElement;
+    const targetUrl = urlInput?.value?.trim();
+    if (!targetUrl) {
+      alert('Please enter a website URL first.');
+      return;
+    }
+
+    globalAutofillBtn.disabled = true;
+    globalAutofillBtn.textContent = 'Scraping...';
+
+    try {
+      const res = await fetch(`/api/admin/scrape?url=${encodeURIComponent(targetUrl)}`);
+      const data = (await res.json()) as any;
+      if (res.ok && data.name) {
+        (document.getElementById('global-name-input') as HTMLInputElement).value = data.name;
+        (document.getElementById('global-slug-input') as HTMLInputElement).value = data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+        if (data.logoUrl) (document.getElementById('global-logo-input') as HTMLInputElement).value = data.logoUrl;
+        if (data.tagline) (document.getElementById('global-tagline-input') as HTMLInputElement).value = data.tagline;
+        if (data.description && !(document.getElementById('global-tagline-input') as HTMLInputElement).value) {
+          (document.getElementById('global-tagline-input') as HTMLInputElement).value = data.description.slice(0, 100);
+        }
+      } else {
+        alert('Auto-fill could not scrape this URL. Please enter details manually.');
+      }
+    } catch {
+      alert('Network error while scraping metadata.');
+    } finally {
+      globalAutofillBtn.disabled = false;
+      globalAutofillBtn.textContent = '✨ Auto-Fill';
+    }
+  });
+
+  // Global Tool Form Submit
+  globalForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const saveBtn = document.getElementById('save-global-tool-btn') as HTMLButtonElement;
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    const formData = new FormData(globalForm);
+    const id = formData.get('id') as string;
+    const action = formData.get('action') as string;
+    const name = formData.get('name') as string;
+    const slug = formData.get('slug') as string;
+    const websiteUrl = formData.get('websiteUrl') as string;
+    const logoUrl = formData.get('logoUrl') as string;
+    const tagline = formData.get('tagline') as string;
+    const startingPriceUsd = formData.get('startingPriceUsd') as string;
+    const categoryId = formData.get('categoryId') as string;
+    const features = formData.get('features') as string;
+    const foreignPainPoints = formData.get('foreignPainPoints') as string;
+    const mappedDesiToolIds = formData.getAll('mappedDesiToolIds') as string[];
+
+    try {
+      const res = await fetch('/api/admin/global-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id,
+          action,
+          name,
+          slug,
+          websiteUrl,
+          logoUrl,
+          tagline,
+          startingPriceUsd,
+          categoryId,
+          features,
+          foreignPainPoints,
+          mappedDesiToolIds,
+        }),
+      });
+
+      if (res.ok) {
+        window.location.reload();
+      } else {
+        const err = await res.json() as any;
+        alert(err.error || 'Failed to save global tool.');
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Global Giant';
+      }
+    } catch {
+      alert('Network error');
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Global Giant';
+    }
+  });
+
+  // Edit Global Tool
+  document.querySelectorAll('[data-edit-global]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const raw = btn.getAttribute('data-edit-global');
+      if (!raw) return;
+      const g = JSON.parse(raw);
+
+      (document.getElementById('global-tool-id') as HTMLInputElement).value = g.id;
+      (document.getElementById('global-tool-action') as HTMLInputElement).value = 'update';
+      (document.getElementById('global-modal-title') as HTMLElement).textContent = `Edit ${g.name}`;
+      (document.getElementById('global-name-input') as HTMLInputElement).value = g.name || '';
+      (document.getElementById('global-slug-input') as HTMLInputElement).value = g.slug || '';
+      (document.getElementById('global-website-input') as HTMLInputElement).value = g.websiteUrl || '';
+      (document.getElementById('global-logo-input') as HTMLInputElement).value = g.logoUrl || '';
+      (document.getElementById('global-tagline-input') as HTMLInputElement).value = g.tagline || '';
+      (document.getElementById('global-price-input') as HTMLInputElement).value = g.startingPriceUsd || '';
+      const catSelect = document.getElementById('global-category-input') as HTMLSelectElement | null;
+      if (catSelect) catSelect.value = g.categoryId || '';
+
+      try {
+        const feats = g.features ? JSON.parse(g.features) : [];
+        (document.getElementById('global-features-input') as HTMLInputElement).value = feats.join(', ');
+      } catch {
+        (document.getElementById('global-features-input') as HTMLInputElement).value = '';
+      }
+
+      try {
+        const pains = g.foreignPainPoints ? JSON.parse(g.foreignPainPoints) : [];
+        (document.getElementById('global-painpoints-input') as HTMLTextAreaElement).value = pains.join('\n');
+      } catch {
+        (document.getElementById('global-painpoints-input') as HTMLTextAreaElement).value = '';
+      }
+
+      globalModal?.classList.remove('hidden');
+    });
+  });
+
+  // Delete Global Tool
+  document.querySelectorAll('[data-delete-global]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-delete-global');
+      if (!id || !confirm('Are you sure you want to delete this global giant reference?')) return;
+
+      try {
+        const res = await fetch('/api/admin/global-tools', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'delete', id }),
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to delete.');
+      } catch {
+        alert('Network error.');
+      }
+    });
+  });
+
+  // Tool Moderation Actions
+  document.querySelectorAll('[data-tool-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const toolId = btn.getAttribute('data-tool-id');
+      const action = btn.getAttribute('data-tool-action');
+      if (!toolId || !action) return;
+
+      try {
+        const res = await fetch('/api/admin/tools', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toolId, action }),
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to perform action');
+      } catch {
+        alert('Network error');
+      }
+    });
+  });
+
+  // Indian Tool Modal
+  const toolModal = document.getElementById('create-tool-modal');
+  const openToolBtn = document.getElementById('open-create-tool-btn');
+  const closeToolBtn = document.getElementById('close-tool-modal');
+  openToolBtn?.addEventListener('click', () => toolModal?.classList.remove('hidden'));
+  closeToolBtn?.addEventListener('click', () => toolModal?.classList.add('hidden'));
+
+  // Category Modal
+  const catModal = document.getElementById('create-cat-modal');
+  const openCatBtn = document.getElementById('open-create-cat-btn');
+  const closeCatBtn = document.getElementById('close-cat-modal');
+  openCatBtn?.addEventListener('click', () => catModal?.classList.remove('hidden'));
+  closeCatBtn?.addEventListener('click', () => catModal?.classList.add('hidden'));
+</script>

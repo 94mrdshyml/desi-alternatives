@@ -97,9 +97,15 @@ export const globalTools = sqliteTable('global_tools', {
   id: text('id').primaryKey().$defaultFn(createGlobalToolId),
   slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
+  tagline: text('tagline'),
   websiteUrl: text('website_url').notNull(),
   logoUrl: text('logo_url'),
+  features: text('features'), // JSON array of string features
+  startingPriceUsd: integer('starting_price_usd'), // USD per month
+  foreignPainPoints: text('foreign_pain_points'), // JSON array of strings
+  categoryId: text('category_id').references(() => categories.id),
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 // ==========================================

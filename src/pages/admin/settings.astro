@@ -1,0 +1,277 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { siteSettings, desiTools, globalTools, categories, claimsQueue, users } from '@/lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+const db = Astro.locals.db;
+
+if (!user || user.role !== 'admin') {
+  return Astro.redirect('/login');
+}
+
+let fromName = 'Desi Alternatives';
+let fromEmail = 'team@letter.mrdshyml.xyz';
+let totalToolsCount = 0;
+let totalGlobalCount = 0;
+let totalCategoriesCount = 0;
+let pendingClaimsCount = 0;
+let totalUsersCount = 0;
+
+if (db) {
+  try {
+    const settings = await db.select().from(siteSettings).where(eq(siteSettings.id, 'general')).get();
+    if (settings) {
+      fromName = settings.fromName || fromName;
+      fromEmail = settings.fromEmail || fromEmail;
+    }
+
+    const tools = await db.select().from(desiTools).all();
+    totalToolsCount = tools.length;
+    const globals = await db.select().from(globalTools).all();
+    totalGlobalCount = globals.length;
+    const cats = await db.select().from(categories).all();
+    totalCategoriesCount = cats.length;
+    const claims = await db.select().from(claimsQueue).where(eq(claimsQueue.status, 'pending')).all();
+    pendingClaimsCount = claims.length;
+    const usersList = await db.select().from(users).all();
+    totalUsersCount = usersList.length;
+  } catch (e) {
+    console.error('Failed to load site settings:', e);
+  }
+}
+---
+
+<AdminLayout
+  title="Platform Settings — Admin Control Center"
+  currentSection="settings"
+  counts={{
+    tools: totalToolsCount,
+    globalTools: totalGlobalCount,
+    categories: totalCategoriesCount,
+    claims: pendingClaimsCount,
+    users: totalUsersCount,
+  }}
+>
+  <div class="space-y-6 max-w-4xl">
+    <!-- Header -->
+    <div>
+      <h1 class="text-2xl font-bold tracking-tight text-foreground">Platform & Email Settings</h1>
+      <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
+        Configure outbound email dispatchers, sender identities, and test live Resend integration.
+      </p>
+    </div>
+
+    <!-- 1. RESEND SENDER IDENTITY CONFIGURATION -->
+    <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+      <div class="flex items-center gap-2.5 pb-4 border-b border-border">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-base">
+          ✉️
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-foreground">Email Dispatch Identity (Resend)</h3>
+          <p class="text-xs text-muted-foreground">Used in outbound 6-digit OTP verification codes and founder notifications</p>
+        </div>
+      </div>
+
+      <form id="admin-settings-form" class="mt-5 space-y-4">
+        <div id="settings-status" class="hidden rounded-xl p-3 text-xs font-medium"></div>
+
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label for="settings-from-name" class="block text-xs font-semibold text-foreground">
+              From Name *
+            </label>
+            <input
+              type="text"
+              id="settings-from-name"
+              name="fromName"
+              required
+              value={fromName}
+              placeholder="Desi Alternatives"
+              class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+            />
+            <p class="mt-1 text-[11px] text-muted-foreground">
+              Display name shown in the recipient's inbox.
+            </p>
+          </div>
+
+          <div>
+            <label for="settings-from-email" class="block text-xs font-semibold text-foreground">
+              From Email *
+            </label>
+            <input
+              type="email"
+              id="settings-from-email"
+              name="fromEmail"
+              required
+              value={fromEmail}
+              placeholder="team@letter.mrdshyml.xyz"
+              class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+            />
+            <p class="mt-1 text-[11px] text-muted-foreground">
+              Must be a verified sending domain in Resend.
+            </p>
+          </div>
+        </div>
+
+        <!-- Resend Documentation Info Box -->
+        <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-900">
+          <div class="flex items-start gap-2">
+            <span class="text-base">💡</span>
+            <div class="space-y-1">
+              <p class="font-bold">Resend Domain Verification Notice:</p>
+              <p class="text-amber-800 leading-relaxed">
+                If you use a custom sender domain (e.g. <code>team@letter.mrdshyml.xyz</code>), ensure DNS records (DKIM & SPF) are verified in your Resend Dashboard.
+                If in Resend sandbox mode (using <code>onboarding@resend.dev</code>), Resend only allows sending to the email address of the account owner.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end pt-2">
+          <button
+            type="submit"
+            id="save-settings-btn"
+            class="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
+          >
+            Save Email Settings
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 2. LIVE TEST EMAIL DIAGNOSTIC -->
+    <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+      <div class="flex items-center gap-2.5 pb-4 border-b border-border">
+        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-base">
+          🚀
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-foreground">Test Email Dispatch (Live Resend Check)</h3>
+          <p class="text-xs text-muted-foreground">Send a real verification OTP email right now to test API connectivity and view Resend logs.</p>
+        </div>
+      </div>
+
+      <div class="mt-5 space-y-4">
+        <div id="test-email-status" class="hidden rounded-xl p-3 text-xs font-medium"></div>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <input
+            type="email"
+            id="test-email-target"
+            placeholder="Enter destination email (e.g. your email)"
+            value={user.email}
+            class="flex-1 rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+          />
+          <button
+            type="button"
+            id="send-test-email-btn"
+            class="rounded-xl bg-foreground px-4 py-2 text-xs font-semibold text-background hover:bg-foreground/90 transition cursor-pointer shrink-0 disabled:opacity-50"
+          >
+            Send Test Email
+          </button>
+        </div>
+
+        <div id="test-email-details" class="hidden rounded-xl bg-slate-900 p-3 text-[11px] font-mono text-emerald-400 overflow-x-auto"></div>
+      </div>
+    </div>
+  </div>
+</AdminLayout>
+
+<script>
+  // Settings Form Submit
+  const settingsForm = document.getElementById('admin-settings-form') as HTMLFormElement;
+  const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement;
+  const statusDiv = document.getElementById('settings-status') as HTMLDivElement;
+
+  settingsForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    statusDiv.classList.add('hidden');
+
+    const formData = new FormData(settingsForm);
+    const fromName = formData.get('fromName');
+    const fromEmail = formData.get('fromEmail');
+
+    try {
+      const res = await fetch('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fromName, fromEmail }),
+      });
+
+      const data = await res.json() as any;
+
+      if (res.ok) {
+        statusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-800';
+        statusDiv.textContent = '✓ Settings saved successfully!';
+        statusDiv.classList.remove('hidden');
+      } else {
+        statusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
+        statusDiv.textContent = `Error: ${data.error || 'Failed to save settings'}`;
+        statusDiv.classList.remove('hidden');
+      }
+    } catch (err: any) {
+      statusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
+      statusDiv.textContent = `Network error: ${err.message}`;
+      statusDiv.classList.remove('hidden');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Email Settings';
+    }
+  });
+
+  // Test Email Handler
+  const sendTestBtn = document.getElementById('send-test-email-btn') as HTMLButtonElement;
+  const testTargetInput = document.getElementById('test-email-target') as HTMLInputElement;
+  const testStatusDiv = document.getElementById('test-email-status') as HTMLDivElement;
+  const testDetailsDiv = document.getElementById('test-email-details') as HTMLDivElement;
+
+  sendTestBtn?.addEventListener('click', async () => {
+    const toEmail = testTargetInput?.value?.trim();
+    if (!toEmail) {
+      alert('Please enter a recipient email.');
+      return;
+    }
+
+    sendTestBtn.disabled = true;
+    sendTestBtn.textContent = 'Dispatching...';
+    testStatusDiv.classList.add('hidden');
+    testDetailsDiv.classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/admin/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toEmail }),
+      });
+
+      const data = await res.json() as any;
+
+      if (res.ok && data.success) {
+        testStatusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-800';
+        testStatusDiv.textContent = `✓ ${data.message}`;
+        testStatusDiv.classList.remove('hidden');
+
+        testDetailsDiv.textContent = JSON.stringify(data, null, 2);
+        testDetailsDiv.classList.remove('hidden');
+      } else {
+        testStatusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
+        testStatusDiv.textContent = `✗ Failed: ${data.error || 'Check Resend logs'}`;
+        testStatusDiv.classList.remove('hidden');
+
+        testDetailsDiv.textContent = JSON.stringify(data, null, 2);
+        testDetailsDiv.classList.remove('hidden');
+      }
+    } catch (err: any) {
+      testStatusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
+      testStatusDiv.textContent = `Network error: ${err.message}`;
+      testStatusDiv.classList.remove('hidden');
+    } finally {
+      sendTestBtn.disabled = false;
+      sendTestBtn.textContent = 'Send Test Email';
+    }
+  });
+</script>

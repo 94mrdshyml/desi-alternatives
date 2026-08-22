@@ -106,8 +106,26 @@ if (!currentGlobalTool) {
     slug,
     websiteUrl: `https://${slug}.com`,
     logoUrl: null,
+    tagline: null,
+    features: null,
+    startingPriceUsd: null,
+    foreignPainPoints: null,
   };
 }
+
+let parsedGlobalFeatures: string[] = [];
+try {
+  if (currentGlobalTool.features) {
+    parsedGlobalFeatures = JSON.parse(currentGlobalTool.features);
+  }
+} catch {}
+
+let parsedGlobalPainPoints: string[] = [];
+try {
+  if (currentGlobalTool.foreignPainPoints) {
+    parsedGlobalPainPoints = JSON.parse(currentGlobalTool.foreignPainPoints);
+  }
+} catch {}
 
 const searchableTools = allToolsList.map((t) => ({
   id: t.id,
@@ -176,9 +194,26 @@ const schemaData = {
       </h1>
 
       <p class="mt-4 text-xs sm:text-sm leading-relaxed text-muted-foreground">
-        Avoid 3.5% credit card forex markups, recurring mandate failures, and distant US data centers.
+        {currentGlobalTool.tagline ? `${currentGlobalTool.tagline}. ` : ''}
+        Avoid 3.5% credit card forex markups, recurring mandate failures, and foreign data centers.
         Discover homegrown Indian software offering ₹ INR pricing, GST tax invoices, and local support.
       </p>
+
+      {parsedGlobalFeatures.length > 0 && (
+        <div class="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+          <span class="text-xs text-muted-foreground font-semibold">Key Capabilities:</span>
+          {parsedGlobalFeatures.map((feat) => (
+            <span class="rounded-full border border-border bg-card px-2.5 py-0.5 text-xs font-medium text-foreground shadow-2xs">
+              {feat}
+            </span>
+          ))}
+          {currentGlobalTool.startingPriceUsd && (
+            <span class="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-900 shadow-2xs">
+              Starting from ${currentGlobalTool.startingPriceUsd}/mo
+            </span>
+          )}
+        </div>
+      )}
     </div>
 
     <!-- Savings & Compliance Callout Banner -->
@@ -219,6 +254,23 @@ const schemaData = {
         </div>
       </div>
     </div>
+
+    {parsedGlobalPainPoints.length > 0 && (
+      <div class="mt-6 rounded-2xl border border-red-200/80 bg-red-50/50 p-4">
+        <h4 class="text-xs font-bold text-red-900 flex items-center gap-1.5">
+          <span>⚠️</span>
+          <span>Common Friction Points with {currentGlobalTool.name} for Indian Tech Companies:</span>
+        </h4>
+        <ul class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs text-red-800">
+          {parsedGlobalPainPoints.map((pain) => (
+            <li class="flex items-start gap-1.5">
+              <span class="text-red-500 font-bold">✕</span>
+              <span>{pain}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
 
     <!-- Comparison Matrix Table -->
     <div class="mt-10">

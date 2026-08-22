@@ -1,0 +1,317 @@
+---
+import AdminLayout from '@/layouts/AdminLayout.astro';
+import { claimsQueue, users, desiTools, globalTools, categories } from '@/lib/server/db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+const db = Astro.locals.db;
+
+if (!user || user.role !== 'admin') {
+  return Astro.redirect('/login');
+}
+
+let pendingClaims: any[] = [];
+let allUsersList: any[] = [];
+let totalToolsCount = 0;
+let totalGlobalCount = 0;
+let totalCategoriesCount = 0;
+
+if (db) {
+  try {
+    // 1. Pending Claims Queue
+    pendingClaims = await db
+      .select({
+        id: claimsQueue.id,
+        toolId: claimsQueue.toolId,
+        toolName: desiTools.name,
+        toolSlug: desiTools.slug,
+        toolLogoUrl: desiTools.logoUrl,
+        userId: claimsQueue.userId,
+        userName: users.name,
+        userEmail: users.email,
+        workEmail: claimsQueue.workEmail,
+        notes: claimsQueue.notes,
+        status: claimsQueue.status,
+        submittedAt: claimsQueue.submittedAt,
+      })
+      .from(claimsQueue)
+      .leftJoin(desiTools, eq(claimsQueue.toolId, desiTools.id))
+      .leftJoin(users, eq(claimsQueue.userId, users.id))
+      .where(eq(claimsQueue.status, 'pending'))
+      .orderBy(desc(claimsQueue.submittedAt))
+      .all();
+
+    // 2. All Users
+    allUsersList = await db.select().from(users).orderBy(desc(users.createdAt)).all();
+
+    // Counts for sidebar badges
+    const tools = await db.select().from(desiTools).all();
+    totalToolsCount = tools.length;
+    const globals = await db.select().from(globalTools).all();
+    totalGlobalCount = globals.length;
+    const cats = await db.select().from(categories).all();
+    totalCategoriesCount = cats.length;
+  } catch (e) {
+    console.error('Failed to load moderation data:', e);
+  }
+}
+---
+
+<AdminLayout
+  title="Moderation & Users — Admin Control Center"
+  currentSection="moderation"
+  counts={{
+    tools: totalToolsCount,
+    globalTools: totalGlobalCount,
+    categories: totalCategoriesCount,
+    claims: pendingClaims.length,
+    users: allUsersList.length,
+  }}
+>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">Moderation & Users</h1>
+        <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          Review product ownership claim requests, founder verification, and manage user accounts and access levels.
+        </p>
+      </div>
+    </div>
+
+    <!-- Sub-Tabs Navigation Segment -->
+    <div class="rounded-2xl border border-border bg-card p-1.5 shadow-2xs">
+      <nav class="flex items-center gap-1.5 overflow-x-auto" aria-label="Moderation Sub-Tabs">
+        <button
+          type="button"
+          data-mod-tab="claims"
+          class="mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer bg-white text-foreground shadow-xs border border-border"
+        >
+          <span>📬 Ownership Claims Queue</span>
+          {pendingClaims.length > 0 ? (
+            <span class="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
+              {pendingClaims.length}
+            </span>
+          ) : (
+            <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+              0
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          data-mod-tab="users"
+          class="mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent"
+        >
+          <span>👥 User Accounts & Roles</span>
+          <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+            {allUsersList.length}
+          </span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- PANEL 1: CLAIMS QUEUE -->
+    <section id="mod-panel-claims" class="mod-panel space-y-4">
+      {pendingClaims.length === 0 ? (
+        <div class="rounded-2xl border border-border bg-white p-12 text-center shadow-xs">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-2xl">
+            ✨
+          </div>
+          <h3 class="mt-4 text-sm font-bold text-foreground">Ownership Claims Queue is Clear</h3>
+          <p class="mt-1 text-xs text-muted-foreground">No pending product claims from founders awaiting verification.</p>
+        </div>
+      ) : (
+        <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="border-b border-border bg-secondary/50">
+                <tr>
+                  <th class="py-3 px-4 font-semibold text-foreground">Tool</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Claimant User</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Work Email</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Proof / Notes</th>
+                  <th class="py-3 px-4 font-semibold text-foreground text-right">Review Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                {pendingClaims.map((c) => (
+                  <tr class="hover:bg-slate-50/50 transition">
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-2.5">
+                        <img src={c.toolLogoUrl} alt={c.toolName} class="h-7 w-7 rounded-lg object-contain bg-slate-50 border border-border/60 p-0.5" />
+                        <span class="font-bold text-foreground">{c.toolName}</span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="font-medium text-foreground">{c.userName}</div>
+                      <div class="text-[11px] text-muted-foreground">{c.userEmail}</div>
+                    </td>
+                    <td class="py-3 px-4 font-mono font-medium text-primary">{c.workEmail}</td>
+                    <td class="py-3 px-4 text-muted-foreground max-w-xs truncate">{c.notes || 'Domain match claim'}</td>
+                    <td class="py-3 px-4 text-right">
+                      <div class="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          data-claim-action="approve"
+                          data-claim-id={c.id}
+                          class="rounded-lg bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 transition cursor-pointer shadow-2xs"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          type="button"
+                          data-claim-action="reject"
+                          data-claim-id={c.id}
+                          class="rounded-lg border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <!-- PANEL 2: USERS & ROLES -->
+    <section id="mod-panel-users" class="mod-panel hidden space-y-4">
+      <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-border bg-secondary/50">
+              <tr>
+                <th class="py-3 px-4 font-semibold text-foreground">User</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Email</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Role</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Joined Date</th>
+                <th class="py-3 px-4 font-semibold text-foreground text-right">Access Controls</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {allUsersList.map((u) => (
+                <tr class="hover:bg-slate-50/50 transition">
+                  <td class="py-3 px-4 font-bold text-foreground">
+                    <div class="flex items-center gap-2.5">
+                      <img
+                        src={u.image || `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(u.name || 'User')}`}
+                        alt={u.name}
+                        class="h-7 w-7 rounded-full bg-slate-100 object-cover"
+                      />
+                      <span>{u.name}</span>
+                    </div>
+                  </td>
+                  <td class="py-3 px-4 text-muted-foreground font-mono">{u.email}</td>
+                  <td class="py-3 px-4">
+                    <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                      u.role === 'admin' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700'
+                    }`}>
+                      {u.role}
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 text-muted-foreground">
+                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                  </td>
+                  <td class="py-3 px-4 text-right">
+                    {u.id !== user.id && (
+                      <button
+                        type="button"
+                        data-user-role-action={u.role === 'admin' ? 'demote' : 'promote'}
+                        data-target-user-id={u.id}
+                        class="rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
+                      >
+                        {u.role === 'admin' ? 'Demote to User' : 'Make Admin'}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</AdminLayout>
+
+<script>
+  function switchModTab(tabId: string) {
+    const validTabs = ['claims', 'users'];
+    const activeTab = validTabs.includes(tabId) ? tabId : 'claims';
+
+    document.querySelectorAll('.mod-panel').forEach((p) => {
+      if (p.id === `mod-panel-${activeTab}`) p.classList.remove('hidden');
+      else p.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.mod-tab-btn').forEach((btn) => {
+      const target = btn.getAttribute('data-mod-tab');
+      if (target === activeTab) {
+        btn.className = 'mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer bg-white text-foreground shadow-xs border border-border';
+      } else {
+        btn.className = 'mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent';
+      }
+    });
+
+    if (window.location.hash.replace('#', '') !== activeTab) {
+      history.replaceState(null, '', `#${activeTab}`);
+    }
+  }
+
+  const initialHash = window.location.hash.replace('#', '');
+  if (initialHash) switchModTab(initialHash);
+
+  document.querySelectorAll('.mod-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.getAttribute('data-mod-tab');
+      if (target) switchModTab(target);
+    });
+  });
+
+  // Claims Actions
+  document.querySelectorAll('[data-claim-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const claimId = btn.getAttribute('data-claim-id');
+      const action = btn.getAttribute('data-claim-action');
+      if (!claimId || !action) return;
+
+      try {
+        const res = await fetch('/api/admin/claims', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ claimId, action }),
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to review claim.');
+      } catch {
+        alert('Network error.');
+      }
+    });
+  });
+
+  // User Role Actions
+  document.querySelectorAll('[data-user-role-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const targetUserId = btn.getAttribute('data-target-user-id');
+      const action = btn.getAttribute('data-user-role-action');
+      if (!targetUserId || !action) return;
+
+      try {
+        const res = await fetch('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetUserId, action }),
+        });
+        if (res.ok) window.location.reload();
+        else alert('Failed to update user role.');
+      } catch {
+        alert('Network error.');
+      }
+    });
+  });
+</script>
