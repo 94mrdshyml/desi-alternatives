@@ -29,7 +29,7 @@ test.describe('Admin Control Center & Programmatic SEO E2E', () => {
   test('renders programmatic SEO comparison page for global alternative', async ({ page }) => {
     await page.goto('/alternatives/notion');
     await expect(page).toHaveTitle(/Indian Alternatives to Notion/);
-    await expect(page.locator('h1')).toContainText('Indian Alternatives to');
+    await expect(page.locator('h1').first()).toContainText('Indian Alternatives to');
     await expect(page.locator('text=Zero Forex Fees')).toBeVisible();
     await expect(page.locator('text=18% GST Input Credit')).toBeVisible();
     await expect(page.locator('text=India Data Residency')).toBeVisible();
