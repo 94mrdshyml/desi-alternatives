@@ -14,7 +14,7 @@ interface Props {
 const {
   title = 'Desi Alternatives — Indian Alternatives to Global Giants',
   description = 'Discover Indian software, developer tools, hardware, games, newsletters, and agencies built to replace global giants with INR pricing, UPI support, and GST invoicing.',
-  ogImage = '/api/og/default.svg',
+  ogImage = '/og-default.png',
   ogType = 'website',
   twitterCreator = '@desialts',
 } = Astro.props;
@@ -22,9 +22,19 @@ const {
 const siteUrl = Astro.site ? Astro.site.toString().replace(/\/$/, '') : (Astro.url.origin || 'https://desialternatives.in');
 const canonicalUrl = Astro.props.canonicalUrl || new URL(Astro.url.pathname, siteUrl).toString();
 
-const absoluteOgImage = ogImage.startsWith('http')
-  ? ogImage
-  : new URL(ogImage.startsWith('/') ? ogImage : `/${ogImage}`, siteUrl).toString();
+const rawOgImage = ogImage || '/og-default.png';
+const absoluteOgImage = rawOgImage.startsWith('http')
+  ? rawOgImage
+  : new URL(rawOgImage.startsWith('/') ? rawOgImage : `/${rawOgImage}`, siteUrl).toString();
+
+let imageMimeType = 'image/png';
+if (absoluteOgImage.includes('.jpg') || absoluteOgImage.includes('.jpeg')) {
+  imageMimeType = 'image/jpeg';
+} else if (absoluteOgImage.includes('.webp')) {
+  imageMimeType = 'image/webp';
+} else if (absoluteOgImage.includes('.svg')) {
+  imageMimeType = 'image/svg+xml';
+}
 ---
 
 <!doctype html>
@@ -44,6 +54,8 @@ const absoluteOgImage = ogImage.startsWith('http')
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={absoluteOgImage} />
+    <meta property="og:image:secure_url" content={absoluteOgImage} />
+    <meta property="og:image:type" content={imageMimeType} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content={title} />
