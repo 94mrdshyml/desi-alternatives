@@ -210,22 +210,27 @@
 
 ---
 
-## Session 10 — Admin Settings Tab & Resend Email Sender Configuration
+## Session 11 — Canonical Alternatives Hub & Interactive Savings Calculator
 
-**Date & Time (IST):** 2026-08-22 16:03 IST
+**Date & Time (IST):** 2026-08-22 17:55 IST
 **Status:** Completed
 **Branch:** `main`
 
 ### What We Built
-- **Database Schema**: Added `site_settings` table in `src/lib/server/db/schema.ts` (with generated migration `0006_bent_puff_adder.sql`) to persist `fromName` and `fromEmail`.
-- **Dynamic Resend Email Dispatcher**: Updated `src/lib/server/email.ts` and `src/lib/server/auth.ts` to dynamically fetch and inject `fromName` and `fromEmail` formatted per Resend specs (`"${fromName} <${fromEmail}>"`).
-- **Admin Settings API**: Created `src/pages/api/admin/settings.ts` with authenticated `GET` and `POST` handlers for platform settings.
-- **Admin Control Center UI**:
-  - Added 6th tab button `⚙️ Platform Settings` (`/admin#settings`).
-  - Added Section 6 (`#tab-panel-settings`) with Resend Email Sender Identity card, input fields for `fromName` (default: `Desi Alternatives`) and `fromEmail` (default: `auth@desialternatives.in`), Resend DKIM/SPF domain guidance, and AJAX live save feedback.
-- **Testing & Verification**:
-  - Added unit test in `tests/unit/email.test.ts` for configurable sender identity (13/13 unit tests passing).
-  - Verified 0 typecheck errors with `bun run typecheck`.
+- **Interactive ₹ vs $ Cost Savings Simulator Component (`src/components/CostSavingsCalculator.tsx`)**:
+  - Interactive scale/team size slider (5 to 250+ users).
+  - Side-by-side foreign SaaS USD cost (with 3.5% forex credit card markups and unclaimable GST) vs Indian alternative INR cost (with full 18% claimable GST Input Tax Credit).
+  - Dynamic annual ₹ savings calculations and percentage discount indicators.
+- **Canonical Global Alternatives Directory Hub (`src/pages/alternatives/index.astro`)**:
+  - Centralized index of all global software products (Datadog, Slack, Retool, Notion, Jira, AWS, Twilio, Firebase, etc.) with real-time mapped alternative count badges.
+  - Value pillars highlighting Zero Forex loss, 18% GST Input Credit, and Domestic Data Sovereignty.
+- **Enhanced Canonical Alternative Detail Pages (`src/pages/alternatives/[slug].astro`)**:
+  - Embedded interactive Cost Savings Calculator.
+  - Ranked Indian alternatives cards with "Why choose [Tool] over [Global]?" advantage breakdowns.
+  - Direct Feature & Compliance Matrix comparing data residency, GST invoicing, payment methods, and IST timezone support.
+  - Schema.org structured data (`ItemList` and `FAQPage` JSON-LD) for rich snippet rankings on search engines.
+- **Navigation Integration**: Added "Alternatives Matrix" link to Navbar.
+
 
 
 
