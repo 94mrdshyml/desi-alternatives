@@ -83,7 +83,7 @@ if (!currentCategory) {
     name: formattedName,
     slug,
     emoji: '⚡',
-    description: `Discover sovereign Indian ${formattedName} software alternatives.`,
+    description: `Discover Indian ${formattedName} alternatives to global giants.`,
     isFeatured: true,
   };
 }
@@ -128,8 +128,8 @@ const searchableTools = allTools.map((t) => ({
 ---
 
 <BaseLayout
-  title={`Best Indian ${currentCategory.name} Software Alternatives — Desi Alternatives`}
-  description={currentCategory.description || `Discover sovereign Indian ${currentCategory.name} software alternatives.`}
+  title={`Best Indian ${currentCategory.name} Alternatives — Desi Alternatives`}
+  description={currentCategory.description || `Discover Indian ${currentCategory.name} alternatives to global giants.`}
 >
   <Navbar />
   <SearchDialog client:idle tools={searchableTools} />

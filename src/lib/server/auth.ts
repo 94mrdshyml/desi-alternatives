@@ -1,10 +1,11 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { dash, sentinel } from '@better-auth/infra';
-import { admin } from 'better-auth/plugins';
+import { admin, emailOTP } from 'better-auth/plugins';
 import { createDb } from './db';
 import * as schema from './db/schema';
 import { generateId } from './id';
+import { sendOtpEmail } from './email';
 
 export function createAuth(
   d1: D1Database,
@@ -12,6 +13,7 @@ export function createAuth(
     BETTER_AUTH_SECRET?: string;
     BETTER_AUTH_URL?: string;
     BETTER_AUTH_API_KEY?: string;
+    RESEND_API_KEY?: string;
   },
   requestOrigin?: string
 ) {
@@ -21,6 +23,18 @@ export function createAuth(
     admin({
       defaultRole: 'user',
       adminRole: 'admin',
+    }),
+    emailOTP({
+      otpLength: 6,
+      expiresIn: 600, // 10 minutes in seconds
+      async sendVerificationOTP({ email, otp, type }) {
+        await sendOtpEmail({
+          apiKey: env.RESEND_API_KEY,
+          to: email,
+          otp,
+          type,
+        });
+      },
     }),
   ];
 

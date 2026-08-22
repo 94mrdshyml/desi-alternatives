@@ -185,6 +185,30 @@
 - Verified type safety (`bun run typecheck`) and unit tests (`bun run test:unit` 10/10 passed).
 - CI/CD workflow run `32500023219` deployed successfully to Cloudflare Workers.
 
+---
+
+## Session 9 — Passwordless 6-Digit Email OTP via React Email & Copywriting Overhaul
+
+**Date & Time (IST):** 2026-08-22 15:45 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built
+- **Passwordless 6-Digit Email OTP with Better-Auth & React Email**:
+  - Installed `@react-email/components` and `@react-email/render`.
+  - Built modern React Email component `src/emails/OtpVerificationEmail.tsx`.
+  - Built email dispatcher `src/lib/server/email.ts` integrating Resend REST API (with local console fallback).
+  - Configured `emailOTP` plugin on server (`src/lib/server/auth.ts`) and `emailOTPClient()` on client (`src/lib/auth-client.ts`).
+  - Redesigned `src/pages/login.astro` into a 2-step passwordless login flow with 6 individual numeric digit boxes, auto-advance, backspace retreat, full clipboard paste support, and auto-submit.
+  - Redirected `/register` directly to the unified passwordless login flow.
+- **Copywriting Overhaul & Broadening Beyond SaaS**:
+  - Removed all instances of "sovereign" across the platform.
+  - Broadened positioning to cover the entire Indian homegrown ecosystem: **Software, Developer Tools, Games, Hardware, Newsletters, Agencies & Podcasts**.
+  - Updated headings, meta tags, and hero copy across `BaseLayout.astro`, `index.astro`, `alternatives/[slug].astro`, `category/[slug].astro`, `tools/[slug].astro`, `submit.astro`, and `admin/index.astro`.
+- **Testing & Verification**:
+  - Added unit test `tests/unit/email.test.ts` verifying React Email template rendering and dev console dispatching (12/12 unit tests passing).
+
+
 
 
 
