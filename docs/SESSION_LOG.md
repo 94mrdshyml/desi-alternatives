@@ -299,11 +299,24 @@
   - Rendered **Editorial Review & Superpowers Grid**: Side-by-side Top Strengths (green) & Honest Tradeoffs / Limitations (amber).
   - Rendered **Multi-Tier Transparent Pricing Plans Grid** with INR billing and GST ITC badges.
 
+---
 
+## Session 15 — Global Directory Card Visuals & Admin Action Button Polish
 
+**Date & Time (IST):** 2026-08-22 18:56 IST
+**Status:** Completed
+**Branch:** `main`
 
-
-
+### What We Fixed & Built
+- **Global Software Directory Card Visuals (`/alternatives`)**:
+  - Joined `categories` with `globalTools` in SQL query to fetch real category emojis and names.
+  - Rendered high-resolution software logos with fallback domain icons.
+  - Replaced generic static `"Software"` pill with dynamic category badges (e.g., `⚡ Developer Tools`, `🗂️ Productivity`).
+- **Admin Catalog Tool Edit & Action Handlers (`/admin/catalog`)**:
+  - Attached click handlers to `[data-edit-tool]` to pre-fill `#create-tool-modal` with existing Indian tool details and switch modal action to `update`.
+  - Attached click handlers to `[data-edit-global]` to pre-fill `#global-tool-modal` and switch modal action to `update`.
+  - Added confirmation safety alerts before deleting tools or global giant anchors.
+  - Verified all 14 unit tests, TypeScript typechecking, and automated Cloudflare Workers deployment.
 
 
 
