@@ -88,57 +88,59 @@ const avatarUrl = user
             </div>
             <nav class="space-y-1">
               {user?.role === 'admin' && (
-                <!-- Item 1: Catalog -->
-                <a
-                  href="/admin/catalog"
-                  class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
-                    currentSection === 'catalog'
-                      ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
-                      : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
-                  }`}
-                >
-                  <div class="flex items-center gap-2.5">
-                    <svg class={`h-4 w-4 ${currentSection === 'catalog' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                    </svg>
-                    <span>Catalog & Tools</span>
-                  </div>
-                  {counts.tools !== undefined && (
-                    <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      currentSection === 'catalog' ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'
-                    }`}>
-                      {counts.tools}
-                    </span>
-                  )}
-                </a>
+                <>
+                  <!-- Item 1: Catalog -->
+                  <a
+                    href="/admin/catalog"
+                    class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+                      currentSection === 'catalog'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
+                        : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
+                    }`}
+                  >
+                    <div class="flex items-center gap-2.5">
+                      <svg class={`h-4 w-4 ${currentSection === 'catalog' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                      <span>Catalog & Tools</span>
+                    </div>
+                    {counts.tools !== undefined && (
+                      <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        currentSection === 'catalog' ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'
+                      }`}>
+                        {counts.tools}
+                      </span>
+                    )}
+                  </a>
 
-                <!-- Item 2: Moderation -->
-                <a
-                  href="/admin/moderation"
-                  class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
-                    currentSection === 'moderation'
-                      ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
-                      : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
-                  }`}
-                >
-                  <div class="flex items-center gap-2.5">
-                    <svg class={`h-4 w-4 ${currentSection === 'moderation' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                    <span>Moderation & Users</span>
-                  </div>
-                  {counts.claims !== undefined && counts.claims > 0 ? (
-                    <span class="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
-                      {counts.claims}
-                    </span>
-                  ) : counts.users !== undefined ? (
-                    <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      currentSection === 'moderation' ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'
-                    }`}>
-                      {counts.users}
-                    </span>
-                  ) : null}
-                </a>
+                  <!-- Item 2: Moderation -->
+                  <a
+                    href="/admin/moderation"
+                    class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+                      currentSection === 'moderation'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
+                        : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
+                    }`}
+                  >
+                    <div class="flex items-center gap-2.5">
+                      <svg class={`h-4 w-4 ${currentSection === 'moderation' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      <span>Moderation & Users</span>
+                    </div>
+                    {counts.claims !== undefined && counts.claims > 0 ? (
+                      <span class="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white animate-pulse">
+                        {counts.claims}
+                      </span>
+                    ) : counts.users !== undefined ? (
+                      <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        currentSection === 'moderation' ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'
+                      }`}>
+                        {counts.users}
+                      </span>
+                    ) : null}
+                  </a>
+                </>
               )}
 
               <!-- Item 3: Blog & Editorial -->
@@ -170,43 +172,45 @@ const avatarUrl = user
               </a>
 
               {user?.role === 'admin' && (
-                <!-- Item 4: Analytics -->
-                <a
-                  href="/admin/analytics"
-                  class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
-                    currentSection === 'analytics'
-                      ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
-                      : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
-                  }`}
-                >
-                  <div class="flex items-center gap-2.5">
-                    <svg class={`h-4 w-4 ${currentSection === 'analytics' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                    </svg>
-                    <span>Analytics</span>
-                  </div>
-                  <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
-                    Live
-                  </span>
-                </a>
+                <>
+                  <!-- Item 4: Analytics -->
+                  <a
+                    href="/admin/analytics"
+                    class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+                      currentSection === 'analytics'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
+                        : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
+                    }`}
+                  >
+                    <div class="flex items-center gap-2.5">
+                      <svg class={`h-4 w-4 ${currentSection === 'analytics' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                      <span>Analytics</span>
+                    </div>
+                    <span class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                      Live
+                    </span>
+                  </a>
 
-                <!-- Item 5: Settings -->
-                <a
-                  href="/admin/settings"
-                  class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
-                    currentSection === 'settings'
-                      ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
-                      : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
-                  }`}
-                >
-                  <div class="flex items-center gap-2.5">
-                    <svg class={`h-4 w-4 ${currentSection === 'settings' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span>Settings</span>
-                  </div>
-                </a>
+                  <!-- Item 5: Settings -->
+                  <a
+                    href="/admin/settings"
+                    class={`flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+                      currentSection === 'settings'
+                        ? 'bg-amber-50 text-amber-900 border border-amber-200/80 shadow-2xs font-bold'
+                        : 'text-muted-foreground hover:bg-slate-50 hover:text-foreground'
+                    }`}
+                  >
+                    <div class="flex items-center gap-2.5">
+                      <svg class={`h-4 w-4 ${currentSection === 'settings' ? 'text-primary' : 'text-muted-foreground'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span>Settings</span>
+                    </div>
+                  </a>
+                </>
               )}
             </nav>
           </div>
