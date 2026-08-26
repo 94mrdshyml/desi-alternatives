@@ -2,7 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import { eq } from 'drizzle-orm';
-import { globalTools, toolAlternatives, desiTools, categories } from '@/lib/server/db/schema';
+import { globalTools, toolAlternatives, categories } from '@/lib/server/db/schema';
 
 const db = Astro.locals.db;
 
@@ -27,22 +27,6 @@ if (db) {
       .from(globalTools)
       .leftJoin(categories, eq(globalTools.categoryId, categories.id))
       .all();
-
-    const rawTools = await db
-      .select({
-        id: desiTools.id,
-        slug: desiTools.slug,
-        name: desiTools.name,
-        tagline: desiTools.tagline,
-        categoryId: desiTools.categoryId,
-        categoryName: categories.name,
-      })
-      .from(desiTools)
-      .leftJoin(categories, eq(desiTools.categoryId, categories.id))
-      .where(eq(desiTools.status, 'published'))
-      .all();
-
-    allToolsList = rawTools;
 
     const rawAlternatives = await db.select().from(toolAlternatives).all();
     for (const alt of rawAlternatives) {
