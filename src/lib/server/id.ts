@@ -16,6 +16,9 @@ export const ID_PREFIXES = {
   verification: 'ver_',
   account: 'acc_',
   pricingPlan: 'plan_',
+  blogAuthor: 'author_',
+  blogPost: 'post_',
+  blogPostTool: 'bpt_',
 } as const;
 
 export type IdPrefixKey = keyof typeof ID_PREFIXES;
@@ -35,3 +38,6 @@ export const createSessionId = () => generateId(ID_PREFIXES.session);
 export const createVerificationId = () => generateId(ID_PREFIXES.verification);
 export const createAccountId = () => generateId(ID_PREFIXES.account);
 export const createPricingPlanId = () => generateId(ID_PREFIXES.pricingPlan);
+export const createBlogAuthorId = () => generateId(ID_PREFIXES.blogAuthor);
+export const createBlogPostId = () => generateId(ID_PREFIXES.blogPost);
+export const createBlogPostToolId = () => generateId(ID_PREFIXES.blogPostTool);

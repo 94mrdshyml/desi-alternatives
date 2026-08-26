@@ -126,4 +126,76 @@ id: text('id').primaryKey(),
 globalToolId: text('global_tool_id').notNull().references(() => globalTools.id, { onDelete: 'cascade' }),
 desiToolId: text('desi_tool_id').notNull().references(() => desiTools.id, { onDelete: 'cascade' }),
 });
+
+// --- BLOG & EDITORIAL ENGINE ---
+export const blogAuthors = sqliteTable('blog_authors', {
+id: text('id').primaryKey(),
+slug: text('slug').notNull().unique(),
+name: text('name').notNull(),
+role: text('role').notNull(), // e.g. "Founder & Lead Architect", "Staff Writer"
+avatarUrl: text('avatar_url'),
+bio: text('bio'),
+twitterHandle: text('twitter_handle'),
+linkedinUrl: text('linkedin_url'),
+websiteUrl: text('website_url'),
+createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const blogPosts = sqliteTable('blog_posts', {
+id: text('id').primaryKey(),
+slug: text('slug').notNull().unique(),
+title: text('title').notNull(),
+subtitle: text('subtitle'),
+content: text('content').notNull(), // Markdown / Block Structure
+coverImageUrl: text('cover_image_url'),
+authorId: text('author_id').references(() => blogAuthors.id),
+categoryId: text('category_id').references(() => categories.id),
+status: text('status', { enum: ['draft', 'published', 'scheduled', 'archived'] }).default('draft').notNull(),
+readingTimeMinutes: integer('reading_time_minutes').default(5).notNull(),
+metaTitle: text('meta_title'),
+metaDescription: text('meta_description'),
+canonicalUrl: text('canonical_url'),
+publishedAt: text('published_at'),
+createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const blogPostTools = sqliteTable('blog_post_tools', {
+id: text('id').primaryKey(),
+postId: text('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+desiToolId: text('desi_tool_id').notNull().references(() => desiTools.id, { onDelete: 'cascade' }),
+});
 ```
+
+---
+
+## 7. Blog & Editorial CMS Specification (Notion-Style Engine)
+
+### 7.1 Objective & Strategy
+To establish sovereign authority in Indian tech search rankings beyond directory indexing, Desi Alternatives operates a custom editorial engine capturing top-of-funnel and high-intent research queries (e.g. *"Best developer tools built in India"*, *"Migrating from Datadog to OpenTelemetry-native APM"*, *"India Data Protection DPDP Act 2023 SaaS readiness"*).
+
+### 7.2 Core Editorial Archetypes
+1. **Best-in-Class Curations**: High-intent, category-specific roundups highlighting engineering craftsmanship, feature sets, hosting compliance, and workflow fit.
+2. **Technical Architecture Showdowns**: In-depth feature matrices comparing global monoliths against indigenous alternatives (e.g., *SigNoz vs Datadog*, *Postman vs Hoppscotch*).
+3. **Founder Stories & Sovereign Essays**: Technical deep dives authored by Indian software architects and founders explaining how they built scalable, sovereign infrastructure.
+
+### 7.3 Notion-Style Admin CMS (`/admin/blog`)
+- **Clean Writing Canvas**: Distraction-free interface supporting Title, Subtitle, Cover Image upload to Cloudflare R2, and markdown/block typography.
+- **Slash Commands (`/`)**: Quick-insert blocks for H2/H3 headings, Callout boxes, Bullet/Numbered lists, Blockquotes, Syntax-highlighted Code blocks, and Images with captions.
+- **Interactive `/tool` Embed Block**: Live search and embed of any Indian tool directly from `desi_tools` in D1. The embedded card dynamically renders live logos, tags, and compliance pills from the database.
+- **Continuous Auto-Save**: Real-time draft persistence to LocalStorage and D1 to prevent loss of long-form writing.
+- **Real-Time Word & Read Time Engine**: Automatic computation of word counts and estimated reading durations.
+
+### 7.4 SEO & Social Distribution Drawer
+- **Slug Management**: Custom slugification with live uniqueness verification against D1.
+- **Search Metadata**: Custom Meta Title and Meta Description with character length visual indicators.
+- **Social & Edge OG Integration**: Instant preview of Google SERP, Twitter/X summary large card, and auto-generated WASM PNG social card via `/api/og/blog/[slug].png`.
+- **Author & Taxonomy Assignment**: Link posts to verified author profiles and categories.
+- **Publishing Lifecycle**: Manage `draft`, `scheduled`, `published`, and `archived` states.
+
+### 7.5 Public Reading Experience (`/blog` & `/blog/[slug]`)
+- **Scroll-Spy Table of Contents**: Floating sticky sidebar highlighting active sections during scroll.
+- **Reading Progress Indicator**: Top accent progress bar reflecting scroll depth.
+- **"Tools Mentioned" Shelf**: Dedicated footer matrix summarizing all tools featured in the guide with 1-click links to their canonical directory profiles.
+- **Structured Schema Markup**: Automatic injection of `Article`, `ItemList`, `BreadcrumbList`, and `FAQPage` JSON-LD schemas for rich SERP snippets.
+

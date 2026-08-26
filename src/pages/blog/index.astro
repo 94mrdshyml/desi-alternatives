@@ -1,0 +1,290 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
+import { blogPosts, blogAuthors, categories } from '@/lib/server/db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const db = Astro.locals.db;
+
+let allPublishedPosts: any[] = [];
+let allCategories: any[] = [];
+
+if (db) {
+  try {
+    allPublishedPosts = await db
+      .select({
+        id: blogPosts.id,
+        slug: blogPosts.slug,
+        title: blogPosts.title,
+        subtitle: blogPosts.subtitle,
+        coverImageUrl: blogPosts.coverImageUrl,
+        readingTimeMinutes: blogPosts.readingTimeMinutes,
+        publishedAt: blogPosts.publishedAt,
+        authorName: blogAuthors.name,
+        authorRole: blogAuthors.role,
+        authorAvatarUrl: blogAuthors.avatarUrl,
+        categorySlug: categories.slug,
+        categoryName: categories.name,
+        categoryEmoji: categories.emoji,
+      })
+      .from(blogPosts)
+      .leftJoin(blogAuthors, eq(blogPosts.authorId, blogAuthors.id))
+      .leftJoin(categories, eq(blogPosts.categoryId, categories.id))
+      .where(eq(blogPosts.status, 'published'))
+      .orderBy(desc(blogPosts.publishedAt))
+      .all();
+
+    allCategories = await db.select().from(categories).orderBy(categories.name).all();
+  } catch (e) {
+    console.error('Error querying published blog posts:', e);
+  }
+}
+
+const featuredPost = allPublishedPosts[0] || null;
+const remainingPosts = allPublishedPosts.slice(1);
+
+const pageTitle = 'Sovereign Tech Magazine & Engineering Guides — Desi Alternatives';
+const pageDescription = 'In-depth engineering analyses, cloud architecture breakdowns, sovereign software comparisons, and founder stories from India’s tech ecosystem.';
+---
+
+<BaseLayout title={pageTitle} description={pageDescription}>
+  <Navbar />
+
+  <main class="min-h-screen bg-slate-50/50 pb-20">
+    <!-- Hero Header -->
+    <section class="border-b border-border/80 bg-white pt-12 pb-14">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200">
+            🇮🇳 Sovereign Tech Editorial
+          </span>
+          <span class="text-xs text-muted-foreground">· Curations, Architecture & Showdowns</span>
+        </div>
+
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground font-serif-editorial max-w-3xl leading-tight">
+          The Homegrown Software & Cloud Engineering Journal
+        </h1>
+        <p class="mt-3 text-base text-muted-foreground max-w-2xl leading-relaxed">
+          Deep-dive technical reviews, architecture teardowns, and sovereign software curations crafted for Indian developers, CTOs, and founders.
+        </p>
+
+        <!-- Category Filter Pills -->
+        <div class="mt-8 flex items-center gap-2 overflow-x-auto pb-1" id="category-filter-bar">
+          <button
+            type="button"
+            data-category="all"
+            class="cat-filter active shrink-0 rounded-xl px-4 py-2 text-xs font-bold transition bg-primary text-primary-foreground shadow-2xs cursor-pointer"
+          >
+            All Articles ({allPublishedPosts.length})
+          </button>
+          {allCategories.map((cat) => {
+            const count = allPublishedPosts.filter((p) => p.categorySlug === cat.slug).length;
+            if (count === 0) return null;
+            return (
+              <button
+                type="button"
+                data-category={cat.slug}
+                class="cat-filter shrink-0 rounded-xl px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-100 transition border border-border/60 bg-white cursor-pointer"
+              >
+                <span>{cat.emoji} {cat.name}</span>
+                <span class="ml-1 text-[10px] opacity-70">({count})</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+
+    <!-- Articles Container -->
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 mt-10 space-y-12">
+      {allPublishedPosts.length === 0 ? (
+        <div class="rounded-3xl border border-dashed border-border bg-white p-16 text-center shadow-2xs">
+          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-50 text-3xl border border-amber-200">
+            ✍️
+          </div>
+          <h2 class="mt-4 text-lg font-bold text-foreground">Articles coming soon!</h2>
+          <p class="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+            Our editorial team and Indian SaaS architects are writing deep dives on observability, data sovereignty, and developer infrastructure.
+          </p>
+        </div>
+      ) : (
+        <>
+          <!-- Featured Hero Article -->
+          {featuredPost && (
+            <article class="group relative rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-sm hover:shadow-md transition overflow-hidden article-card" data-category={featuredPost.categorySlug || 'general'}>
+              <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                <!-- Text Column -->
+                <div class="lg:col-span-7 space-y-4">
+                  <div class="flex items-center gap-2.5 flex-wrap">
+                    {featuredPost.categoryName && (
+                      <span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800 border border-slate-200">
+                        <span>{featuredPost.categoryEmoji || '📁'}</span>
+                        <span>{featuredPost.categoryName}</span>
+                      </span>
+                    )}
+                    <span class="rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 border border-amber-200">
+                      ★ Featured Deep Dive
+                    </span>
+                    <span class="text-xs text-muted-foreground">
+                      ⏱ {featuredPost.readingTimeMinutes} min read
+                    </span>
+                  </div>
+
+                  <h2 class="text-2xl sm:text-3xl font-extrabold text-foreground group-hover:text-primary transition font-serif-editorial leading-tight">
+                    <a href={`/blog/${featuredPost.slug}`} class="focus:outline-none">
+                      <span class="absolute inset-0 z-10"></span>
+                      {featuredPost.title}
+                    </a>
+                  </h2>
+
+                  {featuredPost.subtitle && (
+                    <p class="text-sm text-muted-foreground leading-relaxed line-clamp-3">
+                      {featuredPost.subtitle}
+                    </p>
+                  )}
+
+                  <!-- Author & Date -->
+                  <div class="flex items-center gap-3 pt-2">
+                    {featuredPost.authorAvatarUrl ? (
+                      <img src={featuredPost.authorAvatarUrl} alt={featuredPost.authorName} class="h-8 w-8 rounded-full object-cover border border-border" />
+                    ) : (
+                      <div class="h-8 w-8 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-xs">
+                        {(featuredPost.authorName || 'D')[0]}
+                      </div>
+                    )}
+                    <div class="text-xs">
+                      <div class="font-bold text-foreground">{featuredPost.authorName || 'Desi Alternatives Editorial'}</div>
+                      <div class="text-[11px] text-muted-foreground">
+                        {featuredPost.publishedAt ? new Date(featuredPost.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Editorial'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cover Image Column -->
+                <div class="lg:col-span-5">
+                  <div class="aspect-16/10 rounded-2xl overflow-hidden bg-slate-100 border border-border relative">
+                    {featuredPost.coverImageUrl ? (
+                      <img
+                        src={featuredPost.coverImageUrl}
+                        alt={featuredPost.title}
+                        class="w-full h-full object-cover group-hover:scale-102 transition duration-300"
+                      />
+                    ) : (
+                      <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-500/10 to-blue-500/10 text-4xl">
+                        🇮🇳
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </article>
+          )}
+
+          <!-- Remaining Posts Grid -->
+          {remainingPosts.length > 0 && (
+            <div class="space-y-6">
+              <h2 class="text-xl font-bold tracking-tight text-foreground font-serif-editorial">
+                Latest Analyses & Guides
+              </h2>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="posts-grid">
+                {remainingPosts.map((post) => (
+                  <article class="group relative flex flex-col rounded-2xl border border-border bg-white overflow-hidden shadow-2xs hover:shadow-md transition article-card" data-category={post.categorySlug || 'general'}>
+                    <!-- Thumbnail -->
+                    <div class="aspect-16/10 bg-slate-100 border-b border-border overflow-hidden relative">
+                      {post.coverImageUrl ? (
+                        <img
+                          src={post.coverImageUrl}
+                          alt={post.title}
+                          class="w-full h-full object-cover group-hover:scale-103 transition duration-300"
+                        />
+                      ) : (
+                        <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-100 to-amber-50/60 text-3xl">
+                          📝
+                        </div>
+                      )}
+                      {post.categoryName && (
+                        <div class="absolute top-3 left-3">
+                          <span class="rounded-full bg-white/90 backdrop-blur-xs px-2.5 py-0.5 text-[11px] font-bold text-foreground border border-border shadow-2xs">
+                            {post.categoryEmoji || '📁'} {post.categoryName}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <!-- Content Body -->
+                    <div class="flex-1 p-5 flex flex-col justify-between space-y-4">
+                      <div class="space-y-2">
+                        <div class="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+                          <span>⏱ {post.readingTimeMinutes} min read</span>
+                          <span>·</span>
+                          <span>{post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</span>
+                        </div>
+
+                        <h3 class="text-base font-bold text-foreground group-hover:text-primary transition font-serif-editorial leading-snug line-clamp-2">
+                          <a href={`/blog/${post.slug}`}>
+                            <span class="absolute inset-0 z-10"></span>
+                            {post.title}
+                          </a>
+                        </h3>
+
+                        {post.subtitle && (
+                          <p class="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                            {post.subtitle}
+                          </p>
+                        )}
+                      </div>
+
+                      <!-- Author Footnote -->
+                      <div class="flex items-center gap-2 pt-3 border-t border-border/60">
+                        {post.authorAvatarUrl ? (
+                          <img src={post.authorAvatarUrl} alt={post.authorName} class="h-6 w-6 rounded-full object-cover" />
+                        ) : (
+                          <div class="h-6 w-6 rounded-full bg-amber-100 text-amber-800 flex items-center justify-center text-[10px] font-bold">
+                            {(post.authorName || 'A')[0]}
+                          </div>
+                        )}
+                        <span class="text-xs font-medium text-foreground truncate">{post.authorName || 'Desi Team'}</span>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<script>
+  const catButtons = document.querySelectorAll('.cat-filter');
+  const articleCards = document.querySelectorAll('.article-card') as NodeListOf<HTMLElement>;
+
+  catButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      catButtons.forEach((b) => {
+        b.classList.remove('bg-primary', 'text-primary-foreground', 'shadow-2xs');
+        b.classList.add('text-muted-foreground', 'bg-white');
+      });
+      btn.classList.add('bg-primary', 'text-primary-foreground', 'shadow-2xs');
+      btn.classList.remove('text-muted-foreground', 'bg-white');
+
+      const targetCategory = (btn as HTMLElement).dataset.category;
+
+      articleCards.forEach((card) => {
+        const cardCat = card.dataset.category;
+        if (targetCategory === 'all' || cardCat === targetCategory) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+</script>

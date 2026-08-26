@@ -1,0 +1,603 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
+import { blogPosts, blogAuthors, categories, blogPostTools, desiTools } from '@/lib/server/db/schema';
+import { eq, ne, and } from 'drizzle-orm';
+
+const { slug } = Astro.params;
+const db = Astro.locals.db;
+
+if (!db || !slug) {
+  return Astro.redirect('/blog');
+}
+
+let post: any = null;
+let mentionedTools: any[] = [];
+let relatedPosts: any[] = [];
+
+try {
+  post = await db
+    .select({
+      id: blogPosts.id,
+      slug: blogPosts.slug,
+      title: blogPosts.title,
+      subtitle: blogPosts.subtitle,
+      content: blogPosts.content,
+      coverImageUrl: blogPosts.coverImageUrl,
+      authorId: blogPosts.authorId,
+      categoryId: blogPosts.categoryId,
+      status: blogPosts.status,
+      readingTimeMinutes: blogPosts.readingTimeMinutes,
+      metaTitle: blogPosts.metaTitle,
+      metaDescription: blogPosts.metaDescription,
+      canonicalUrl: blogPosts.canonicalUrl,
+      publishedAt: blogPosts.publishedAt,
+      createdAt: blogPosts.createdAt,
+      authorName: blogAuthors.name,
+      authorRole: blogAuthors.role,
+      authorAvatarUrl: blogAuthors.avatarUrl,
+      authorBio: blogAuthors.bio,
+      authorTwitter: blogAuthors.twitterHandle,
+      authorLinkedin: blogAuthors.linkedinUrl,
+      categoryName: categories.name,
+      categoryEmoji: categories.emoji,
+      categorySlug: categories.slug,
+    })
+    .from(blogPosts)
+    .leftJoin(blogAuthors, eq(blogPosts.authorId, blogAuthors.id))
+    .leftJoin(categories, eq(blogPosts.categoryId, categories.id))
+    .where(eq(blogPosts.slug, slug))
+    .get();
+
+  if (!post || (post.status !== 'published' && Astro.locals.user?.role !== 'admin')) {
+    return Astro.redirect('/blog');
+  }
+
+  // Get tagged tools
+  mentionedTools = await db
+    .select({
+      id: desiTools.id,
+      name: desiTools.name,
+      slug: desiTools.slug,
+      tagline: desiTools.tagline,
+      logoUrl: desiTools.logoUrl,
+      websiteUrl: desiTools.websiteUrl,
+      primaryColor: desiTools.primaryColor,
+      startingPriceInr: desiTools.startingPriceInr,
+      hasIndianDataResidency: desiTools.hasIndianDataResidency,
+      hasGstInvoice: desiTools.hasGstInvoice,
+      hasInrPricing: desiTools.hasInrPricing,
+      hasUpiSupport: desiTools.hasUpiSupport,
+      isOpenSource: desiTools.isOpenSource,
+      city: desiTools.city,
+      state: desiTools.state,
+    })
+    .from(blogPostTools)
+    .innerJoin(desiTools, eq(blogPostTools.desiToolId, desiTools.id))
+    .where(eq(blogPostTools.postId, post.id))
+    .all();
+
+  // Related posts
+  relatedPosts = await db
+    .select({
+      id: blogPosts.id,
+      slug: blogPosts.slug,
+      title: blogPosts.title,
+      subtitle: blogPosts.subtitle,
+      coverImageUrl: blogPosts.coverImageUrl,
+      readingTimeMinutes: blogPosts.readingTimeMinutes,
+    })
+    .from(blogPosts)
+    .where(and(eq(blogPosts.status, 'published'), ne(blogPosts.id, post.id)))
+    .limit(3)
+    .all();
+} catch (e) {
+  console.error('Error fetching blog post:', e);
+  return Astro.redirect('/blog');
+}
+
+// Extract Table of Contents (H2 and H3)
+interface TocItem {
+  id: string;
+  text: string;
+  level: number;
+}
+const toc: TocItem[] = [];
+const headingRegex = /^(#{2,3})\s+(.+)$/gm;
+let match;
+let cleanContent = post.content || '';
+
+while ((match = headingRegex.exec(cleanContent)) !== null) {
+  const level = match[1].length;
+  const rawText = match[2].trim();
+  const id = rawText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  toc.push({ id, text: rawText, level });
+}
+
+// Markdown Parser Helper (with custom callouts, tool embeds, and headings)
+function renderMarkdownToHtml(markdown: string): string {
+  if (!markdown) return '';
+
+  let html = markdown;
+
+  // 1. Tool Embeds :::tool{slug="tool-slug"}
+  html = html.replace(/:::tool\{slug="([^"]+)"\}\s*:::/g, (_m, toolSlug) => {
+    const tool = mentionedTools.find((t) => t.slug === toolSlug);
+    if (!tool) {
+      return `<div class="my-6 p-4 rounded-xl border border-border bg-slate-50 text-xs text-muted-foreground">Embedded Tool: <code>${toolSlug}</code></div>`;
+    }
+
+    return `
+      <div class="my-8 rounded-2xl border border-border bg-gradient-to-br from-white to-slate-50/80 p-5 shadow-xs not-prose">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-start gap-3.5">
+            <img src="${tool.logoUrl}" alt="${tool.name}" class="h-12 w-12 rounded-xl object-contain bg-white border border-border p-1 shadow-2xs shrink-0" />
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="text-base font-bold text-foreground">${tool.name}</span>
+                ${tool.city && tool.state ? `<span class="text-[10px] text-muted-foreground font-medium">📍 ${tool.city}, ${tool.state}</span>` : ''}
+              </div>
+              <p class="text-xs text-muted-foreground mt-0.5">${tool.tagline}</p>
+              
+              <div class="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                ${tool.isOpenSource ? '<span class="rounded bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">⚡ Open Source</span>' : ''}
+                ${tool.hasGstInvoice ? '<span class="rounded bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 text-[10px] font-bold">🧾 18% GST</span>' : ''}
+                ${tool.hasIndianDataResidency ? '<span class="rounded bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 text-[10px] font-bold">🇮🇳 India Hosted</span>' : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <a href="/tools/${tool.slug}" class="rounded-xl border border-border bg-white px-3.5 py-2 text-xs font-bold text-foreground hover:bg-slate-50 transition shadow-2xs text-center">
+              View Profile
+            </a>
+            <a href="${tool.websiteUrl}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs text-center">
+              Visit Website ↗
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  // 2. Callout Boxes (> [!NOTE] or > [!TIP])
+  html = html.replace(/> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\n([\s\S]*?)(?=\n\n|$)/g, (_m, type, body) => {
+    const cleanBody = body.replace(/^>\s?/gm, '').trim();
+    const colors: Record<string, string> = {
+      NOTE: 'bg-blue-50/70 border-blue-200 text-blue-900',
+      TIP: 'bg-emerald-50/70 border-emerald-200 text-emerald-900',
+      IMPORTANT: 'bg-amber-50/70 border-amber-200 text-amber-900',
+      WARNING: 'bg-rose-50/70 border-rose-200 text-rose-900',
+    };
+    const style = colors[type] || colors.NOTE;
+    return `<div class="my-6 rounded-2xl border p-4.5 text-sm ${style} not-prose leading-relaxed"><strong class="block text-xs uppercase tracking-wider font-bold mb-1">${type}</strong>${cleanBody}</div>`;
+  });
+
+  // 3. Headings with IDs for TOC linking
+  html = html.replace(/^(#{2,3})\s+(.+)$/gm, (_m, hashes, headingText) => {
+    const level = hashes.length;
+    const cleanText = headingText.trim();
+    const id = cleanText.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return `<h${level} id="${id}" class="scroll-mt-24 font-serif-editorial font-bold">${cleanText}</h${level}>`;
+  });
+
+  // 4. Code Blocks
+  html = html.replace(/```([a-z0-9_-]*)\n([\s\S]*?)```/g, (_m, lang, code) => {
+    const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `
+      <div class="my-6 rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 not-prose shadow-lg">
+        <div class="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+          <span>${lang || 'code'}</span>
+          <button type="button" class="copy-code-btn hover:text-white transition cursor-pointer" data-code="${encodeURIComponent(code)}">Copy</button>
+        </div>
+        <pre class="p-4 text-xs font-mono text-slate-200 overflow-x-auto"><code>${escapedCode}</code></pre>
+      </div>
+    `;
+  });
+
+  // 5. Basic markdown conversions (paragraphs, lists, blockquotes, bold, links, tables)
+  // Paragraphs & newlines
+  const paragraphs = html.split(/\n\n+/);
+  html = paragraphs
+    .map((p) => {
+      p = p.trim();
+      if (!p) return '';
+      if (p.startsWith('<div') || p.startsWith('<h') || p.startsWith('<table') || p.startsWith('<pre')) {
+        return p;
+      }
+      if (p.startsWith('|') && p.endsWith('|')) {
+        // Simple Markdown Table
+        const rows = p.split('\n');
+        let tableHtml = '<div class="my-6 overflow-x-auto not-prose"><table class="w-full text-left text-xs border-collapse border border-border rounded-xl bg-white shadow-2xs">';
+        rows.forEach((row, idx) => {
+          if (row.includes('---')) return;
+          const cells = row.split('|').slice(1, -1).map((c) => c.trim());
+          if (idx === 0) {
+            tableHtml += '<thead class="bg-slate-50 border-b border-border font-bold text-foreground"><tr>' + cells.map((c) => `<th class="p-3">${c}</th>`).join('') + '</tr></thead><tbody>';
+          } else {
+            tableHtml += '<tr class="border-b border-border/60 hover:bg-slate-50/50">' + cells.map((c) => `<td class="p-3">${c}</td>`).join('') + '</tr>';
+          }
+        });
+        tableHtml += '</tbody></table></div>';
+        return tableHtml;
+      }
+      if (p.startsWith('- ') || p.startsWith('* ')) {
+        const items = p.split('\n').map((li) => `<li>${li.replace(/^[-*]\s+/, '')}</li>`).join('');
+        return `<ul class="list-disc pl-5 space-y-1.5 my-4">${items}</ul>`;
+      }
+      if (/^\d+\.\s+/.test(p)) {
+        const items = p.split('\n').map((li) => `<li>${li.replace(/^\d+\.\s+/, '')}</li>`).join('');
+        return `<ol class="list-decimal pl-5 space-y-1.5 my-4">${items}</ol>`;
+      }
+      return `<p class="my-4 leading-relaxed">${p}</p>`;
+    })
+    .join('\n');
+
+  // Inline formatting
+  html = html
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-amber-900 border border-slate-200">$1</code>')
+    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-primary font-semibold hover:underline">$1</a>');
+
+  return html;
+}
+
+const renderedHtml = renderMarkdownToHtml(post.content || '');
+
+const siteUrl = 'https://desialternatives.in';
+const ogImageUrl = `${siteUrl}/api/og/blog/${post.slug}.png`;
+const canonicalUrl = post.canonicalUrl || `${siteUrl}/blog/${post.slug}`;
+---
+
+<BaseLayout
+  title={`${post.metaTitle || post.title} — Desi Alternatives`}
+  description={post.metaDescription || post.subtitle || 'Sovereign tech insights & comparison.'}
+  ogImage={ogImageUrl}
+  canonicalUrl={canonicalUrl}
+>
+  <!-- Reading Progress Bar -->
+  <div id="reading-progress-bar" class="fixed top-0 left-0 h-1 bg-gradient-to-r from-amber-500 via-rose-500 to-primary z-50 transition-all w-0"></div>
+
+  <Navbar />
+
+  <main class="min-h-screen bg-white pb-24">
+    <!-- Article Header -->
+    <header class="border-b border-border/80 bg-slate-50/60 pt-12 pb-14">
+      <div class="mx-auto max-w-4xl px-4 sm:px-6 space-y-5">
+        <!-- Breadcrumb & Category -->
+        <div class="flex items-center gap-2 text-xs font-semibold text-muted-foreground flex-wrap">
+          <a href="/blog" class="hover:text-foreground transition">Journal</a>
+          <span>›</span>
+          {post.categoryName ? (
+            <span class="inline-flex items-center gap-1 rounded-md bg-white px-2.5 py-0.5 text-xs font-bold text-slate-800 border border-border shadow-2xs">
+              <span>{post.categoryEmoji || '📁'}</span>
+              <span>{post.categoryName}</span>
+            </span>
+          ) : (
+            <span>Editorial</span>
+          )}
+          <span>·</span>
+          <span>⏱ {post.readingTimeMinutes} min read</span>
+        </div>
+
+        <!-- Main Title -->
+        <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-foreground font-serif-editorial leading-tight">
+          {post.title}
+        </h1>
+
+        <!-- Subtitle -->
+        {post.subtitle && (
+          <p class="text-lg sm:text-xl text-muted-foreground leading-relaxed font-sans">
+            {post.subtitle}
+          </p>
+        )}
+
+        <!-- Author & Date Byline + Share -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-border/60">
+          <div class="flex items-center gap-3">
+            {post.authorAvatarUrl ? (
+              <img src={post.authorAvatarUrl} alt={post.authorName} class="h-10 w-10 rounded-full object-cover border border-border shadow-2xs" />
+            ) : (
+              <div class="h-10 w-10 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-sm">
+                {(post.authorName || 'D')[0]}
+              </div>
+            )}
+            <div>
+              <div class="font-bold text-foreground text-sm flex items-center gap-1.5">
+                <span>{post.authorName || 'Desi Alternatives Editorial'}</span>
+                {post.authorTwitter && (
+                  <a href={`https://x.com/${post.authorTwitter}`} target="_blank" class="text-muted-foreground hover:text-foreground text-xs font-normal">
+                    @{post.authorTwitter}
+                  </a>
+                )}
+              </div>
+              <div class="text-xs text-muted-foreground">
+                {post.authorRole || 'Staff Writer'} · {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Draft'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Social Share Actions -->
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              id="share-twitter-btn"
+              class="rounded-xl border border-border bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-50 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg class="h-3.5 w-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span>Post</span>
+            </button>
+
+            <button
+              type="button"
+              id="copy-link-btn"
+              class="rounded-xl border border-border bg-white px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-50 transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+            >
+              <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span id="copy-btn-text">Copy Link</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Cover Image Hero -->
+    {post.coverImageUrl && (
+      <div class="mx-auto max-w-4xl px-4 sm:px-6 -mt-6">
+        <div class="aspect-21/9 rounded-3xl overflow-hidden border border-border bg-slate-100 shadow-md">
+          <img src={post.coverImageUrl} alt={post.title} class="w-full h-full object-cover" />
+        </div>
+      </div>
+    )}
+
+    <!-- Article Content & Sticky TOC Layout -->
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 mt-12">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <!-- Main Article Content Body -->
+        <article class="lg:col-span-8 max-w-none text-base text-foreground/90 font-sans leading-relaxed space-y-6" id="article-body">
+          <div set:html={renderedHtml} />
+
+          <!-- Tagged Tools Shelf at Bottom of Article -->
+          {mentionedTools.length > 0 && (
+            <div class="mt-14 pt-8 border-t border-border space-y-5 not-prose">
+              <div>
+                <span class="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 uppercase tracking-wider">
+                  Directory Matrix
+                </span>
+                <h3 class="text-xl font-bold tracking-tight text-foreground font-serif-editorial mt-1">
+                  Indian Tools Mentioned in this Guide
+                </h3>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {mentionedTools.map((tool) => (
+                  <div class="rounded-2xl border border-border bg-white p-4 shadow-2xs flex flex-col justify-between space-y-3">
+                    <div class="flex items-start gap-3">
+                      <img src={tool.logoUrl} alt={tool.name} class="h-10 w-10 rounded-xl object-contain bg-white border border-border p-1 shrink-0" />
+                      <div>
+                        <a href={`/tools/${tool.slug}`} class="font-bold text-foreground hover:text-primary transition text-sm">
+                          {tool.name}
+                        </a>
+                        <p class="text-xs text-muted-foreground line-clamp-2 mt-0.5">{tool.tagline}</p>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-border/60">
+                      <span class="text-xs font-bold text-foreground">
+                        {tool.startingPriceInr !== null && tool.startingPriceInr !== undefined
+                          ? (tool.startingPriceInr === 0 ? 'Free Tier' : `From ₹${tool.startingPriceInr}/mo`)
+                          : 'Transparent Pricing'}
+                      </span>
+                      <a href={`/tools/${tool.slug}`} class="text-xs font-bold text-primary hover:underline">
+                        Explore Alternative →
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <!-- Author Bio Footer Box -->
+          {post.authorBio && (
+            <div class="mt-12 rounded-3xl border border-border bg-slate-50/80 p-6 flex flex-col sm:flex-row items-start gap-4 not-prose">
+              {post.authorAvatarUrl ? (
+                <img src={post.authorAvatarUrl} alt={post.authorName} class="h-14 w-14 rounded-2xl object-cover border border-border shadow-2xs shrink-0" />
+              ) : (
+                <div class="h-14 w-14 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold text-lg shrink-0">
+                  {(post.authorName || 'A')[0]}
+                </div>
+              )}
+              <div class="space-y-1.5 flex-1">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <h4 class="font-bold text-foreground text-sm">{post.authorName}</h4>
+                    <p class="text-xs text-muted-foreground">{post.authorRole}</p>
+                  </div>
+                  {post.authorTwitter && (
+                    <a
+                      href={`https://x.com/${post.authorTwitter}`}
+                      target="_blank"
+                      class="text-xs font-bold text-primary hover:underline"
+                    >
+                      Follow @{post.authorTwitter}
+                    </a>
+                  )}
+                </div>
+                <p class="text-xs text-muted-foreground leading-relaxed">{post.authorBio}</p>
+              </div>
+            </div>
+          )}
+        </article>
+
+        <!-- Sidebar: Sticky TOC & Related Guides -->
+        <aside class="hidden lg:block lg:col-span-4 space-y-8">
+          <div class="sticky top-24 space-y-6">
+            <!-- Table of Contents -->
+            {toc.length > 0 && (
+              <div class="rounded-2xl border border-border bg-slate-50/70 p-5 shadow-2xs space-y-3">
+                <div class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Table of Contents
+                </div>
+                <nav class="space-y-1.5 text-xs" id="toc-nav">
+                  {toc.map((item) => (
+                    <a
+                      href={`#${item.id}`}
+                      class={`block text-muted-foreground hover:text-foreground transition line-clamp-1 py-1 toc-link ${
+                        item.level === 3 ? 'pl-3 text-[11px]' : 'font-semibold text-foreground/80'
+                      }`}
+                    >
+                      {item.text}
+                    </a>
+                  ))}
+                </nav>
+              </div>
+            )}
+
+            <!-- Directory CTA Box -->
+            <div class="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-500/10 to-amber-500/5 p-5 space-y-3">
+              <div class="flex items-center gap-1.5 text-amber-900 font-bold text-xs">
+                <span>🇮🇳</span>
+                <span>Desi Alternatives Directory</span>
+              </div>
+              <p class="text-xs text-muted-foreground leading-relaxed">
+                Discover hundreds of sovereign Indian tools verified for 18% GST invoices, domestic hosting, and UPI billing.
+              </p>
+              <a
+                href="/"
+                class="block w-full rounded-xl bg-primary px-3 py-2 text-center text-xs font-bold text-primary-foreground shadow-2xs hover:bg-primary/90 transition"
+              >
+                Browse Software Directory →
+              </a>
+            </div>
+
+            <!-- Related Articles -->
+            {relatedPosts.length > 0 && (
+              <div class="rounded-2xl border border-border bg-white p-5 shadow-2xs space-y-3">
+                <div class="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Related Stories
+                </div>
+                <div class="space-y-3">
+                  {relatedPosts.map((rel) => (
+                    <a href={`/blog/${rel.slug}`} class="group block space-y-1">
+                      <div class="text-xs font-bold text-foreground group-hover:text-primary transition line-clamp-2">
+                        {rel.title}
+                      </div>
+                      <div class="text-[10px] text-muted-foreground">⏱ {rel.readingTimeMinutes} min read</div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<!-- JSON-LD Structured Schema -->
+<script type="application/ld+json" is:inline set:html={JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": post.title,
+  "description": post.subtitle || post.metaDescription,
+  "image": [ogImageUrl],
+  "datePublished": post.publishedAt || post.createdAt,
+  "dateModified": post.publishedAt || post.createdAt,
+  "author": [{
+    "@type": "Person",
+    "name": post.authorName || "Desi Alternatives Editorial",
+    "jobTitle": post.authorRole || "Author"
+  }],
+  "publisher": {
+    "@type": "Organization",
+    "name": "Desi Alternatives",
+    "url": siteUrl,
+    "logo": {
+      "@type": "ImageObject",
+      "url": `${siteUrl}/favicon.svg`
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": canonicalUrl
+  }
+})} />
+
+<script>
+  // Scroll Progress Bar
+  const progressBar = document.getElementById('reading-progress-bar');
+  window.addEventListener('scroll', () => {
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+    if (progressBar) {
+      progressBar.style.width = scrolled + '%';
+    }
+  });
+
+  // Table of Contents Scroll-Spy
+  const tocLinks = document.querySelectorAll('.toc-link');
+  const headings = document.querySelectorAll('#article-body h2, #article-body h3');
+
+  window.addEventListener('scroll', () => {
+    let currentId = '';
+    headings.forEach((heading) => {
+      const top = heading.getBoundingClientRect().top;
+      if (top <= 120) {
+        currentId = heading.id;
+      }
+    });
+
+    tocLinks.forEach((link) => {
+      const href = link.getAttribute('href')?.replace('#', '');
+      if (href === currentId) {
+        link.classList.add('text-primary', 'font-bold');
+        link.classList.remove('text-muted-foreground');
+      } else {
+        link.classList.remove('text-primary', 'font-bold');
+        link.classList.add('text-muted-foreground');
+      }
+    });
+  });
+
+  // Copy Link Button
+  const copyLinkBtn = document.getElementById('copy-link-btn');
+  const copyBtnText = document.getElementById('copy-btn-text');
+  if (copyLinkBtn && copyBtnText) {
+    copyLinkBtn.addEventListener('click', async () => {
+      await navigator.clipboard.writeText(window.location.href);
+      copyBtnText.textContent = 'Copied!';
+      setTimeout(() => (copyBtnText.textContent = 'Copy Link'), 2000);
+    });
+  }
+
+  // Share to Twitter Button
+  const shareTwitterBtn = document.getElementById('share-twitter-btn');
+  if (shareTwitterBtn) {
+    shareTwitterBtn.addEventListener('click', () => {
+      const text = encodeURIComponent(`Check out "${document.title}" on Desi Alternatives:`);
+      const url = encodeURIComponent(window.location.href);
+      window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+    });
+  }
+
+  // Code Block Copy Buttons
+  document.querySelectorAll('.copy-code-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const code = decodeURIComponent((btn as HTMLElement).dataset.code || '');
+      await navigator.clipboard.writeText(code);
+      btn.textContent = 'Copied!';
+      setTimeout(() => (btn.textContent = 'Copy'), 2000);
+    });
+  });
+</script>

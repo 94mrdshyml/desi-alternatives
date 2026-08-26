@@ -12,6 +12,9 @@ import {
   createClaimId,
   createEditId,
   createPricingPlanId,
+  createBlogAuthorId,
+  createBlogPostId,
+  createBlogPostToolId,
 } from '../id';
 
 // ==========================================
@@ -227,4 +230,47 @@ export const siteSettings = sqliteTable('site_settings', {
   fromEmail: text('from_email').default('team@letter.mrdshyml.xyz').notNull(),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
+
+// ==========================================
+// 8. BLOG & EDITORIAL ENGINE
+// ==========================================
+
+export const blogAuthors = sqliteTable('blog_authors', {
+  id: text('id').primaryKey().$defaultFn(createBlogAuthorId),
+  slug: text('slug').notNull().unique(),
+  name: text('name').notNull(),
+  role: text('role').notNull(), // e.g. "Founder & Lead Architect", "Staff Writer"
+  avatarUrl: text('avatar_url'),
+  bio: text('bio'),
+  twitterHandle: text('twitter_handle'),
+  linkedinUrl: text('linkedin_url'),
+  websiteUrl: text('website_url'),
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const blogPosts = sqliteTable('blog_posts', {
+  id: text('id').primaryKey().$defaultFn(createBlogPostId),
+  slug: text('slug').notNull().unique(),
+  title: text('title').notNull(),
+  subtitle: text('subtitle'),
+  content: text('content').notNull(), // Markdown / Block Structure
+  coverImageUrl: text('cover_image_url'),
+  authorId: text('author_id').references(() => blogAuthors.id),
+  categoryId: text('category_id').references(() => categories.id),
+  status: text('status', { enum: ['draft', 'published', 'scheduled', 'archived'] }).default('draft').notNull(),
+  readingTimeMinutes: integer('reading_time_minutes').default(5).notNull(),
+  metaTitle: text('meta_title'),
+  metaDescription: text('meta_description'),
+  canonicalUrl: text('canonical_url'),
+  publishedAt: text('published_at'),
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const blogPostTools = sqliteTable('blog_post_tools', {
+  id: text('id').primaryKey().$defaultFn(createBlogPostToolId),
+  postId: text('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+  desiToolId: text('desi_tool_id').notNull().references(() => desiTools.id, { onDelete: 'cascade' }),
+});
+
 

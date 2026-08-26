@@ -1,0 +1,957 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { blogPosts, blogAuthors, categories, blogPostTools, desiTools } from '@/lib/server/db/schema';
+import { eq, desc } from 'drizzle-orm';
+
+const user = Astro.locals.user;
+const db = Astro.locals.db;
+
+if (!user || user.role !== 'admin') {
+  return Astro.redirect('/login');
+}
+
+const url = new URL(Astro.request.url);
+const editId = url.searchParams.get('id');
+
+let existingPost: any = null;
+let taggedToolIds: string[] = [];
+let authorsList: any[] = [];
+let categoriesList: any[] = [];
+let toolsList: any[] = [];
+
+if (db) {
+  try {
+    authorsList = await db.select().from(blogAuthors).orderBy(blogAuthors.name).all();
+    categoriesList = await db.select().from(categories).orderBy(categories.name).all();
+    toolsList = await db
+      .select({
+        id: desiTools.id,
+        name: desiTools.name,
+        slug: desiTools.slug,
+        categoryEmoji: categories.emoji,
+      })
+      .from(desiTools)
+      .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+      .orderBy(desiTools.name)
+      .all();
+
+    if (editId) {
+      existingPost = await db.select().from(blogPosts).where(eq(blogPosts.id, editId)).get();
+      if (existingPost) {
+        const tagged = await db
+          .select({ desiToolId: blogPostTools.desiToolId })
+          .from(blogPostTools)
+          .where(eq(blogPostTools.postId, editId))
+          .all();
+        taggedToolIds = tagged.map((t) => t.desiToolId);
+      }
+    }
+  } catch (e) {
+    console.error('Error loading blog editor dependencies:', e);
+  }
+}
+
+const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write New Article — Notion Studio';
+---
+
+<BaseLayout title={pageTitle} description="Notion-style writing canvas for sovereign tech articles and comparisons.">
+  <!-- Toast & Notification Container -->
+  <div id="editor-toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Main Studio Shell -->
+  <div class="min-h-screen bg-[#FDFDFC] flex flex-col">
+    <!-- Top Action Bar -->
+    <header class="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border/80 bg-white/90 px-4 sm:px-6 backdrop-blur-md">
+      <!-- Left: Back & Breadcrumb -->
+      <div class="flex items-center gap-3">
+        <a
+          href="/admin/blog"
+          class="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-100 transition"
+        >
+          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          <span class="hidden sm:inline">Back to Articles</span>
+        </a>
+
+        <div class="h-4 w-px bg-border hidden sm:block"></div>
+
+        <div class="flex items-center gap-2">
+          <span id="save-indicator" class="text-[11px] font-medium text-muted-foreground flex items-center gap-1.5">
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+            <span>Saved</span>
+          </span>
+          <span id="reading-stats" class="text-[11px] text-muted-foreground/80 hidden sm:inline">
+            · 0 words · 1 min read
+          </span>
+        </div>
+      </div>
+
+      <!-- Right: Preview, Settings Drawer & Save Buttons -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="toggle-preview-btn"
+          class="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-50 transition cursor-pointer"
+        >
+          Preview Mode
+        </button>
+
+        <button
+          type="button"
+          id="toggle-drawer-btn"
+          class="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-50 transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          <span>SEO & Settings</span>
+        </button>
+
+        <button
+          type="button"
+          id="save-draft-btn"
+          class="rounded-xl border border-border bg-white px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-slate-50 transition shadow-2xs cursor-pointer"
+        >
+          Save Draft
+        </button>
+
+        <button
+          type="button"
+          id="publish-btn"
+          class="rounded-xl bg-primary px-4 py-1.5 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition cursor-pointer"
+        >
+          {existingPost && existingPost.status === 'published' ? 'Update Live' : 'Publish Article'}
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Canvas & Drawer Container -->
+    <div class="flex-1 flex overflow-hidden relative">
+      <!-- Left: Notion Writing Canvas -->
+      <main class="flex-1 overflow-y-auto px-4 sm:px-12 py-8 sm:py-12 transition-all" id="editor-canvas-container">
+        <div class="max-w-3xl mx-auto space-y-6">
+          <!-- Cover Image Container -->
+          <div class="group relative" id="cover-image-wrapper">
+            <div
+              id="cover-preview-container"
+              class={`w-full h-48 sm:h-64 rounded-2xl overflow-hidden border border-border relative bg-slate-100 ${
+                existingPost?.coverImageUrl ? '' : 'hidden'
+              }`}
+            >
+              <img
+                id="cover-preview-img"
+                src={existingPost?.coverImageUrl || ''}
+                alt="Article Cover"
+                class="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                id="remove-cover-btn"
+                class="absolute top-3 right-3 rounded-lg bg-black/60 text-white p-1.5 hover:bg-black/80 transition text-xs flex items-center gap-1 cursor-pointer"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span>Remove</span>
+              </button>
+            </div>
+
+            <div id="add-cover-btn-container" class={existingPost?.coverImageUrl ? 'hidden' : ''}>
+              <button
+                type="button"
+                id="trigger-cover-upload"
+                class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground py-1 px-2.5 rounded-lg hover:bg-slate-100 transition cursor-pointer"
+              >
+                <svg class="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <span>Add Cover Image</span>
+              </button>
+              <input type="file" id="cover-file-input" accept="image/*" class="hidden" />
+            </div>
+          </div>
+
+          <!-- Article Title Input -->
+          <div>
+            <textarea
+              id="article-title"
+              placeholder="Article Title..."
+              rows="1"
+              class="w-full resize-none border-0 bg-transparent text-3xl sm:text-4xl font-extrabold text-foreground placeholder:text-muted-foreground/40 focus:outline-none font-serif-editorial leading-tight"
+            >{existingPost?.title || ''}</textarea>
+          </div>
+
+          <!-- Subtitle / Excerpt Input -->
+          <div>
+            <textarea
+              id="article-subtitle"
+              placeholder="Add a crisp subtitle or summary..."
+              rows="1"
+              class="w-full resize-none border-0 bg-transparent text-base sm:text-lg text-muted-foreground placeholder:text-muted-foreground/30 focus:outline-none leading-relaxed"
+            >{existingPost?.subtitle || ''}</textarea>
+          </div>
+
+          <div class="h-px bg-border/60 my-4"></div>
+
+          <!-- Slash Command Toolbar Prompt -->
+          <div class="flex items-center justify-between text-xs text-muted-foreground bg-slate-50/80 px-3.5 py-2 rounded-xl border border-border/60">
+            <div class="flex items-center gap-2">
+              <span class="rounded bg-white px-1.5 py-0.5 font-mono text-[10px] font-bold border border-border">/</span>
+              <span>Type slash commands for blocks</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" data-cmd="h2" class="quick-cmd px-2 py-0.5 rounded hover:bg-white text-[11px] font-bold">H2</button>
+              <button type="button" data-cmd="h3" class="quick-cmd px-2 py-0.5 rounded hover:bg-white text-[11px] font-bold">H3</button>
+              <button type="button" data-cmd="callout" class="quick-cmd px-2 py-0.5 rounded hover:bg-white text-[11px]">💡 Callout</button>
+              <button type="button" data-cmd="tool" class="quick-cmd px-2 py-0.5 rounded hover:bg-amber-100 text-amber-900 font-bold text-[11px]">⚡ Embed Tool</button>
+              <button type="button" data-cmd="table" class="quick-cmd px-2 py-0.5 rounded hover:bg-white text-[11px]">📊 Table</button>
+              <button type="button" data-cmd="code" class="quick-cmd px-2 py-0.5 rounded hover:bg-white font-mono text-[11px]">&lt;/&gt;</button>
+            </div>
+          </div>
+
+          <!-- Editor Body (Markdown Canvas) -->
+          <div class="relative">
+            <textarea
+              id="article-content"
+              placeholder="Write your story, technical comparison, or migration guide here... Use Markdown or slash commands."
+              rows="24"
+              class="w-full resize-y border-0 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground/40 focus:outline-none font-sans leading-relaxed min-h-[500px]"
+            >{existingPost?.content || ''}</textarea>
+
+            <!-- Live Preview Container (Hidden by default) -->
+            <div id="live-preview-box" class="hidden prose prose-slate max-w-none prose-headings:font-serif-editorial prose-headings:font-bold prose-a:text-primary"></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right: Slide-out SEO & Settings Drawer -->
+      <aside
+        id="settings-drawer"
+        class="w-80 sm:w-96 border-l border-border bg-white p-5 overflow-y-auto hidden lg:block shrink-0 shadow-lg lg:shadow-none transition-all z-20"
+      >
+        <div class="flex items-center justify-between pb-4 border-b border-border">
+          <h3 class="text-sm font-bold text-foreground flex items-center gap-1.5">
+            <svg class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            </svg>
+            <span>Article Settings & SEO</span>
+          </h3>
+          <button type="button" id="close-drawer-btn" class="lg:hidden text-muted-foreground p-1 hover:text-foreground">
+            ✕
+          </button>
+        </div>
+
+        <div class="py-5 space-y-6 text-xs">
+          <!-- Status & Publish Date -->
+          <div class="space-y-3">
+            <div>
+              <label class="block font-bold text-foreground mb-1">Status</label>
+              <select
+                id="post-status-select"
+                class="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              >
+                <option value="draft" selected={existingPost?.status === 'draft'}>Draft (Work in progress)</option>
+                <option value="published" selected={existingPost?.status === 'published'}>Published (Publicly live)</option>
+                <option value="scheduled" selected={existingPost?.status === 'scheduled'}>Scheduled</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-foreground mb-1">Publish Date</label>
+              <input
+                type="datetime-local"
+                id="post-published-at"
+                value={existingPost?.publishedAt ? new Date(existingPost.publishedAt).toISOString().slice(0, 16) : ''}
+                class="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Author & Category -->
+          <div class="space-y-3 pt-3 border-t border-border/80">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="font-bold text-foreground">Author</label>
+                <button type="button" id="quick-add-author-btn" class="text-[11px] font-bold text-primary hover:underline cursor-pointer">
+                  + Add Author
+                </button>
+              </div>
+              <select
+                id="post-author-select"
+                class="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              >
+                <option value="">Select Author...</option>
+                {authorsList.map((a) => (
+                  <option value={a.id} selected={existingPost?.authorId === a.id}>
+                    {a.name} ({a.role})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label class="block font-bold text-foreground mb-1">Category</label>
+              <select
+                id="post-category-select"
+                class="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              >
+                <option value="">General / Editorial</option>
+                {categoriesList.map((c) => (
+                  <option value={c.id} selected={existingPost?.categoryId === c.id}>
+                    {c.emoji} {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <!-- Tagged Indian Tools (Bi-directional Linking) -->
+          <div class="space-y-2 pt-3 border-t border-border/80">
+            <label class="block font-bold text-foreground">
+              Tagged Indian Tools
+              <span class="font-normal text-muted-foreground block text-[11px]">
+                These tools will be linked and showcased at the bottom of the article.
+              </span>
+            </label>
+            <div class="max-h-40 overflow-y-auto space-y-1 rounded-xl border border-border p-2 bg-slate-50/50" id="tagged-tools-container">
+              {toolsList.map((tool) => (
+                <label class="flex items-center gap-2 p-1 rounded hover:bg-white transition cursor-pointer text-[11px]">
+                  <input
+                    type="checkbox"
+                    name="tagged-tool"
+                    value={tool.id}
+                    checked={taggedToolIds.includes(tool.id)}
+                    class="rounded border-border text-primary focus:ring-primary h-3.5 w-3.5"
+                  />
+                  <span>{tool.categoryEmoji || '🇮🇳'}</span>
+                  <span class="font-medium text-foreground">{tool.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <!-- SEO & Slug Configuration -->
+          <div class="space-y-3 pt-3 border-t border-border/80">
+            <div>
+              <label class="block font-bold text-foreground mb-1">URL Slug</label>
+              <div class="flex items-center rounded-xl border border-border bg-white px-3 py-2 focus-within:border-primary">
+                <span class="text-muted-foreground/60 select-none">/blog/</span>
+                <input
+                  type="text"
+                  id="post-slug-input"
+                  value={existingPost?.slug || ''}
+                  placeholder="article-slug"
+                  class="w-full border-0 bg-transparent text-xs text-foreground focus:outline-none"
+                />
+              </div>
+              <div id="slug-check-msg" class="text-[10px] text-muted-foreground mt-1"></div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="font-bold text-foreground">Meta Title</label>
+                <span id="meta-title-count" class="text-[10px] text-muted-foreground">0 / 60</span>
+              </div>
+              <input
+                type="text"
+                id="post-meta-title"
+                value={existingPost?.metaTitle || ''}
+                placeholder="Google SEO Title..."
+                maxlength="70"
+                class="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="font-bold text-foreground">Meta Description</label>
+                <span id="meta-desc-count" class="text-[10px] text-muted-foreground">0 / 160</span>
+              </div>
+              <textarea
+                id="post-meta-desc"
+                rows="3"
+                placeholder="Search snippet summary..."
+                maxlength="170"
+                class="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none resize-none"
+              >{existingPost?.metaDescription || ''}</textarea>
+            </div>
+
+            <div>
+              <label class="block font-bold text-foreground mb-1">Canonical URL (Optional)</label>
+              <input
+                type="url"
+                id="post-canonical-url"
+                value={existingPost?.canonicalUrl || ''}
+                placeholder="https://..."
+                class="w-full rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Google SERP Snippet Preview -->
+          <div class="pt-3 border-t border-border/80">
+            <div class="text-[11px] font-bold text-foreground uppercase tracking-wider mb-2">Google SERP Preview</div>
+            <div class="rounded-xl border border-border bg-slate-50 p-3 text-left space-y-1">
+              <div class="text-[11px] text-slate-500 font-mono flex items-center gap-1 truncate">
+                <span>https://desialternatives.in</span>
+                <span>›</span>
+                <span>blog</span>
+                <span>›</span>
+                <span id="serp-slug-preview">{existingPost?.slug || 'your-slug'}</span>
+              </div>
+              <div class="text-xs font-bold text-blue-700 hover:underline cursor-pointer line-clamp-1" id="serp-title-preview">
+                {existingPost?.metaTitle || existingPost?.title || 'Article Title | Desi Alternatives'}
+              </div>
+              <div class="text-[11px] text-slate-600 line-clamp-2" id="serp-desc-preview">
+                {existingPost?.metaDescription || existingPost?.subtitle || 'Search summary will appear here on Google SERP.'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Social Card Preview Notice -->
+          <div class="pt-3 border-t border-border/80">
+            <div class="text-[11px] font-bold text-foreground uppercase tracking-wider mb-1.5">Open Graph Social Card</div>
+            <div class="rounded-xl border border-border bg-slate-900 text-white p-3 text-xs space-y-1">
+              <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">⚡ Dynamic 1200×630 WASM PNG</div>
+              <p class="text-[11px] text-slate-400">
+                Generated automatically at <span class="font-mono text-slate-300">/api/og/blog/{existingPost?.slug || '[slug]'}.png</span> with verified preview formatting for LinkedIn, X (Twitter), and WhatsApp.
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <!-- Slash Tool Search & Insert Modal -->
+  <div id="tool-search-modal" class="fixed inset-0 z-50 hidden bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-md rounded-2xl border border-border bg-white shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      <div class="p-4 border-b border-border flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚡</span>
+          <h3 class="text-sm font-bold text-foreground">Embed Indian Tool Card</h3>
+        </div>
+        <button type="button" id="close-tool-modal" class="text-muted-foreground hover:text-foreground p-1 cursor-pointer">✕</button>
+      </div>
+      <div class="p-4 space-y-3">
+        <input
+          type="text"
+          id="modal-tool-search-input"
+          placeholder="Search Indian tools (e.g. SigNoz, Hasura, Appsmith)..."
+          class="w-full rounded-xl border border-border bg-slate-50 px-3.5 py-2 text-xs text-foreground focus:bg-white focus:border-primary focus:outline-none"
+        />
+        <div id="tool-search-results" class="max-h-60 overflow-y-auto space-y-1.5 divide-y divide-border/40">
+          <div class="text-center py-6 text-xs text-muted-foreground">Type to search tools from the database...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Add Author Modal -->
+  <div id="author-modal" class="fixed inset-0 z-50 hidden bg-black/40 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="w-full max-w-sm rounded-2xl border border-border bg-white shadow-2xl p-5 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-foreground">Add New Author</h3>
+        <button type="button" id="close-author-modal" class="text-muted-foreground hover:text-foreground p-1 cursor-pointer">✕</button>
+      </div>
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-foreground mb-1">Author Name *</label>
+          <input type="text" id="new-author-name" placeholder="e.g. Pranay Prateek" class="w-full rounded-xl border border-border px-3 py-2 text-xs" />
+        </div>
+        <div>
+          <label class="block font-bold text-foreground mb-1">Role / Headline</label>
+          <input type="text" id="new-author-role" placeholder="e.g. Co-founder at SigNoz" class="w-full rounded-xl border border-border px-3 py-2 text-xs" />
+        </div>
+        <div>
+          <label class="block font-bold text-foreground mb-1">Twitter / X Handle</label>
+          <input type="text" id="new-author-twitter" placeholder="username" class="w-full rounded-xl border border-border px-3 py-2 text-xs" />
+        </div>
+        <div>
+          <label class="block font-bold text-foreground mb-1">Bio</label>
+          <textarea id="new-author-bio" rows="2" placeholder="Short bio..." class="w-full rounded-xl border border-border px-3 py-2 text-xs resize-none"></textarea>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2 border-t border-border">
+        <button type="button" id="cancel-author-btn" class="rounded-xl border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-slate-50 cursor-pointer">Cancel</button>
+        <button type="button" id="save-author-btn" class="rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 cursor-pointer">Save Author</button>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // State
+  const editPostId = new URLSearchParams(window.location.search).get('id');
+  let coverImageUrl = document.getElementById('cover-preview-img')?.getAttribute('src') || '';
+  let isSaving = false;
+  let isPreviewMode = false;
+
+  // DOM Elements
+  const titleInput = document.getElementById('article-title') as HTMLTextAreaElement;
+  const subtitleInput = document.getElementById('article-subtitle') as HTMLTextAreaElement;
+  const contentInput = document.getElementById('article-content') as HTMLTextAreaElement;
+  const livePreviewBox = document.getElementById('live-preview-box') as HTMLDivElement;
+  const togglePreviewBtn = document.getElementById('toggle-preview-btn') as HTMLButtonElement;
+
+  const saveIndicator = document.getElementById('save-indicator') as HTMLElement;
+  const readingStats = document.getElementById('reading-stats') as HTMLElement;
+  const saveDraftBtn = document.getElementById('save-draft-btn') as HTMLButtonElement;
+  const publishBtn = document.getElementById('publish-btn') as HTMLButtonElement;
+
+  const settingsDrawer = document.getElementById('settings-drawer') as HTMLElement;
+  const toggleDrawerBtn = document.getElementById('toggle-drawer-btn') as HTMLButtonElement;
+  const closeDrawerBtn = document.getElementById('close-drawer-btn') as HTMLButtonElement;
+
+  const statusSelect = document.getElementById('post-status-select') as unknown as HTMLSelectElement;
+  const publishedAtInput = document.getElementById('post-published-at') as HTMLInputElement;
+  const authorSelect = document.getElementById('post-author-select') as unknown as HTMLSelectElement;
+  const categorySelect = document.getElementById('post-category-select') as unknown as HTMLSelectElement;
+  const slugInput = document.getElementById('post-slug-input') as HTMLInputElement;
+  const slugCheckMsg = document.getElementById('slug-check-msg') as HTMLElement;
+  const metaTitleInput = document.getElementById('post-meta-title') as HTMLInputElement;
+  const metaDescInput = document.getElementById('post-meta-desc') as HTMLTextAreaElement;
+  const canonicalUrlInput = document.getElementById('post-canonical-url') as HTMLInputElement;
+
+  const metaTitleCount = document.getElementById('meta-title-count') as HTMLElement;
+  const metaDescCount = document.getElementById('meta-desc-count') as HTMLElement;
+  const serpTitlePreview = document.getElementById('serp-title-preview') as HTMLElement;
+  const serpDescPreview = document.getElementById('serp-desc-preview') as HTMLElement;
+  const serpSlugPreview = document.getElementById('serp-slug-preview') as HTMLElement;
+
+  const coverFileInput = document.getElementById('cover-file-input') as HTMLInputElement;
+  const triggerCoverUpload = document.getElementById('trigger-cover-upload') as HTMLButtonElement;
+  const coverPreviewContainer = document.getElementById('cover-preview-container') as HTMLElement;
+  const coverPreviewImg = document.getElementById('cover-preview-img') as HTMLImageElement;
+  const removeCoverBtn = document.getElementById('remove-cover-btn') as HTMLButtonElement;
+  const addCoverBtnContainer = document.getElementById('add-cover-btn-container') as HTMLElement;
+
+  const toolSearchModal = document.getElementById('tool-search-modal') as HTMLElement;
+  const closeToolModal = document.getElementById('close-tool-modal') as HTMLButtonElement;
+  const modalToolSearchInput = document.getElementById('modal-tool-search-input') as HTMLInputElement;
+  const toolSearchResults = document.getElementById('tool-search-results') as HTMLElement;
+
+  const authorModal = document.getElementById('author-modal') as HTMLElement;
+  const quickAddAuthorBtn = document.getElementById('quick-add-author-btn') as HTMLButtonElement;
+  const closeAuthorModal = document.getElementById('close-author-modal') as HTMLButtonElement;
+  const cancelAuthorBtn = document.getElementById('cancel-author-btn') as HTMLButtonElement;
+  const saveAuthorBtn = document.getElementById('save-author-btn') as HTMLButtonElement;
+
+  function showToast(msg: string, type: 'success' | 'error' | 'info' = 'info') {
+    const container = document.getElementById('editor-toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `rounded-xl p-3.5 text-xs font-semibold shadow-lg border pointer-events-auto transition-all transform duration-200 ${
+      type === 'success'
+        ? 'bg-emerald-950 text-emerald-100 border-emerald-800'
+        : type === 'error'
+        ? 'bg-rose-950 text-rose-100 border-rose-800'
+        : 'bg-slate-900 text-slate-100 border-slate-700'
+    }`;
+    toast.innerHTML = msg;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-10px)';
+      setTimeout(() => toast.remove(), 250);
+    }, 3000);
+  }
+
+  // Preview Mode Toggle
+  togglePreviewBtn.addEventListener('click', () => {
+    isPreviewMode = !isPreviewMode;
+    if (isPreviewMode) {
+      togglePreviewBtn.textContent = 'Edit Mode';
+      togglePreviewBtn.classList.add('bg-primary', 'text-primary-foreground');
+      contentInput.classList.add('hidden');
+      livePreviewBox.classList.remove('hidden');
+
+      // Basic preview markdown renderer
+      let raw = contentInput.value;
+      raw = raw.replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mt-4 mb-2 font-serif-editorial">$1</h3>');
+      raw = raw.replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mt-6 mb-3 font-serif-editorial border-b pb-1">$1</h2>');
+      raw = raw.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
+      raw = raw.replace(/\*(.*)\*/gim, '<em>$1</em>');
+      raw = raw.replace(/`([^`]+)`/gim, '<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs text-amber-900">$1</code>');
+      raw = raw.replace(/:::tool\{slug="([^"]+)"\}\s*:::/gim, '<div class="p-3 my-4 rounded-xl border border-amber-300 bg-amber-50/70 text-xs font-bold text-amber-900">⚡ Live Embedded Tool: <code>$1</code></div>');
+      raw = raw.replace(/\n\n/gim, '<br/><br/>');
+
+      livePreviewBox.innerHTML = raw || '<p class="text-muted-foreground italic">No content written yet.</p>';
+    } else {
+      togglePreviewBtn.textContent = 'Preview Mode';
+      togglePreviewBtn.classList.remove('bg-primary', 'text-primary-foreground');
+      contentInput.classList.remove('hidden');
+      livePreviewBox.classList.add('hidden');
+    }
+  });
+
+  // Auto-resize textareas
+  function autoResize(el: HTMLTextAreaElement) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  }
+
+  titleInput.addEventListener('input', () => autoResize(titleInput));
+  subtitleInput.addEventListener('input', () => autoResize(subtitleInput));
+  autoResize(titleInput);
+  autoResize(subtitleInput);
+
+  // Word Count & Read Time Calculation
+  function updateReadingStats() {
+    const text = contentInput.value.trim();
+    const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+    const minutes = Math.max(1, Math.ceil(words / 200));
+    readingStats.textContent = `· ${words.toLocaleString()} words · ${minutes} min read`;
+  }
+  contentInput.addEventListener('input', updateReadingStats);
+  updateReadingStats();
+
+  // SERP Previews & Character Counters
+  function updateSerpPreviews() {
+    const title = metaTitleInput.value.trim() || titleInput.value.trim() || 'Article Title | Desi Alternatives';
+    const desc = metaDescInput.value.trim() || subtitleInput.value.trim() || 'Search summary will appear here on Google SERP.';
+    const slug = slugInput.value.trim() || 'your-slug';
+
+    serpTitlePreview.textContent = title;
+    serpDescPreview.textContent = desc;
+    serpSlugPreview.textContent = slug;
+
+    metaTitleCount.textContent = `${metaTitleInput.value.length} / 60`;
+    metaTitleCount.className = `text-[10px] ${metaTitleInput.value.length > 60 ? 'text-amber-600 font-bold' : 'text-muted-foreground'}`;
+
+    metaDescCount.textContent = `${metaDescInput.value.length} / 160`;
+    metaDescCount.className = `text-[10px] ${metaDescInput.value.length > 160 ? 'text-amber-600 font-bold' : 'text-muted-foreground'}`;
+  }
+
+  titleInput.addEventListener('input', () => {
+    if (!metaTitleInput.value) updateSerpPreviews();
+  });
+  subtitleInput.addEventListener('input', () => {
+    if (!metaDescInput.value) updateSerpPreviews();
+  });
+  metaTitleInput.addEventListener('input', updateSerpPreviews);
+  metaDescInput.addEventListener('input', updateSerpPreviews);
+  slugInput.addEventListener('input', updateSerpPreviews);
+  updateSerpPreviews();
+
+  // Auto-generate slug on title change if slug is empty
+  titleInput.addEventListener('blur', () => {
+    if (!slugInput.value && titleInput.value) {
+      slugInput.value = titleInput.value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '');
+      updateSerpPreviews();
+      checkSlugAvailability();
+    }
+  });
+
+  // Slug check
+  let slugDebounce: any;
+  async function checkSlugAvailability() {
+    const slug = slugInput.value.trim();
+    if (!slug) return;
+
+    try {
+      const res = await fetch('/api/admin/blog/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'check-slug', slug, id: editPostId }),
+      });
+      const data: any = await res.json();
+      if (data.available) {
+        slugCheckMsg.innerHTML = `<span class="text-emerald-600">✓ Slug is available</span>`;
+      } else {
+        slugCheckMsg.innerHTML = `<span class="text-rose-600">⚠ Slug already taken (${data.error || 'choose another'})</span>`;
+      }
+    } catch (e) {
+      // Ignore
+    }
+  }
+  slugInput.addEventListener('input', () => {
+    clearTimeout(slugDebounce);
+    slugDebounce = setTimeout(checkSlugAvailability, 400);
+  });
+
+  // Cover Image Upload to Cloudflare R2
+  triggerCoverUpload.addEventListener('click', () => coverFileInput.click());
+  coverFileInput.addEventListener('change', async () => {
+    const file = coverFileInput.files?.[0];
+    if (!file) return;
+
+    triggerCoverUpload.innerHTML = 'Uploading image...';
+    triggerCoverUpload.disabled = true;
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data: any = await res.json();
+      if (data.url) {
+        coverImageUrl = data.url;
+        coverPreviewImg.src = data.url;
+        coverPreviewContainer.classList.remove('hidden');
+        addCoverBtnContainer.classList.add('hidden');
+        showToast('Cover image uploaded.', 'success');
+      } else {
+        showToast(data.error || 'Failed to upload cover', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Upload error', 'error');
+    } finally {
+      triggerCoverUpload.innerHTML = `<span>Add Cover Image</span>`;
+      triggerCoverUpload.disabled = false;
+    }
+  });
+
+  removeCoverBtn.addEventListener('click', () => {
+    coverImageUrl = '';
+    coverPreviewImg.src = '';
+    coverPreviewContainer.classList.add('hidden');
+    addCoverBtnContainer.classList.remove('hidden');
+    coverFileInput.value = '';
+  });
+
+  // Drawer Toggle
+  toggleDrawerBtn.addEventListener('click', () => {
+    settingsDrawer.classList.toggle('hidden');
+  });
+  closeDrawerBtn.addEventListener('click', () => {
+    settingsDrawer.classList.add('hidden');
+  });
+
+  // Quick Command Buttons
+  document.querySelectorAll('.quick-cmd').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const cmd = (btn as HTMLElement).dataset.cmd;
+      insertCommandSnippet(cmd);
+    });
+  });
+
+  function insertCommandSnippet(cmd?: string) {
+    const pos = contentInput.selectionStart || 0;
+    const val = contentInput.value;
+    let snippet = '';
+
+    if (cmd === 'h2') snippet = '\n\n## Section Heading\n\n';
+    else if (cmd === 'h3') snippet = '\n\n### Sub-section Heading\n\n';
+    else if (cmd === 'callout') snippet = '\n\n> [!NOTE]\n> **Key Takeaway**: Summary insight or important sovereign advice.\n\n';
+    else if (cmd === 'table') snippet = '\n\n| Capability | Sovereign Alternative | Global Giant |\n| :--- | :--- | :--- |\n| **Data Hosting** | 🇮🇳 Mumbai / India | 🇺🇸 US-East |\n| **Compliance** | DPDP Act 2023 | GDPR / SOC2 |\n| **Billing** | INR + 18% GST ITC | USD + Forex fee |\n\n';
+    else if (cmd === 'code') snippet = '\n\n```bash\n# Quick installation snippet\ncurl -fsSL https://get.signoz.io/install.sh | bash\n```\n\n';
+    else if (cmd === 'tool') {
+      openToolModal();
+      return;
+    }
+
+    contentInput.value = val.substring(0, pos) + snippet + val.substring(pos);
+    contentInput.focus();
+    updateReadingStats();
+  }
+
+  // Tool Embed Modal
+  function openToolModal() {
+    toolSearchModal.classList.remove('hidden');
+    modalToolSearchInput.value = '';
+    modalToolSearchInput.focus();
+    loadToolsForModal('');
+  }
+  closeToolModal.addEventListener('click', () => toolSearchModal.classList.add('hidden'));
+
+  let toolSearchDebounce: any;
+  modalToolSearchInput.addEventListener('input', () => {
+    clearTimeout(toolSearchDebounce);
+    toolSearchDebounce = setTimeout(() => loadToolsForModal(modalToolSearchInput.value.trim()), 200);
+  });
+
+  async function loadToolsForModal(query: string) {
+    toolSearchResults.innerHTML = `<div class="text-center py-4 text-xs text-muted-foreground">Searching...</div>`;
+    try {
+      const res = await fetch(`/api/admin/blog/search-tools?q=${encodeURIComponent(query)}`);
+      const data: any = await res.json();
+      if (!data.tools || data.tools.length === 0) {
+        toolSearchResults.innerHTML = `<div class="text-center py-4 text-xs text-muted-foreground">No Indian tools found matching "${query}".</div>`;
+        return;
+      }
+
+      toolSearchResults.innerHTML = data.tools
+        .map(
+          (t: any) => `
+        <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer select-tool-item" data-slug="${t.slug}" data-name="${t.name}">
+          <div class="flex items-center gap-2.5">
+            <img src="${t.logoUrl}" alt="${t.name}" class="h-7 w-7 rounded-lg object-contain bg-white border border-border" />
+            <div>
+              <div class="font-bold text-foreground text-xs">${t.name}</div>
+              <div class="text-[10px] text-muted-foreground line-clamp-1">${t.tagline}</div>
+            </div>
+          </div>
+          <button type="button" class="rounded-lg bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-bold hover:bg-primary hover:text-white transition">
+            + Embed
+          </button>
+        </div>
+      `
+        )
+        .join('');
+
+      document.querySelectorAll('.select-tool-item').forEach((item) => {
+        item.addEventListener('click', () => {
+          const slug = (item as HTMLElement).dataset.slug;
+          const name = (item as HTMLElement).dataset.name;
+          const snippet = `\n\n:::tool{slug="${slug}"}\n::: \n\n`;
+          const pos = contentInput.selectionStart || 0;
+          contentInput.value = contentInput.value.substring(0, pos) + snippet + contentInput.value.substring(pos);
+          toolSearchModal.classList.add('hidden');
+          contentInput.focus();
+          showToast(`Embedded tool card for ${name}.`, 'success');
+        });
+      });
+    } catch (e: any) {
+      toolSearchResults.innerHTML = `<div class="text-center py-4 text-xs text-rose-600">Error loading tools.</div>`;
+    }
+  }
+
+  // Quick Add Author Modal
+  quickAddAuthorBtn.addEventListener('click', () => authorModal.classList.remove('hidden'));
+  closeAuthorModal.addEventListener('click', () => authorModal.classList.add('hidden'));
+  cancelAuthorBtn.addEventListener('click', () => authorModal.classList.add('hidden'));
+
+  saveAuthorBtn.addEventListener('click', async () => {
+    const name = (document.getElementById('new-author-name') as HTMLInputElement).value.trim();
+    const role = (document.getElementById('new-author-role') as HTMLInputElement).value.trim();
+    const twitter = (document.getElementById('new-author-twitter') as HTMLInputElement).value.trim();
+    const bio = (document.getElementById('new-author-bio') as HTMLTextAreaElement).value.trim();
+
+    if (!name) {
+      showToast('Author name is required', 'error');
+      return;
+    }
+
+    saveAuthorBtn.disabled = true;
+    saveAuthorBtn.textContent = 'Saving...';
+
+    try {
+      const res = await fetch('/api/admin/blog/authors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, role, twitterHandle: twitter, bio }),
+      });
+
+      const data: any = await res.json();
+      if (data.success) {
+        const opt = document.createElement('option');
+        opt.value = data.author.id;
+        opt.textContent = `${data.author.name} (${data.author.role})`;
+        opt.selected = true;
+        authorSelect.appendChild(opt);
+        authorModal.classList.add('hidden');
+        showToast('Author created and selected.', 'success');
+      } else {
+        showToast(data.error || 'Failed to create author', 'error');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Network error', 'error');
+    } finally {
+      saveAuthorBtn.disabled = false;
+      saveAuthorBtn.textContent = 'Save Author';
+    }
+  });
+
+  // Save Post Handler (Draft vs Published)
+  async function savePost(targetStatus?: string) {
+    if (isSaving) return;
+
+    const title = titleInput.value.trim();
+    if (!title) {
+      showToast('Please enter an article title', 'error');
+      titleInput.focus();
+      return;
+    }
+
+    const subtitle = subtitleInput.value.trim();
+    const content = contentInput.value;
+    const status = targetStatus || statusSelect.value || 'draft';
+    const authorId = authorSelect.value || null;
+    const categoryId = categorySelect.value || null;
+    const slug = slugInput.value.trim();
+    const metaTitle = metaTitleInput.value.trim();
+    const metaDescription = metaDescInput.value.trim();
+    const canonicalUrl = canonicalUrlInput.value.trim();
+    const publishedAt = publishedAtInput.value ? new Date(publishedAtInput.value).toISOString() : null;
+
+    // Get checked tagged tools
+    const taggedToolIds: string[] = [];
+    document.querySelectorAll('input[name="tagged-tool"]:checked').forEach((chk) => {
+      taggedToolIds.push((chk as HTMLInputElement).value);
+    });
+
+    isSaving = true;
+    saveIndicator.innerHTML = `<span class="h-1.5 w-1.5 rounded-full bg-amber-500 animate-ping"></span><span>Saving to cloud...</span>`;
+    saveDraftBtn.disabled = true;
+    publishBtn.disabled = true;
+
+    try {
+      const payload: any = {
+        action: editPostId ? 'update' : 'create',
+        id: editPostId || undefined,
+        title,
+        subtitle,
+        content,
+        coverImageUrl,
+        authorId,
+        categoryId,
+        status,
+        slug,
+        metaTitle,
+        metaDescription,
+        canonicalUrl,
+        publishedAt,
+        taggedToolIds,
+      };
+
+      const res = await fetch('/api/admin/blog/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data: any = await res.json();
+      if (data.success) {
+        saveIndicator.innerHTML = `<span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span><span>Saved</span>`;
+        showToast(
+          status === 'published'
+            ? 'Article published live on /blog!'
+            : 'Article saved to drafts.',
+          'success'
+        );
+
+        if (!editPostId && data.postId) {
+          // Redirect to edit URL to continue working
+          window.location.href = `/admin/blog/editor?id=${data.postId}`;
+        }
+      } else {
+        saveIndicator.innerHTML = `<span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span><span>Save error</span>`;
+        showToast(data.error || 'Failed to save article', 'error');
+      }
+    } catch (err: any) {
+      saveIndicator.innerHTML = `<span class="h-1.5 w-1.5 rounded-full bg-rose-500"></span><span>Network error</span>`;
+      showToast(err.message || 'Network error while saving', 'error');
+    } finally {
+      isSaving = false;
+      saveDraftBtn.disabled = false;
+      publishBtn.disabled = false;
+    }
+  }
+
+  saveDraftBtn.addEventListener('click', () => savePost('draft'));
+  publishBtn.addEventListener('click', () => savePost('published'));
+</script>
