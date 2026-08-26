@@ -19,6 +19,7 @@ export const ID_PREFIXES = {
   blogAuthor: 'author_',
   blogPost: 'post_',
   blogPostTool: 'bpt_',
+  searchLog: 'srch_',
 } as const;
 
 export type IdPrefixKey = keyof typeof ID_PREFIXES;
@@ -41,3 +42,4 @@ export const createPricingPlanId = () => generateId(ID_PREFIXES.pricingPlan);
 export const createBlogAuthorId = () => generateId(ID_PREFIXES.blogAuthor);
 export const createBlogPostId = () => generateId(ID_PREFIXES.blogPost);
 export const createBlogPostToolId = () => generateId(ID_PREFIXES.blogPostTool);
+export const createSearchLogId = () => generateId(ID_PREFIXES.searchLog);

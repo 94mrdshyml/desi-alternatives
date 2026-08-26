@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
-import SearchDialog from '@/components/SearchDialog';
 import { eq, asc } from 'drizzle-orm';
 import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans } from '@/lib/server/db/schema';
 
@@ -17,7 +16,6 @@ let alternatives: any[] = [];
 let pricingPlans: any[] = [];
 let parsedPros: string[] = [];
 let parsedCons: string[] = [];
-let searchableTools: any[] = [];
 
 try {
   // 1. Fetch tool by slug
@@ -118,7 +116,6 @@ const brandColor = toolResult.primaryColor || '#D97706';
   ogType="product"
 >
   <Navbar />
-  <SearchDialog client:idle tools={searchableTools} />
 
   <!-- Breadcrumb Bar -->
   <div class="border-b border-border/80 bg-white/60">

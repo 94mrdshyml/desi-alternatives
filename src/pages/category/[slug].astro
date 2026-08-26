@@ -3,7 +3,6 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import CategoryFilter from '@/components/CategoryFilter.astro';
 import ToolCard from '@/components/ToolCard.astro';
-import SearchDialog from '@/components/SearchDialog';
 import { eq } from 'drizzle-orm';
 import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
 
@@ -116,15 +115,6 @@ const categoryOptions = allCategories.map((c) => ({
   emoji: c.emoji,
   count: categoryCounts[c.slug] || 0,
 }));
-
-const searchableTools = allTools.map((t) => ({
-  id: t.id,
-  slug: t.slug,
-  name: t.name,
-  tagline: t.tagline,
-  categoryName: t.categoryName,
-  alternatives: t.alternatives?.map((a: any) => a.name) || [],
-}));
 ---
 
 <BaseLayout
@@ -132,7 +122,6 @@ const searchableTools = allTools.map((t) => ({
   description={currentCategory.description || `Discover Indian ${currentCategory.name} alternatives to global giants.`}
 >
   <Navbar />
-  <SearchDialog client:idle tools={searchableTools} />
 
   <main class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
     <!-- Category Hero Banner -->

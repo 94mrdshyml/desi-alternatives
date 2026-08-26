@@ -1,6 +1,7 @@
 ---
 import '../styles/global.css';
 import AnalyticsTracker from '@/components/AnalyticsTracker.astro';
+import SearchDialog from '@/components/SearchDialog';
 
 interface Props {
   title?: string;
@@ -80,6 +81,7 @@ if (absoluteOgImage.includes('.jpg') || absoluteOgImage.includes('.jpeg')) {
   </head>
   <body class="min-h-screen bg-background text-foreground antialiased selection:bg-primary/20 selection:text-primary">
     <slot />
+    <SearchDialog client:load />
     <AnalyticsTracker />
   </body>
 </html>

@@ -1,6 +1,6 @@
 ---
 import AdminLayout from '@/layouts/AdminLayout.astro';
-import { desiTools, globalTools, categories, claimsQueue, users } from '@/lib/server/db/schema';
+import { desiTools, globalTools, categories, claimsQueue, users, searchLogs } from '@/lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user;
@@ -20,6 +20,12 @@ let totalCategoriesCount = 0;
 let pendingClaimsCount = 0;
 let totalUsersCount = 0;
 
+// Search Intelligence & Content Gap Metrics
+let totalSearchesCount = 0;
+let zeroResultSearches: { query: string; count: number; lastSearched: string }[] = [];
+let topSearchQueries: { query: string; count: number; avgResults: number; clicks: number }[] = [];
+let recentSearchLogs: any[] = [];
+
 if (db) {
   try {
     const allTools = await db.select().from(desiTools).orderBy(desc(desiTools.createdAt)).all();
@@ -35,6 +41,56 @@ if (db) {
     pendingClaimsCount = claims.length;
     const usersList = await db.select().from(users).all();
     totalUsersCount = usersList.length;
+
+    // Search Logs Telemetry Queries
+    try {
+      const allSearchLogs = await db
+        .select()
+        .from(searchLogs)
+        .orderBy(desc(searchLogs.createdAt))
+        .all();
+
+      totalSearchesCount = allSearchLogs.length;
+      recentSearchLogs = allSearchLogs.slice(0, 12);
+
+      // Aggregate Zero-Result Searches (Content Gaps)
+      const zeroLogs = allSearchLogs.filter((s) => s.resultsCount === 0);
+      const zeroMap: Record<string, { query: string; count: number; lastSearched: string }> = {};
+      zeroLogs.forEach((z) => {
+        const key = z.normalizedQuery.toLowerCase();
+        if (!zeroMap[key]) {
+          zeroMap[key] = { query: z.query, count: 0, lastSearched: z.createdAt };
+        }
+        zeroMap[key].count += 1;
+      });
+      zeroResultSearches = Object.values(zeroMap).sort((a, b) => b.count - a.count).slice(0, 8);
+
+      // Aggregate Top Search Queries
+      const queryMap: Record<string, { query: string; count: number; totalResults: number; clicks: number }> = {};
+      allSearchLogs.forEach((s) => {
+        const key = s.normalizedQuery.toLowerCase();
+        if (!queryMap[key]) {
+          queryMap[key] = { query: s.query, count: 0, totalResults: 0, clicks: 0 };
+        }
+        queryMap[key].count += 1;
+        queryMap[key].totalResults += s.resultsCount || 0;
+        if (s.clickedType && s.clickedType !== 'none') {
+          queryMap[key].clicks += 1;
+        }
+      });
+
+      topSearchQueries = Object.values(queryMap)
+        .map((item) => ({
+          query: item.query,
+          count: item.count,
+          avgResults: Math.round(item.totalResults / item.count),
+          clicks: item.clicks,
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
+    } catch (searchErr) {
+      console.warn('Search logs query warning:', searchErr);
+    }
   } catch (e) {
     console.error('Failed to load analytics data:', e);
   }
@@ -240,6 +296,232 @@ if (db) {
               <span class="font-mono font-semibold text-primary">{98 - idx * 14} upvotes</span>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- SEARCH INTELLIGENCE & CONTENT GAP EXPLORER -->
+    <!-- ========================================== -->
+    <div class="space-y-6 pt-4 border-t border-border">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-xl font-bold tracking-tight text-foreground">Search Intelligence & Content Gaps</h2>
+            <span class="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-bold text-amber-800 border border-amber-200">
+              Live Query Telemetry
+            </span>
+          </div>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Identify exact search terms buyers use, zero-result software gaps to list next, and query conversion rates.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a
+            href="/admin/catalog"
+            class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-3.5 py-2 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition cursor-pointer"
+          >
+            <span>🇮🇳 Manage Catalog</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Search Metrics Cards -->
+      <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Total Searches</p>
+          <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalSearchesCount.toLocaleString()}</p>
+          <p class="mt-1 text-[11px] text-muted-foreground font-medium">Logged search events</p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">0-Result Content Gaps</p>
+          <p class="mt-2 text-2xl font-extrabold text-amber-600 font-mono">{zeroResultSearches.length}</p>
+          <p class="mt-1 text-[11px] text-amber-700 font-medium">Missing tools to onboard</p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Top Search Term</p>
+          <p class="mt-2 text-xl font-extrabold text-foreground font-mono truncate">
+            {topSearchQueries.length > 0 ? topSearchQueries[0].query : 'N/A'}
+          </p>
+          <p class="mt-1 text-[11px] text-muted-foreground font-medium">
+            {topSearchQueries.length > 0 ? `${topSearchQueries[0].count} queries` : 'Awaiting data'}
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search Click-Throughs</p>
+          <p class="mt-2 text-2xl font-extrabold text-emerald-600 font-mono">
+            {recentSearchLogs.filter((s) => s.clickedType && s.clickedType !== 'none').length}
+          </p>
+          <p class="mt-1 text-[11px] text-emerald-700 font-medium">Card navigations</p>
+        </div>
+      </div>
+
+      <!-- Content Gaps & Top Queries Grid -->
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <!-- 1. Zero-Result Content Gaps Table -->
+        <div class="rounded-2xl border border-amber-200 bg-amber-50/40 p-6 shadow-xs">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="text-base">🚨</span>
+              <h3 class="text-sm font-bold text-amber-950">Zero-Result Searches (High Intent Gaps)</h3>
+            </div>
+            <span class="rounded-full bg-amber-200/80 px-2 py-0.5 text-[10px] font-bold text-amber-900">
+              Action Required
+            </span>
+          </div>
+          <p class="mt-1 text-xs text-amber-800/90 leading-relaxed">
+            These terms were searched by visitors but returned 0 tools. Add Indian homegrown alternatives or global reference anchors for these terms to capture organic traffic!
+          </p>
+
+          <div class="mt-4 divide-y divide-amber-200/70 border-t border-amber-200/70">
+            {zeroResultSearches.length === 0 ? (
+              <div class="py-6 text-center text-xs text-amber-900/70">
+                ✨ Zero content gaps recorded yet! As users search for missing software, queries will appear here.
+              </div>
+            ) : (
+              zeroResultSearches.map((item, idx) => (
+                <div class="flex items-center justify-between py-3 text-xs">
+                  <div class="flex items-center gap-3">
+                    <span class="font-mono font-bold text-amber-900/50 w-4">{idx + 1}</span>
+                    <div>
+                      <div class="font-bold text-amber-950 font-mono">"{item.query}"</div>
+                      <div class="text-[10px] text-amber-800/80">Searched {item.count} times</div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-1.5">
+                    <a
+                      href={`/admin/catalog?tab=indian-tools&name=${encodeURIComponent(item.query)}`}
+                      class="rounded-lg bg-white border border-amber-300 px-2.5 py-1 text-[11px] font-bold text-amber-900 shadow-2xs hover:bg-amber-100 transition"
+                    >
+                      + Add Indian Tool
+                    </a>
+                    <a
+                      href={`/admin/catalog?tab=global-giants&name=${encodeURIComponent(item.query)}`}
+                      class="rounded-lg bg-amber-600 px-2.5 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-amber-700 transition"
+                    >
+                      + Add Global Anchor
+                    </a>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <!-- 2. Most Popular Searches Table -->
+        <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+          <h3 class="text-sm font-bold text-foreground flex items-center justify-between">
+            <span>Most Popular Search Keywords</span>
+            <span class="text-xs text-muted-foreground font-normal">All query streams</span>
+          </h3>
+          <p class="mt-1 text-xs text-muted-foreground">
+            Top keywords searched by users, average results count returned, and total clicks generated.
+          </p>
+
+          <div class="mt-4 divide-y divide-border border-t border-border">
+            {topSearchQueries.length === 0 ? (
+              <div class="py-6 text-center text-xs text-muted-foreground">
+                🔍 No search queries logged yet. Try searching in the search modal (⌘K) to generate telemetry!
+              </div>
+            ) : (
+              topSearchQueries.map((item, idx) => (
+                <div class="flex items-center justify-between py-3 text-xs">
+                  <div class="flex items-center gap-3">
+                    <span class="font-mono font-bold text-muted-foreground w-4">{idx + 1}</span>
+                    <div>
+                      <span class="font-bold text-foreground font-mono">"{item.query}"</span>
+                      <div class="text-[10px] text-muted-foreground">
+                        {item.avgResults} results avg
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-3 text-right">
+                    <div>
+                      <span class="font-mono font-bold text-foreground">{item.count} searches</span>
+                      <div class="text-[10px] text-emerald-600 font-medium">
+                        {item.clicks} clicks
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Real-Time Live Search Stream -->
+      <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+        <div class="flex items-center justify-between mb-3">
+          <div class="flex items-center gap-2">
+            <span class="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <h3 class="text-sm font-bold text-foreground">Recent Live Search Feed</h3>
+          </div>
+          <span class="text-xs text-muted-foreground">Last {recentSearchLogs.length} events</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="border-b border-border bg-secondary/40">
+              <tr>
+                <th class="py-2.5 px-3 font-semibold text-foreground">Query</th>
+                <th class="py-2.5 px-3 font-semibold text-foreground">Results Count</th>
+                <th class="py-2.5 px-3 font-semibold text-foreground">Status / Result Type</th>
+                <th class="py-2.5 px-3 font-semibold text-foreground">Clicked Destination</th>
+                <th class="py-2.5 px-3 font-semibold text-foreground text-right">Time</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              {recentSearchLogs.length === 0 ? (
+                <tr>
+                  <td colspan="5" class="py-6 text-center text-xs text-muted-foreground">
+                    No search events logged yet.
+                  </td>
+                </tr>
+              ) : (
+                recentSearchLogs.map((log) => {
+                  const isZero = log.resultsCount === 0;
+                  return (
+                    <tr class="hover:bg-slate-50/50 transition">
+                      <td class="py-2.5 px-3 font-mono font-bold text-foreground">
+                        "{log.query}"
+                      </td>
+                      <td class="py-2.5 px-3">
+                        <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          isZero ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                        }`}>
+                          {log.resultsCount} {log.resultsCount === 1 ? 'match' : 'matches'}
+                        </span>
+                      </td>
+                      <td class="py-2.5 px-3">
+                        {isZero ? (
+                          <span class="inline-flex items-center gap-1 font-bold text-amber-700 text-[11px]">
+                            <span>🚨 Content Gap</span>
+                          </span>
+                        ) : (
+                          <span class="text-muted-foreground text-[11px]">
+                            {log.clickedType !== 'none' ? `Clicked ${log.clickedType}` : 'Browsed'}
+                          </span>
+                        )}
+                      </td>
+                      <td class="py-2.5 px-3 text-muted-foreground font-mono text-[11px]">
+                        {log.clickedSlug ? `/${log.clickedType === 'tool' ? 'tools' : log.clickedType === 'alternative' ? 'alternatives' : log.clickedType === 'category' ? 'category' : 'blog'}/${log.clickedSlug}` : '—'}
+                      </td>
+                      <td class="py-2.5 px-3 text-right text-muted-foreground text-[10px] font-mono">
+                        {log.createdAt ? new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

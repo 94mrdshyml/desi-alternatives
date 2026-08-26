@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
-import SearchDialog from '@/components/SearchDialog';
 import CostSavingsCalculator from '@/components/CostSavingsCalculator';
 import { eq } from 'drizzle-orm';
 import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
@@ -128,15 +127,6 @@ try {
   }
 } catch {}
 
-const searchableTools = allToolsList.map((t) => ({
-  id: t.id,
-  slug: t.slug,
-  name: t.name,
-  tagline: t.tagline,
-  categoryName: t.categoryName,
-  alternatives: t.alternatives?.map((a: any) => a.name) || [],
-}));
-
 // SEO Metadata
 const pageTitle = `Top Indian Alternatives to ${currentGlobalTool.name} in 2026 — Desi Alternatives`;
 const pageDescription = `Looking for sovereign Indian alternatives to ${currentGlobalTool.name}? Compare top homegrown software with ₹ INR pricing, 18% GST invoices, zero forex markups, and local data residency in India.`;
@@ -201,7 +191,6 @@ const jsonLdData = [
   ogImage={`/api/og/alternative/${currentGlobalTool.slug}.png`}
 >
   <Navbar />
-  <SearchDialog client:idle tools={searchableTools} />
 
   <!-- Inject Schema.org JSON-LD -->
   <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLdData)} />

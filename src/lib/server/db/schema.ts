@@ -15,6 +15,7 @@ import {
   createBlogAuthorId,
   createBlogPostId,
   createBlogPostToolId,
+  createSearchLogId,
 } from '../id';
 
 // ==========================================
@@ -271,6 +272,22 @@ export const blogPostTools = sqliteTable('blog_post_tools', {
   id: text('id').primaryKey().$defaultFn(createBlogPostToolId),
   postId: text('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
   desiToolId: text('desi_tool_id').notNull().references(() => desiTools.id, { onDelete: 'cascade' }),
+});
+
+// ==========================================
+// 9. SEARCH INTELLIGENCE & TELEMETRY
+// ==========================================
+
+export const searchLogs = sqliteTable('search_logs', {
+  id: text('id').primaryKey().$defaultFn(createSearchLogId),
+  query: text('query').notNull(),
+  normalizedQuery: text('normalized_query').notNull(),
+  resultsCount: integer('results_count').default(0).notNull(),
+  clickedType: text('clicked_type', { enum: ['tool', 'alternative', 'category', 'blog', 'none'] }).default('none'),
+  clickedId: text('clicked_id'),
+  clickedSlug: text('clicked_slug'),
+  userSessionId: text('user_session_id'),
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 
