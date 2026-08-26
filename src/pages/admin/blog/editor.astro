@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import { blogPosts, blogAuthors, categories, blogPostTools, desiTools, users } from '@/lib/server/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { eq, or, inArray } from 'drizzle-orm';
 
 const user = Astro.locals.user;
 const db = Astro.locals.db;
@@ -34,8 +34,11 @@ if (db) {
       .orderBy(users.name)
       .all();
 
+    const validAuthorIds: string[] = [];
+
     for (const u of authorUsers) {
       const authorProfileId = `author_u_${u.id}`;
+      validAuthorIds.push(authorProfileId);
       const existing = await db.select().from(blogAuthors).where(eq(blogAuthors.id, authorProfileId)).get();
       if (!existing) {
         const slug = u.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -50,7 +53,10 @@ if (db) {
       }
     }
 
-    authorsList = await db.select().from(blogAuthors).orderBy(blogAuthors.name).all();
+    // Strictly fetch only live authors mapped to real admin/author users
+    authorsList = validAuthorIds.length > 0
+      ? await db.select().from(blogAuthors).where(inArray(blogAuthors.id, validAuthorIds)).orderBy(blogAuthors.name).all()
+      : [];
     categoriesList = await db.select().from(categories).orderBy(categories.name).all();
     toolsList = await db
       .select({
@@ -675,7 +681,29 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write New Arti
       raw = raw.replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>');
       raw = raw.replace(/\*(.*)\*/gim, '<em>$1</em>');
       raw = raw.replace(/`([^`]+)`/gim, '<code class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs text-amber-900">$1</code>');
-      raw = raw.replace(/:::tool\{slug="([^"]+)"\}\s*:::/gim, '<div class="p-3 my-4 rounded-xl border border-amber-300 bg-amber-50/70 text-xs font-bold text-amber-900">⚡ Live Embedded Tool: <code>$1</code></div>');
+      raw = raw.replace(/:::tool\{slug="([^"]+)"\}\s*:::/gim, (_m, slug) => {
+        const cleanSlug = String(slug || '').trim();
+        return `
+          <div class="my-6 rounded-2xl border border-border/80 bg-gradient-to-br from-white via-amber-50/20 to-slate-50/60 p-4 sm:p-5 shadow-sm not-prose">
+            <div class="flex items-center justify-between gap-3 flex-wrap">
+              <div class="flex items-center gap-3">
+                <div class="h-11 w-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-base font-bold text-amber-900 shrink-0">
+                  ⚡
+                </div>
+                <div>
+                  <div class="font-bold text-foreground capitalize text-sm sm:text-base">${cleanSlug.replace(/-/g, ' ')}</div>
+                  <div class="text-[11px] text-muted-foreground">Live Indian Software Card · DPDP &amp; GST Invoicing Ready</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 px-2.5 py-1 text-[10px] font-bold">
+                  ✓ Verified Embed
+                </span>
+              </div>
+            </div>
+          </div>
+        `;
+      });
       raw = raw.replace(/\n\n/gim, '<br/><br/>');
 
       livePreviewBox.innerHTML = raw || '<p class="text-muted-foreground italic">No content written yet.</p>';

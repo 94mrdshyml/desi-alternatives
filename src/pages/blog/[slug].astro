@@ -3,7 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
 import { blogPosts, blogAuthors, categories, blogPostTools, desiTools } from '@/lib/server/db/schema';
-import { eq, ne, and } from 'drizzle-orm';
+import { eq, ne, and, inArray } from 'drizzle-orm';
 
 const { slug } = Astro.params;
 const db = Astro.locals.db;
@@ -54,8 +54,12 @@ try {
     return Astro.redirect('/blog');
   }
 
-  // Get tagged tools
-  mentionedTools = await db
+  // Extract all tool slugs embedded in post content (e.g. :::tool{slug="appsmith"}:::)
+  const contentToolMatches = Array.from((post.content || '').matchAll(/:::tool\{slug="([^"]+)"\}/g)) as RegExpMatchArray[];
+  const embeddedSlugs = contentToolMatches.map((m) => (m[1] || '').trim()).filter(Boolean);
+
+  // 1. Get explicitly tagged tools from blogPostTools
+  const explicitlyTagged = await db
     .select({
       id: desiTools.id,
       name: desiTools.name,
@@ -72,11 +76,49 @@ try {
       isOpenSource: desiTools.isOpenSource,
       city: desiTools.city,
       state: desiTools.state,
+      categoryName: categories.name,
+      categoryEmoji: categories.emoji,
     })
     .from(blogPostTools)
     .innerJoin(desiTools, eq(blogPostTools.desiToolId, desiTools.id))
+    .leftJoin(categories, eq(desiTools.categoryId, categories.id))
     .where(eq(blogPostTools.postId, post.id))
     .all();
+
+  mentionedTools = [...explicitlyTagged];
+
+  // 2. Fetch all missing embedded tools directly by slug from desiTools
+  const existingSlugs = new Set(mentionedTools.map((t) => t.slug));
+  const missingSlugs = embeddedSlugs.filter((slug) => !existingSlugs.has(slug));
+
+  if (missingSlugs.length > 0) {
+    const extraTools = await db
+      .select({
+        id: desiTools.id,
+        name: desiTools.name,
+        slug: desiTools.slug,
+        tagline: desiTools.tagline,
+        logoUrl: desiTools.logoUrl,
+        websiteUrl: desiTools.websiteUrl,
+        primaryColor: desiTools.primaryColor,
+        startingPriceInr: desiTools.startingPriceInr,
+        hasIndianDataResidency: desiTools.hasIndianDataResidency,
+        hasGstInvoice: desiTools.hasGstInvoice,
+        hasInrPricing: desiTools.hasInrPricing,
+        hasUpiSupport: desiTools.hasUpiSupport,
+        isOpenSource: desiTools.isOpenSource,
+        city: desiTools.city,
+        state: desiTools.state,
+        categoryName: categories.name,
+        categoryEmoji: categories.emoji,
+      })
+      .from(desiTools)
+      .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+      .where(inArray(desiTools.slug, missingSlugs))
+      .all();
+
+    mentionedTools.push(...extraTools);
+  }
 
   // Related posts
   relatedPosts = await db
@@ -123,38 +165,62 @@ function renderMarkdownToHtml(markdown: string): string {
 
   // 1. Tool Embeds :::tool{slug="tool-slug"}
   html = html.replace(/:::tool\{slug="([^"]+)"\}\s*:::/g, (_m, toolSlug) => {
-    const tool = mentionedTools.find((t) => t.slug === toolSlug);
+    const rawSlug = String(toolSlug || '').trim();
+    const tool = mentionedTools.find((t) => t.slug === rawSlug || t.slug.toLowerCase() === rawSlug.toLowerCase());
+
     if (!tool) {
-      return `<div class="my-6 p-4 rounded-xl border border-border bg-slate-50 text-xs text-muted-foreground">Embedded Tool: <code>${toolSlug}</code></div>`;
+      return `
+        <div class="my-6 rounded-2xl border border-border bg-slate-50/90 p-4 text-xs not-prose flex items-center justify-between gap-3">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🇮🇳</span>
+            <span class="font-bold text-foreground capitalize">${rawSlug.replace(/-/g, ' ')}</span>
+            <span class="text-muted-foreground text-[11px]">· Listed in Desi Alternatives Directory</span>
+          </div>
+          <a href="/alternatives" class="font-bold text-primary hover:underline text-xs">Browse Alternatives →</a>
+        </div>
+      `;
     }
 
+    const logo = tool.logoUrl || `https://api.dicebear.com/9.x/shapes/svg?seed=${encodeURIComponent(tool.name)}`;
+    const startingPriceText = tool.startingPriceInr !== null && tool.startingPriceInr !== undefined
+      ? tool.startingPriceInr === 0 ? 'Free tier available' : `Starts at ₹${tool.startingPriceInr.toLocaleString('en-IN')}/mo`
+      : null;
+
     return `
-      <div class="my-8 rounded-2xl border border-border bg-gradient-to-br from-white to-slate-50/80 p-5 shadow-xs not-prose">
+      <div class="my-8 rounded-2xl border border-border/80 bg-gradient-to-br from-white via-amber-50/20 to-slate-50/60 p-5 sm:p-6 shadow-sm hover:shadow-md transition-all not-prose">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div class="flex items-start gap-3.5">
-            <img src="${tool.logoUrl}" alt="${tool.name}" class="h-12 w-12 rounded-xl object-contain bg-white border border-border p-1 shadow-2xs shrink-0" />
+          <div class="flex items-start gap-4">
+            <div class="h-14 w-14 rounded-2xl border border-border bg-white p-2 shadow-2xs shrink-0 flex items-center justify-center overflow-hidden">
+              <img src="${logo}" alt="${tool.name} logo" class="h-full w-full object-contain" />
+            </div>
             <div>
-              <div class="flex items-center gap-2">
-                <span class="text-base font-bold text-foreground">${tool.name}</span>
-                ${tool.city && tool.state ? `<span class="text-[10px] text-muted-foreground font-medium">📍 ${tool.city}, ${tool.state}</span>` : ''}
+              <div class="flex items-center gap-2 flex-wrap">
+                <span class="text-lg font-extrabold text-foreground tracking-tight">${tool.name}</span>
+                ${tool.categoryName ? `<span class="rounded-full bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 text-[10px] font-bold">${tool.categoryEmoji || '📁'} ${tool.categoryName}</span>` : ''}
+                ${tool.city && tool.state ? `<span class="text-[11px] text-muted-foreground font-medium">📍 ${tool.city}, ${tool.state}</span>` : ''}
               </div>
-              <p class="text-xs text-muted-foreground mt-0.5">${tool.tagline}</p>
+              <p class="text-xs sm:text-sm text-muted-foreground mt-1 leading-relaxed max-w-xl">${tool.tagline || 'World-class homegrown software alternative.'}</p>
               
-              <div class="flex items-center gap-1.5 mt-2.5 flex-wrap">
-                ${tool.isOpenSource ? '<span class="rounded bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">⚡ Open Source</span>' : ''}
-                ${tool.hasGstInvoice ? '<span class="rounded bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 text-[10px] font-bold">🧾 18% GST</span>' : ''}
-                ${tool.hasIndianDataResidency ? '<span class="rounded bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 text-[10px] font-bold">🇮🇳 India Hosted</span>' : ''}
+              <div class="flex items-center gap-1.5 mt-3 flex-wrap">
+                ${tool.isOpenSource ? '<span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-2 py-0.5 text-[10px] font-bold">⚡ Open Source</span>' : ''}
+                ${tool.hasGstInvoice ? '<span class="rounded-lg bg-blue-50 text-blue-800 border border-blue-200/80 px-2 py-0.5 text-[10px] font-bold">🧾 18% GST Invoicing</span>' : ''}
+                ${tool.hasIndianDataResidency ? '<span class="rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80 px-2 py-0.5 text-[10px] font-bold">🇮🇳 India Hosted</span>' : ''}
+                ${tool.hasUpiSupport || tool.hasInrPricing ? '<span class="rounded-lg bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-2 py-0.5 text-[10px] font-bold">💳 INR / UPI</span>' : ''}
+                ${startingPriceText ? `<span class="rounded-lg bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 text-[10px] font-bold">💰 ${startingPriceText}</span>` : ''}
               </div>
             </div>
           </div>
 
-          <div class="flex items-center gap-2 shrink-0">
-            <a href="/tools/${tool.slug}" class="rounded-xl border border-border bg-white px-3.5 py-2 text-xs font-bold text-foreground hover:bg-slate-50 transition shadow-2xs text-center">
-              View Profile
+          <div class="flex sm:flex-col items-center sm:items-stretch gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/60">
+            <a href="/tools/${tool.slug}" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-white px-4 py-2 text-xs font-bold text-foreground hover:bg-slate-50 transition shadow-2xs text-center">
+              View Profile &amp; Alternatives
             </a>
-            <a href="${tool.websiteUrl}" target="_blank" rel="noopener noreferrer" class="rounded-xl bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs text-center">
-              Visit Website ↗
-            </a>
+            ${tool.websiteUrl ? `
+              <a href="${tool.websiteUrl}" target="_blank" rel="noopener noreferrer" class="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-2xs text-center">
+                <span>Visit Website</span>
+                <span class="text-[10px]">↗</span>
+              </a>
+            ` : ''}
           </div>
         </div>
       </div>
