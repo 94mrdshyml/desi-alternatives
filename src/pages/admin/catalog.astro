@@ -96,6 +96,7 @@ if (db) {
 
 const publishedToolsCount = allToolsList.filter((t) => t.status === 'published').length;
 const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
+const initialTab = Astro.url.searchParams.get('tab') || 'indian-tools';
 ---
 
 <AdminLayout
@@ -164,7 +165,11 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
         <button
           type="button"
           data-catalog-tab="indian-tools"
-          class="catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer bg-white text-foreground shadow-xs border border-border"
+          class={`catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+            initialTab === 'indian-tools'
+              ? 'bg-white text-foreground shadow-xs border border-border font-bold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent'
+          }`}
         >
           <span>🇮🇳 Indian Tools</span>
           <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
@@ -176,7 +181,11 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
         <button
           type="button"
           data-catalog-tab="global-giants"
-          class="catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent"
+          class={`catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+            initialTab === 'global-giants'
+              ? 'bg-white text-foreground shadow-xs border border-border font-bold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent'
+          }`}
         >
           <span>🌐 Global Giants (Programmatic SEO)</span>
           <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
@@ -188,7 +197,11 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
         <button
           type="button"
           data-catalog-tab="categories"
-          class="catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent"
+          class={`catalog-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+            initialTab === 'categories'
+              ? 'bg-white text-foreground shadow-xs border border-border font-bold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent'
+          }`}
         >
           <span>🏷️ Categories Taxonomy</span>
           <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
@@ -199,7 +212,7 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     </div>
 
     <!-- PANEL 1: INDIAN TOOLS MANAGEMENT -->
-    <section id="catalog-panel-indian-tools" class="catalog-panel space-y-4">
+    <section id="catalog-panel-indian-tools" class={`catalog-panel space-y-4 ${initialTab === 'indian-tools' ? '' : 'hidden'}`}>
       <!-- Status Filter Tabs for Indian Tools -->
       <div class="flex items-center justify-between gap-2 flex-wrap">
         <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
@@ -326,7 +339,7 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     </section>
 
     <!-- PANEL 2: GLOBAL GIANTS & PROGRAMMATIC SEO -->
-    <section id="catalog-panel-global-giants" class="catalog-panel hidden space-y-4">
+    <section id="catalog-panel-global-giants" class={`catalog-panel space-y-4 ${initialTab === 'global-giants' ? '' : 'hidden'}`}>
       <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
         <div class="flex items-start gap-2.5">
           <span class="text-base">🚀</span>
@@ -430,7 +443,7 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
     </section>
 
     <!-- PANEL 3: CATEGORIES TAXONOMY -->
-    <section id="catalog-panel-categories" class="catalog-panel hidden space-y-4">
+    <section id="catalog-panel-categories" class={`catalog-panel space-y-4 ${initialTab === 'categories' ? '' : 'hidden'}`}>
       <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">

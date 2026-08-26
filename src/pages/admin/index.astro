@@ -1,4 +1,17 @@
 ---
-// Redirect /admin to /admin/catalog
-return Astro.redirect('/admin/catalog');
+const user = Astro.locals.user;
+
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+if (user.role === 'author') {
+  return Astro.redirect('/admin/blog');
+}
+
+if (user.role === 'admin') {
+  return Astro.redirect('/admin/catalog');
+}
+
+return Astro.redirect('/login');
 ---

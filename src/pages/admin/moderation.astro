@@ -55,6 +55,8 @@ if (db) {
     console.error('Failed to load moderation data:', e);
   }
 }
+
+const initialTab = Astro.url.searchParams.get('tab') || 'claims';
 ---
 
 <AdminLayout
@@ -85,7 +87,11 @@ if (db) {
         <button
           type="button"
           data-mod-tab="claims"
-          class="mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer bg-white text-foreground shadow-xs border border-border"
+          class={`mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+            initialTab === 'claims'
+              ? 'bg-white text-foreground shadow-xs border border-border font-bold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent'
+          }`}
         >
           <span>📬 Ownership Claims Queue</span>
           {pendingClaims.length > 0 ? (
@@ -102,7 +108,11 @@ if (db) {
         <button
           type="button"
           data-mod-tab="users"
-          class="mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-medium transition cursor-pointer text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent"
+          class={`mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+            initialTab === 'users'
+              ? 'bg-white text-foreground shadow-xs border border-border font-bold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent'
+          }`}
         >
           <span>👥 User Accounts & Roles</span>
           <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
@@ -113,7 +123,7 @@ if (db) {
     </div>
 
     <!-- PANEL 1: CLAIMS QUEUE -->
-    <section id="mod-panel-claims" class="mod-panel space-y-4">
+    <section id="mod-panel-claims" class={`mod-panel space-y-4 ${initialTab === 'claims' ? '' : 'hidden'}`}>
       {pendingClaims.length === 0 ? (
         <div class="rounded-2xl border border-border bg-white p-12 text-center shadow-xs">
           <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-2xl">
@@ -180,7 +190,7 @@ if (db) {
     </section>
 
     <!-- PANEL 2: USERS & ROLES -->
-    <section id="mod-panel-users" class="mod-panel hidden space-y-4">
+    <section id="mod-panel-users" class={`mod-panel space-y-4 ${initialTab === 'users' ? '' : 'hidden'}`}>
       <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs">
