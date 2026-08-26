@@ -24,7 +24,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const user = locals.user;
   const db = locals.db;
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role !== 'admin' && user.role !== 'author')) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
 

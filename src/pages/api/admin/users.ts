@@ -23,9 +23,33 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    if (action === 'setRole' && role && ['admin', 'user'].includes(role)) {
+    if (action === 'setRole' && role && ['admin', 'author', 'user'].includes(role)) {
       await db.update(users).set({ role }).where(eq(users.id, userId));
       return new Response(JSON.stringify({ success: true, updatedRole: role }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'promote-admin') {
+      await db.update(users).set({ role: 'admin' }).where(eq(users.id, userId));
+      return new Response(JSON.stringify({ success: true, updatedRole: 'admin' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'promote-author') {
+      await db.update(users).set({ role: 'author' }).where(eq(users.id, userId));
+      return new Response(JSON.stringify({ success: true, updatedRole: 'author' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'demote-user') {
+      await db.update(users).set({ role: 'user' }).where(eq(users.id, userId));
+      return new Response(JSON.stringify({ success: true, updatedRole: 'user' }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });

@@ -1,12 +1,12 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import { blogPosts, blogAuthors, categories, blogPostTools, desiTools } from '@/lib/server/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { blogPosts, blogAuthors, categories, blogPostTools, desiTools, users } from '@/lib/server/db/schema';
+import { eq, or } from 'drizzle-orm';
 
 const user = Astro.locals.user;
 const db = Astro.locals.db;
 
-if (!user || user.role !== 'admin') {
+if (!user || (user.role !== 'admin' && user.role !== 'author')) {
   return Astro.redirect('/login');
 }
 
@@ -21,6 +21,35 @@ let toolsList: any[] = [];
 
 if (db) {
   try {
+    // 1. Ensure all users with admin or author role have a blogAuthors profile
+    const authorUsers = await db
+      .select({
+        id: users.id,
+        name: users.name,
+        role: users.role,
+        image: users.image,
+      })
+      .from(users)
+      .where(or(eq(users.role, 'admin'), eq(users.role, 'author')))
+      .orderBy(users.name)
+      .all();
+
+    for (const u of authorUsers) {
+      const authorProfileId = `author_u_${u.id}`;
+      const existing = await db.select().from(blogAuthors).where(eq(blogAuthors.id, authorProfileId)).get();
+      if (!existing) {
+        const slug = u.name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        await db.insert(blogAuthors).values({
+          id: authorProfileId,
+          slug: `${slug}-${u.id.slice(-4)}`,
+          name: u.name,
+          avatarUrl: u.image || `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(u.name)}`,
+          role: u.role === 'admin' ? 'Editor in Chief' : 'Contributing Author',
+          bio: `Verified ${u.role === 'admin' ? 'editorial lead' : 'author'} at Desi Alternatives.`,
+        }).onConflictDoNothing().run();
+      }
+    }
+
     authorsList = await db.select().from(blogAuthors).orderBy(blogAuthors.name).all();
     categoriesList = await db.select().from(categories).orderBy(categories.name).all();
     toolsList = await db
@@ -215,10 +244,79 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write New Arti
           <div class="relative">
             <textarea
               id="article-content"
-              placeholder="Write your story, technical comparison, or migration guide here... Use Markdown or slash commands."
+              placeholder="Write your story, technical comparison, or migration guide here... Type / for commands, headings, or tool embeds."
               rows="24"
               class="w-full resize-y border-0 bg-transparent text-sm sm:text-base text-foreground placeholder:text-muted-foreground/40 focus:outline-none font-sans leading-relaxed min-h-[500px]"
             >{existingPost?.content || ''}</textarea>
+
+            <!-- Floating Slash Command Menu (Notion-Style) -->
+            <div
+              id="floating-slash-menu"
+              class="hidden absolute left-4 top-12 z-40 w-72 rounded-2xl border border-border bg-white p-2 shadow-2xl ring-1 ring-black/5 text-xs transition-all duration-150"
+            >
+              <div class="px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60 mb-1 flex items-center justify-between">
+                <span>Blocks &amp; Embeds</span>
+                <span class="font-mono text-[9px] text-muted-foreground">↑↓ to navigate · ↵ select</span>
+              </div>
+              <div id="slash-menu-items" class="space-y-0.5 max-h-64 overflow-y-auto">
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-amber-50/80 hover:text-amber-900 transition cursor-pointer active" data-cmd="tool" data-keywords="tool embed software desi indian">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-900 font-bold text-xs shrink-0">⚡</span>
+                  <div>
+                    <div class="font-bold text-foreground">Embed Indian Tool</div>
+                    <div class="text-[10px] text-muted-foreground">Live software card from directory</div>
+                  </div>
+                </button>
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="h2" data-keywords="h2 heading title section">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0 font-serif-editorial">H2</span>
+                  <div>
+                    <div class="font-bold text-foreground">Heading 2</div>
+                    <div class="text-[10px] text-muted-foreground">Section heading</div>
+                  </div>
+                </button>
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="h3" data-keywords="h3 sub-heading subsection">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0 font-serif-editorial">H3</span>
+                  <div>
+                    <div class="font-bold text-foreground">Heading 3</div>
+                    <div class="text-[10px] text-muted-foreground">Sub-section heading</div>
+                  </div>
+                </button>
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="callout" data-keywords="callout note tip warning alert box">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-800 font-bold text-xs shrink-0">💡</span>
+                  <div>
+                    <div class="font-bold text-foreground">Callout Box</div>
+                    <div class="text-[10px] text-muted-foreground">Key takeaway or sovereign note</div>
+                  </div>
+                </button>
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="table" data-keywords="table comparison vs grid matrix">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs shrink-0">📊</span>
+                  <div>
+                    <div class="font-bold text-foreground">Comparison Table</div>
+                    <div class="text-[10px] text-muted-foreground">Sovereign Alternative vs Global Giant</div>
+                  </div>
+                </button>
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="code" data-keywords="code snippet terminal script bash syntax">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-800 font-bold text-xs shrink-0 font-mono">&lt;/&gt;</span>
+                  <div>
+                    <div class="font-bold text-foreground">Code Block</div>
+                    <div class="text-[10px] text-muted-foreground">Installation commands or config</div>
+                  </div>
+                </button>
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="quote" data-keywords="quote blockquote insight">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 font-bold text-xs shrink-0">❝</span>
+                  <div>
+                    <div class="font-bold text-foreground">Quote / Insight</div>
+                    <div class="text-[10px] text-muted-foreground">Blockquote with author wisdom</div>
+                  </div>
+                </button>
+                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="divider" data-keywords="divider line hr separator">
+                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0">―</span>
+                  <div>
+                    <div class="font-bold text-foreground">Divider</div>
+                    <div class="text-[10px] text-muted-foreground">Horizontal rule separator</div>
+                  </div>
+                </button>
+              </div>
+            </div>
 
             <!-- Live Preview Container (Hidden by default) -->
             <div id="live-preview-box" class="hidden prose prose-slate max-w-none prose-headings:font-serif-editorial prose-headings:font-bold prose-a:text-primary"></div>
@@ -731,33 +829,177 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write New Arti
     settingsDrawer.classList.add('hidden');
   });
 
-  // Quick Command Buttons
-  document.querySelectorAll('.quick-cmd').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const cmd = (btn as HTMLElement).dataset.cmd;
-      insertCommandSnippet(cmd);
+  // --- NOTION-STYLE SLASH COMMAND POPUP MENU ---
+  const slashMenu = document.getElementById('floating-slash-menu') as HTMLElement;
+  const slashItems = document.querySelectorAll<HTMLButtonElement>('.slash-item');
+  let isSlashMenuOpen = false;
+  let slashQuery = '';
+  let slashStartIndex = -1;
+  let activeSlashIndex = 0;
+
+  function updateActiveSlashItem() {
+    const visibleItems = Array.from(slashItems).filter((it) => !it.classList.contains('hidden'));
+    visibleItems.forEach((it, idx) => {
+      if (idx === activeSlashIndex) {
+        it.classList.add('bg-amber-100/90', 'text-amber-950', 'ring-1', 'ring-amber-400/50');
+      } else {
+        it.classList.remove('bg-amber-100/90', 'text-amber-950', 'ring-1', 'ring-amber-400/50');
+      }
     });
-  });
+  }
 
-  function insertCommandSnippet(cmd?: string) {
-    const pos = contentInput.selectionStart || 0;
-    const val = contentInput.value;
+  function openSlashMenu(pos: number) {
+    isSlashMenuOpen = true;
+    slashStartIndex = pos;
+    slashQuery = '';
+    slashMenu.classList.remove('hidden');
+    filterSlashMenu('');
+  }
+
+  function closeSlashMenu() {
+    isSlashMenuOpen = false;
+    slashStartIndex = -1;
+    slashQuery = '';
+    slashMenu.classList.add('hidden');
+  }
+
+  function filterSlashMenu(query: string) {
+    const q = query.toLowerCase().trim();
+    let visibleCount = 0;
+
+    slashItems.forEach((item) => {
+      const cmd = item.dataset.cmd || '';
+      const keywords = item.dataset.keywords || '';
+      const text = item.textContent?.toLowerCase() || '';
+
+      if (!q || cmd.includes(q) || keywords.includes(q) || text.includes(q)) {
+        item.classList.remove('hidden');
+        visibleCount++;
+      } else {
+        item.classList.add('hidden');
+      }
+    });
+
+    activeSlashIndex = 0;
+    updateActiveSlashItem();
+
+    if (visibleCount === 0) {
+      closeSlashMenu();
+    }
+  }
+
+  function executeSlashCommand(cmd?: string) {
+    if (!cmd) return;
+
+    // Delete the typed '/...' prefix from text
+    const curPos = contentInput.selectionStart || 0;
+    const text = contentInput.value;
+    let before = text.substring(0, slashStartIndex >= 0 ? slashStartIndex : curPos);
+    let after = text.substring(curPos);
+
+    closeSlashMenu();
+
     let snippet = '';
-
     if (cmd === 'h2') snippet = '\n\n## Section Heading\n\n';
     else if (cmd === 'h3') snippet = '\n\n### Sub-section Heading\n\n';
     else if (cmd === 'callout') snippet = '\n\n> [!NOTE]\n> **Key Takeaway**: Summary insight or important sovereign advice.\n\n';
     else if (cmd === 'table') snippet = '\n\n| Capability | Sovereign Alternative | Global Giant |\n| :--- | :--- | :--- |\n| **Data Hosting** | 🇮🇳 Mumbai / India | 🇺🇸 US-East |\n| **Compliance** | DPDP Act 2023 | GDPR / SOC2 |\n| **Billing** | INR + 18% GST ITC | USD + Forex fee |\n\n';
     else if (cmd === 'code') snippet = '\n\n```bash\n# Quick installation snippet\ncurl -fsSL https://get.signoz.io/install.sh | bash\n```\n\n';
+    else if (cmd === 'quote') snippet = '\n\n> "Sovereign engineering builds software you truly own and control."\n\n';
+    else if (cmd === 'divider') snippet = '\n\n---\n\n';
     else if (cmd === 'tool') {
+      contentInput.value = before + after;
       openToolModal();
       return;
     }
 
-    contentInput.value = val.substring(0, pos) + snippet + val.substring(pos);
+    contentInput.value = before + snippet + after;
+    const newPos = before.length + snippet.length;
+    contentInput.setSelectionRange(newPos, newPos);
     contentInput.focus();
     updateReadingStats();
+    showToast(`Inserted ${cmd.toUpperCase()} block.`, 'info');
   }
+
+  // Keyboard navigation & slash detection on contentInput
+  contentInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (isSlashMenuOpen) {
+      const visibleItems = Array.from(slashItems).filter((it) => !it.classList.contains('hidden'));
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeSlashIndex = (activeSlashIndex + 1) % visibleItems.length;
+        updateActiveSlashItem();
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeSlashIndex = (activeSlashIndex - 1 + visibleItems.length) % visibleItems.length;
+        updateActiveSlashItem();
+        return;
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault();
+        const selected = visibleItems[activeSlashIndex];
+        if (selected) {
+          executeSlashCommand(selected.dataset.cmd);
+        }
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeSlashMenu();
+        return;
+      }
+    }
+  });
+
+  contentInput.addEventListener('input', () => {
+    const pos = contentInput.selectionStart || 0;
+    const val = contentInput.value;
+
+    // Check if user just typed a '/'
+    const lastChar = val[pos - 1];
+    const prevChar = val[pos - 2];
+
+    if (lastChar === '/' && (!prevChar || /\s/.test(prevChar))) {
+      openSlashMenu(pos - 1);
+    } else if (isSlashMenuOpen) {
+      if (slashStartIndex >= 0 && pos > slashStartIndex) {
+        slashQuery = val.substring(slashStartIndex + 1, pos);
+        if (/\s/.test(slashQuery)) {
+          closeSlashMenu();
+        } else {
+          filterSlashMenu(slashQuery);
+        }
+      } else {
+        closeSlashMenu();
+      }
+    }
+  });
+
+  // Slash items click handler
+  slashItems.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const cmd = btn.dataset.cmd;
+      executeSlashCommand(cmd);
+    });
+  });
+
+  // Close menu when clicking outside
+  document.addEventListener('click', (e) => {
+    if (isSlashMenuOpen && !slashMenu.contains(e.target as Node) && e.target !== contentInput) {
+      closeSlashMenu();
+    }
+  });
+
+  // Quick Command Buttons
+  document.querySelectorAll('.quick-cmd').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const cmd = (btn as HTMLElement).dataset.cmd;
+      executeSlashCommand(cmd);
+    });
+  });
 
   // Tool Embed Modal
   function openToolModal() {

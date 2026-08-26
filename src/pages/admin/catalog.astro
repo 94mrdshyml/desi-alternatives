@@ -239,9 +239,8 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
               <tr>
                 <th class="py-3 px-4 font-semibold text-foreground">Tool & Info</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Category</th>
-                <th class="py-3 px-4 font-semibold text-foreground">Pricing</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Status</th>
-                <th class="py-3 px-4 font-semibold text-foreground">Compliance Badges</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Date Added</th>
                 <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
               </tr>
             </thead>
@@ -271,24 +270,14 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
                     </span>
                   </td>
                   <td class="py-3 px-4">
-                    <span class="font-semibold text-foreground">
-                      {t.startingPriceInr !== null ? (t.startingPriceInr === 0 ? 'Free tier' : `₹${t.startingPriceInr}/mo`) : 'Custom'}
-                    </span>
-                  </td>
-                  <td class="py-3 px-4">
                     <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
                       t.status === 'published' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
                     }`}>
                       {t.status === 'published' ? 'Published' : 'Draft / In Review'}
                     </span>
                   </td>
-                  <td class="py-3 px-4">
-                    <div class="flex items-center gap-1">
-                      {t.hasIndianDataResidency && <span class="rounded bg-blue-50 px-1.5 py-0.5 text-[10px] text-blue-700" title="India Hosting">🇮🇳 Data</span>}
-                      {t.hasGstInvoice && <span class="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700" title="18% GST Invoice">🧾 GST</span>}
-                      {t.hasInrPricing && <span class="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-800" title="INR Billing">₹ INR</span>}
-                      {t.hasUpiSupport && <span class="rounded bg-purple-50 px-1.5 py-0.5 text-[10px] text-purple-700" title="UPI Support">⚡ UPI</span>}
-                    </div>
+                  <td class="py-3 px-4 text-muted-foreground font-mono text-[11px]">
+                    {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
                   </td>
                   <td class="py-3 px-4 text-right">
                     <div class="flex items-center justify-end gap-1.5">
@@ -954,16 +943,29 @@ const draftToolsCount = allToolsList.filter((t) => t.status === 'draft').length;
       }
     });
 
-    if (window.location.hash.replace('#', '') !== activeTab) {
-      history.replaceState(null, '', `#${activeTab}`);
+    const currentHash = window.location.hash.replace('#', '');
+    const currentParam = new URLSearchParams(window.location.search).get('tab');
+    if (currentHash !== activeTab && currentParam !== activeTab) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      history.replaceState(null, '', url.toString());
     }
   }
 
-  const initialHash = window.location.hash.replace('#', '');
-  if (initialHash) switchCatalogTab(initialHash);
+  function getInitialCatalogTab() {
+    const param = new URLSearchParams(window.location.search).get('tab');
+    const hash = window.location.hash.replace('#', '');
+    return param || hash || 'indian-tools';
+  }
+
+  switchCatalogTab(getInitialCatalogTab());
+
+  window.addEventListener('popstate', () => switchCatalogTab(getInitialCatalogTab()));
+  window.addEventListener('hashchange', () => switchCatalogTab(getInitialCatalogTab()));
 
   document.querySelectorAll('.catalog-tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const target = btn.getAttribute('data-catalog-tab');
       if (target) switchCatalogTab(target);
     });

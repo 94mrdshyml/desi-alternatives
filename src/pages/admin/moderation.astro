@@ -209,9 +209,13 @@ if (db) {
                   <td class="py-3 px-4 text-muted-foreground font-mono">{u.email}</td>
                   <td class="py-3 px-4">
                     <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      u.role === 'admin' ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-slate-100 text-slate-700'
+                      u.role === 'admin'
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                        : u.role === 'author'
+                        ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
+                        : 'bg-slate-100 text-slate-700'
                     }`}>
-                      {u.role}
+                      {u.role === 'admin' ? '👑 Admin' : u.role === 'author' ? '✍️ Author' : 'User'}
                     </span>
                   </td>
                   <td class="py-3 px-4 text-muted-foreground">
@@ -219,14 +223,16 @@ if (db) {
                   </td>
                   <td class="py-3 px-4 text-right">
                     {u.id !== user.id && (
-                      <button
-                        type="button"
-                        data-user-role-action={u.role === 'admin' ? 'demote' : 'promote'}
-                        data-target-user-id={u.id}
-                        class="rounded-lg border border-border px-2.5 py-1 text-[11px] font-medium text-foreground hover:bg-slate-100 transition cursor-pointer"
-                      >
-                        {u.role === 'admin' ? 'Demote to User' : 'Make Admin'}
-                      </button>
+                      <div class="inline-flex items-center gap-1.5">
+                        <select
+                          data-target-user-id={u.id}
+                          class="user-role-select rounded-lg border border-border bg-white px-2 py-1 text-[11px] font-medium text-foreground hover:bg-slate-50 transition cursor-pointer"
+                        >
+                          <option value="user" selected={u.role === 'user'}>User</option>
+                          <option value="author" selected={u.role === 'author'}>Author</option>
+                          <option value="admin" selected={u.role === 'admin'}>Admin</option>
+                        </select>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -258,16 +264,29 @@ if (db) {
       }
     });
 
-    if (window.location.hash.replace('#', '') !== activeTab) {
-      history.replaceState(null, '', `#${activeTab}`);
+    const currentHash = window.location.hash.replace('#', '');
+    const currentParam = new URLSearchParams(window.location.search).get('tab');
+    if (currentHash !== activeTab && currentParam !== activeTab) {
+      const url = new URL(window.location.href);
+      url.searchParams.set('tab', activeTab);
+      history.replaceState(null, '', url.toString());
     }
   }
 
-  const initialHash = window.location.hash.replace('#', '');
-  if (initialHash) switchModTab(initialHash);
+  function getInitialTab() {
+    const param = new URLSearchParams(window.location.search).get('tab');
+    const hash = window.location.hash.replace('#', '');
+    return param || hash || 'claims';
+  }
+
+  switchModTab(getInitialTab());
+
+  window.addEventListener('popstate', () => switchModTab(getInitialTab()));
+  window.addEventListener('hashchange', () => switchModTab(getInitialTab()));
 
   document.querySelectorAll('.mod-tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const target = btn.getAttribute('data-mod-tab');
       if (target) switchModTab(target);
     });
@@ -298,24 +317,26 @@ if (db) {
     });
   });
 
-  // User Role Actions
-  document.querySelectorAll('[data-user-role-action]').forEach((btn) => {
-    btn.addEventListener('click', async () => {
-      const targetUserId = btn.getAttribute('data-target-user-id');
-      const action = btn.getAttribute('data-user-role-action');
-      if (!targetUserId || !action) return;
+  // User Role Select Change
+  document.querySelectorAll('.user-role-select').forEach((el) => {
+    const sel = el as unknown as HTMLSelectElement;
+    sel.addEventListener('change', async () => {
+      const targetUserId = sel.getAttribute('data-target-user-id');
+      const role = sel.value;
+      if (!targetUserId || !role) return;
 
       try {
         const res = await fetch('/api/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ targetUserId, action }),
+          body: JSON.stringify({ userId: targetUserId, role, action: 'setRole' }),
         });
-        if (res.ok) {
-          (window as any).showToast?.('User role updated successfully.', 'success');
-          setTimeout(() => window.location.reload(), 500);
+        const data = (await res.json()) as any;
+        if (res.ok && data.success) {
+          (window as any).showToast?.(`User role updated to ${role}.`, 'success');
+          setTimeout(() => window.location.reload(), 400);
         } else {
-          (window as any).showToast?.('Failed to update user role.', 'error');
+          (window as any).showToast?.(data.error || 'Failed to update user role.', 'error');
         }
       } catch {
         (window as any).showToast?.('Network error.', 'error');
