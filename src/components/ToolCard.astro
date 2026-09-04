@@ -38,14 +38,16 @@ const { tool } = Astro.props;
         <div
           class="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-border bg-slate-50 p-2 overflow-hidden shadow-2xs group-hover:scale-105 transition-transform"
         >
-          <img
-            src={tool.logoUrl}
-            alt={`${tool.name} logo`}
-            class="h-full w-full object-contain"
-            loading="lazy"
-            onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-          />
-          <div class="hidden h-full w-full items-center justify-center text-sm font-bold text-foreground">
+          {tool.logoUrl ? (
+            <img
+              src={tool.logoUrl}
+              alt={`${tool.name} logo`}
+              class="h-full w-full object-contain"
+              loading="lazy"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+            />
+          ) : null}
+          <div class={`h-full w-full items-center justify-center text-sm font-bold text-foreground bg-amber-50 text-amber-900 rounded-md ${tool.logoUrl ? 'hidden' : 'flex'}`}>
             {tool.name.slice(0, 2).toUpperCase()}
           </div>
         </div>

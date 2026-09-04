@@ -1,0 +1,192 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
+
+export const prerender = true;
+---
+
+<BaseLayout
+  title="The Manifesto — Desi Alternatives"
+  description="The Era of Borrowed Infrastructure is Over. The sovereign manifesto for Indian software."
+>
+  <Navbar />
+
+  <main class="relative min-h-screen bg-[#fcfbf9] py-16 sm:py-24 overflow-hidden">
+    <!-- Ambient Background Editorial Glows -->
+    <div class="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-gradient-to-b from-amber-200/20 via-amber-100/10 to-transparent blur-3xl -z-10"></div>
+    <div class="pointer-events-none absolute top-[900px] -left-48 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10"></div>
+    <div class="pointer-events-none absolute top-[1800px] -right-48 w-96 h-96 bg-amber-300/10 rounded-full blur-3xl -z-10"></div>
+
+    <article class="mx-auto max-w-5xl px-4 sm:px-8">
+      <!-- Eyebrow & Hero Header -->
+      <div class="text-center max-w-4xl mx-auto">
+        <!-- Editorial Seal -->
+        <div class="inline-flex items-center justify-center gap-2 mb-3 text-primary/70">
+          <span class="h-px w-6 bg-primary/30"></span>
+          <span class="text-[10px] tracking-widest font-mono uppercase">✦ 🇮🇳 ✦</span>
+          <span class="h-px w-6 bg-primary/30"></span>
+        </div>
+
+        <p class="text-[11px] font-semibold uppercase tracking-[0.28em] text-muted-foreground/80">
+          The Manifesto
+        </p>
+
+        <!-- H1 Title -->
+        <h1 class="mt-4 font-sans text-3xl sm:text-4xl lg:text-[44px] xl:text-5xl font-bold tracking-tight text-foreground leading-[1.15] lg:whitespace-nowrap">
+          The Era of <span class="font-serif-editorial italic font-bold text-primary">Borrowed Infrastructure</span> is Over.
+        </h1>
+
+        <!-- Lead Paragraph -->
+        <p class="mt-6 mx-auto max-w-[660px] font-serif-editorial italic text-lg sm:text-xl text-slate-800 leading-relaxed font-normal">
+          For the last decade, the Indian tech playbook was written on borrowed soil. We built billion-dollar companies in Bangalore and Hyderabad, but we ran them on foreign infrastructure. <span class="brand-emphasis">It is time to change the default.</span>
+        </p>
+      </div>
+
+      <!-- Illustration 1 (Gallery Presentation) -->
+      <figure class="my-10 sm:my-14 max-w-3xl mx-auto">
+        <div class="overflow-hidden rounded-2xl border border-stone-200/90 bg-white p-3 sm:p-4 shadow-sm ring-1 ring-stone-900/5 transition-all hover:shadow-md">
+          <img
+            src="/images/manifesto-friction.jpg"
+            alt="Illustration of a tangled credit card swipe"
+            class="w-full h-auto rounded-xl object-contain"
+            loading="eager"
+          />
+        </div>
+        <figcaption class="mt-3 text-center font-serif-editorial italic text-xs text-stone-500">
+          Fig 01. The Global Default — The unseen friction of cross-border currency markups and overseas data routing.
+        </figcaption>
+      </figure>
+
+      <!-- Essay Body Content -->
+      <div class="max-w-[650px] mx-auto space-y-7 text-slate-700 text-[17px] sm:text-[18px] leading-[1.8] sm:leading-[1.85] font-normal">
+        <!-- Section 1: The Global Default (with Classical Drop Cap) -->
+        <p class="first-letter:font-serif-editorial first-letter:text-5xl first-letter:font-bold first-letter:text-primary first-letter:float-left first-letter:mr-3 first-letter:leading-none first-letter:mt-1">
+          For years, the ritual was identical. A founder in India would incorporate their company, raise their first round, and immediately pull out an international corporate card to subscribe to the global giants. We stored our code on GitHub, chatted on Slack, tracked tickets on Jira, managed pipelines on HubSpot, and hosted it all on AWS US-East.
+        </p>
+
+        <!-- Editorial Accent Callout -->
+        <div class="border-l-2 border-primary/40 pl-4 py-1 my-6 bg-amber-50/30 rounded-r-lg">
+          <p class="text-lg sm:text-xl font-serif-editorial text-foreground">
+            It was seamless. <span class="brand-emphasis">Until it wasn't.</span>
+          </p>
+        </div>
+
+        <p>
+          Behind that frictionless checkout hid a massive, silent tax on Indian innovation. Every month, Indian builders bled capital—not to their competitors, but to currency conversions. A 3.5% forex markup on every swipe. The complete loss of the 18% GST input credit. Unpredictable software bills that spiked every time the Rupee fluctuated against the Dollar.
+        </p>
+
+        <p>
+          Then came the operational chaos. RBI e-mandate rules repeatedly triggered subscription dropouts, locking critical engineering teams out of their own workspaces. And as data privacy laws tightened, we realized our most sensitive customer data was sitting on servers in Virginia or Dublin, quietly violating our own domestic DPDP compliance.
+        </p>
+
+        <!-- Editorial Accent Callout -->
+        <div class="border-l-2 border-primary/40 pl-4 py-1 my-6 bg-amber-50/30 rounded-r-lg">
+          <p class="text-lg sm:text-xl font-serif-editorial text-foreground">
+            We were <span class="brand-emphasis">renting our digital sovereignty.</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Illustration 2 Break (Gallery Presentation) -->
+      <figure class="my-10 sm:my-14 max-w-3xl mx-auto">
+        <div class="overflow-hidden rounded-2xl border border-stone-200/90 bg-white p-3 sm:p-4 shadow-sm ring-1 ring-stone-900/5 transition-all hover:shadow-md">
+          <img
+            src="/images/manifesto-pillars.jpg"
+            alt="Illustration comparing fragile foreign infrastructure to solid local infrastructure"
+            class="w-full h-auto rounded-xl object-contain"
+            loading="lazy"
+          />
+        </div>
+        <figcaption class="mt-3 text-center font-serif-editorial italic text-xs text-stone-500">
+          Fig 02. Sovereign Foundations — Contrasting brittle foreign dependencies with resilient domestic infrastructure.
+        </figcaption>
+      </figure>
+
+      <!-- Essay Body Content Continued -->
+      <div class="max-w-[650px] mx-auto space-y-7 text-slate-700 text-[17px] sm:text-[18px] leading-[1.8] sm:leading-[1.85] font-normal">
+        <!-- Section 2: The Shift -->
+        <p>
+          But while we were paying the Silicon Valley tax, a quiet shift was happening at home. Indian engineering stopped just maintaining the world’s software and <span class="brand-emphasis">started replacing it.</span>
+        </p>
+
+        <p>
+          Today, you don't need Zendesk; you have Freshdesk and Chatwoot. You don't need Jira; you have Plane. You don't need Stripe to handle your billing; you have Chargebee and Cashfree. You don't need to default to OpenAI; you have Sarvam AI.
+        </p>
+
+        <p>
+          These aren't cheap knockoffs or compromised alternatives. They are world-class products built by Indian engineers who understand our ecosystem natively.
+        </p>
+
+        <!-- Elegant Asterism Divider -->
+        <div class="py-6 flex items-center justify-center gap-3 text-primary/40">
+          <span class="h-px w-10 bg-stone-300"></span>
+          <span class="font-serif-editorial text-sm">✦</span>
+          <span class="h-px w-10 bg-stone-300"></span>
+        </div>
+
+        <!-- Section 3: The Sovereign Standard -->
+        <p>
+          We don’t choose Desi tools out of charity or blind patriotism. We choose them because they make <span class="brand-emphasis">better business sense.</span>
+        </p>
+
+        <p>
+          When you build with homegrown tech, you pay in predictable INR. You instantly reclaim your 18% GST input credit. Your payments clear seamlessly via UPI or native NetBanking. Your support tickets are answered by engineers awake in your timezone. And most importantly, your data remains safely within Indian borders, fully compliant with the laws of the land.
+        </p>
+
+        <!-- Section 4: The Mission -->
+        <p>
+          Desi Alternatives exists to index, verify, and champion this transition.
+        </p>
+
+        <p>
+          We are not simply building a directory of software to save a few rupees on exchange rates. We are curating the sovereign digital backbone of India’s technological century.
+        </p>
+
+        <p>
+          Whether you are a developer looking for superior open-source tools, or a founder migrating your stack to achieve compliance and profitability, <span class="brand-emphasis">this is your home.</span>
+        </p>
+      </div>
+
+      <!-- Artistic Call to Action Section -->
+      <section class="mt-16 sm:mt-20 pt-12 sm:pt-14 border-t border-stone-200/90 text-center max-w-2xl mx-auto relative">
+        <div class="mb-4 inline-flex items-center gap-1.5 rounded-full bg-amber-100/70 border border-amber-200 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-900">
+          <span>🇮🇳</span>
+          <span>The Sovereign Movement</span>
+        </div>
+
+        <p class="text-2xl sm:text-3xl font-bold text-foreground font-sans tracking-tight">
+          Stop funding the global default. <br class="hidden sm:inline" />
+          <span class="brand-emphasis">Start building Bharat.</span>
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-6">
+          <a
+            href="/"
+            class="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-primary px-7 py-3.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary-hover hover:shadow transition cursor-pointer"
+          >
+            Explore the Directory
+          </a>
+
+          <a
+            href="/submit"
+            class="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-stone-300 bg-white px-7 py-3.5 text-xs font-semibold text-foreground hover:bg-stone-50 hover:border-stone-400 transition cursor-pointer"
+          >
+            Submit a Desi Tool
+          </a>
+        </div>
+      </section>
+    </article>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<style>
+  .brand-emphasis {
+    font-family: var(--font-serif-editorial);
+    font-weight: 700;
+    font-style: italic;
+    color: var(--color-primary);
+  }
+</style>

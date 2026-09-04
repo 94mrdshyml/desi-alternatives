@@ -24,3 +24,7 @@ Thumbs.db
 coverage/
 playwright-report/
 test-results/
+
+# Media & Recordings
+*.mp4
+*.mov

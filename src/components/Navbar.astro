@@ -29,15 +29,12 @@ const avatarUrl = user
         <kbd class="hidden md:inline-block rounded bg-secondary px-1.5 py-0.2 text-[10px] font-mono text-muted-foreground">⌘K</kbd>
       </button>
 
-      <!-- 2. Blog Link (Visible on desktop/tablet md+, inside drawer on mobile) -->
+      <!-- 2. Manifesto Link (Visible on desktop/tablet md+) -->
       <a
-        href="/blog"
+        href="/about"
         class="hidden md:inline-flex items-center gap-1.5 rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-foreground/80 hover:text-primary hover:bg-slate-50 transition"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-        </svg>
-        <span>Blog</span>
+        <span>Manifesto</span>
       </a>
 
       <!-- 3. Desktop Auth Buttons / User Avatar Dropdown -->
@@ -136,19 +133,19 @@ const avatarUrl = user
           </a>
 
           <a
-            href="/register"
+            href="/submit"
             class="rounded-xl bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition"
           >
-            Get Started
+            Submit a Tool
           </a>
         </div>
       )}
 
-      <!-- 4. Global Hamburger Menu Button (Desktop & Mobile) -->
+      <!-- 4. Mobile-only Hamburger Menu Button -->
       <button
         type="button"
         id="global-hamburger-toggle"
-        class="flex h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-border bg-slate-50/80 text-muted-foreground hover:text-foreground hover:bg-white hover:border-primary/40 transition cursor-pointer"
+        class="flex md:hidden h-8.5 w-8.5 sm:h-9 sm:w-9 items-center justify-center rounded-xl border border-border bg-slate-50/80 text-muted-foreground hover:text-foreground hover:bg-white hover:border-primary/40 transition cursor-pointer"
         aria-label="Open Navigation Menu"
       >
         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -159,7 +156,7 @@ const avatarUrl = user
   </div>
 </header>
 
-<!-- Global Hamburger Slide-out Drawer (Desktop & Mobile) -->
+<!-- Global Hamburger Slide-out Drawer -->
 <div id="global-hamburger-backdrop" class="fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden transition-opacity"></div>
 
 <aside
@@ -191,10 +188,10 @@ const avatarUrl = user
       <div class="space-y-2 pb-3 border-b border-border/70 md:hidden">
         <div class="flex flex-col gap-2">
           <a
-            href="/register"
+            href="/submit"
             class="flex items-center justify-center rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary-hover transition text-center"
           >
-            Get Started Free
+            Submit a Tool
           </a>
           <a
             href="/login"
@@ -218,29 +215,37 @@ const avatarUrl = user
       </div>
     )}
 
-    <!-- Section: Directory & Tools -->
+    <!-- Section: The Stack -->
     <div class="space-y-1.5">
-      <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">Directory &amp; Comparisons</div>
+      <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">THE STACK</div>
       <nav class="space-y-1">
-        <a
-          href="/alternatives"
-          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-amber-50 hover:text-amber-900 transition"
-        >
-          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-900 shrink-0 font-bold">🔄</span>
-          <div>
-            <div class="font-bold">Alternatives Matrix</div>
-            <div class="text-[11px] text-muted-foreground font-normal">Sovereign replacements vs Global giants</div>
-          </div>
-        </a>
-
         <a
           href="/#categories"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-slate-50 transition"
         >
-          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-900 shrink-0 font-bold">📁</span>
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-700 border border-blue-100 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <rect width="7" height="7" x="3" y="3" rx="1" /><rect width="7" height="7" x="14" y="3" rx="1" /><rect width="7" height="7" x="14" y="14" rx="1" /><rect width="7" height="7" x="3" y="14" rx="1" />
+            </svg>
+          </span>
           <div>
-            <div class="font-bold">Browse Categories</div>
-            <div class="text-[11px] text-muted-foreground font-normal">Dev tools, CRM, ERP, Cloud, Observability</div>
+            <div class="font-bold">Explore the Directory</div>
+            <div class="text-[11px] text-muted-foreground font-normal">Find world-class homegrown tech by category.</div>
+          </div>
+        </a>
+
+        <a
+          href="/alternatives"
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-amber-50 hover:text-amber-900 transition"
+        >
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-800 border border-amber-100 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </span>
+          <div>
+            <div class="font-bold">Alternatives Matrix</div>
+            <div class="text-[11px] text-muted-foreground font-normal">Head-to-head: Global monopolies vs. Indian innovators.</div>
           </div>
         </a>
 
@@ -248,27 +253,50 @@ const avatarUrl = user
           href="/submit"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-emerald-50 hover:text-emerald-900 transition"
         >
-          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-900 shrink-0 font-bold">➕</span>
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-100 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+          </span>
           <div>
-            <div class="font-bold">Submit Indian Tool</div>
-            <div class="text-[11px] text-muted-foreground font-normal">List your homegrown software product</div>
+            <div class="font-bold">Submit Your Product</div>
+            <div class="text-[11px] text-muted-foreground font-normal">Built something great? Add it to the sovereign stack.</div>
           </div>
         </a>
       </nav>
     </div>
 
-    <!-- Section: Editorial & Insights -->
+    <!-- Section: The Movement -->
     <div class="space-y-1.5 pt-3 border-t border-border/70">
-      <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">Editorial &amp; Insights</div>
+      <div class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">THE MOVEMENT</div>
       <nav class="space-y-1">
+        <a
+          href="/about"
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-amber-50 hover:text-amber-900 transition"
+        >
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-800 border border-amber-100 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </span>
+          <div>
+            <div class="font-bold">The Manifesto</div>
+            <div class="text-[11px] text-muted-foreground font-normal">Why we are replacing the global default.</div>
+          </div>
+        </a>
+
         <a
           href="/blog"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-xs font-semibold text-foreground hover:bg-purple-50 hover:text-purple-900 transition"
         >
-          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-900 shrink-0 font-bold">📰</span>
+          <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-700 border border-purple-100 shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+          </span>
           <div>
-            <div class="font-bold">Desi Tech Blog</div>
-            <div class="text-[11px] text-muted-foreground font-normal">Deep dives, migration teardowns, and architecture</div>
+            <div class="font-bold">The Journal</div>
+            <div class="text-[11px] text-muted-foreground font-normal">Engineering teardowns, migration stories, and founder insights.</div>
           </div>
         </a>
 
@@ -290,7 +318,7 @@ const avatarUrl = user
 
   <!-- Drawer Footer -->
   <div class="p-4 border-t border-border bg-slate-50/50 text-[11px] text-muted-foreground flex items-center justify-between">
-    <span>🇮🇳 100% Sovereign Indian Directory</span>
+    <span>🇮🇳 Curated for Bharat's Builders</span>
     <a href="https://github.com/94mrdshyml/desi-alternatives" target="_blank" class="hover:text-primary transition font-bold">GitHub</a>
   </div>
 </aside>
