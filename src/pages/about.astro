@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 
 export const prerender = true;
 ---
@@ -19,6 +20,15 @@ export const prerender = true;
     <div class="pointer-events-none absolute top-[1800px] -right-48 w-96 h-96 bg-amber-300/10 rounded-full blur-3xl -z-10"></div>
 
     <article class="mx-auto max-w-5xl px-4 sm:px-8">
+      <!-- Breadcrumbs Navigation -->
+      <Breadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'The Manifesto' },
+        ]}
+        class="mb-8 justify-center"
+      />
+
       <!-- Eyebrow & Hero Header -->
       <div class="text-center max-w-4xl mx-auto">
         <!-- Editorial Seal -->

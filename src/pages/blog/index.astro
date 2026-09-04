@@ -2,6 +2,7 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import { blogPosts, blogAuthors, categories } from '@/lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
@@ -53,8 +54,17 @@ const pageDescription = 'In-depth engineering analyses, cloud architecture break
 
   <main class="min-h-screen bg-slate-50/50 pb-20">
     <!-- Hero Header -->
-    <section class="border-b border-border/80 bg-white pt-12 pb-14">
+    <section class="border-b border-border/80 bg-white pt-8 pb-14">
       <div class="mx-auto max-w-6xl px-4 sm:px-6">
+        <!-- Breadcrumbs Navigation -->
+        <Breadcrumbs
+          items={[
+            { label: 'Home', href: '/' },
+            { label: 'The Journal' },
+          ]}
+          class="mb-6"
+        />
+
         <div class="flex items-center gap-2 mb-3">
           <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 border border-amber-200">
             🇮🇳 Sovereign Tech Editorial

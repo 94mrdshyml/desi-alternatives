@@ -443,4 +443,29 @@
 - `bun run build`: Clean production build with Cloudflare SSR bundle.
 
 
+## Session 21 — Uniform Breadcrumb System with Structured Data
+
+**Date & Time (IST):** 2026-09-04 11:15 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Reusable Breadcrumbs Component (`src/components/Breadcrumbs.astro`)**:
+   - Engineered a unified, semantic `<Breadcrumbs />` component replacing fragmented inline nav bars.
+   - Standardized layout with Home icon, chevron SVG dividers (`M9 5l7 7-7 7`), muted link styling with hover transitions, and bold/highlighted active page titles.
+   - Built-in Schema.org `BreadcrumbList` JSON-LD structured data generation for Google search indexing and rich snippets.
+   - Responsive truncation for long titles on small viewports.
+
+2. **Universal Page Adoption**:
+   - Applied `<Breadcrumbs />` across Tool Details (`/tools/[slug]`), Global Alternative Details (`/alternatives/[slug]`), Alternatives Matrix (`/alternatives`), Category Pages (`/category/[slug]`), Blog Articles (`/blog/[slug]`), Blog Directory (`/blog`), Submit Tool (`/submit`), and Manifesto (`/about`).
+
+3. **Visual & Automated Verification**:
+   - 24/24 Vitest unit tests passing.
+   - 0 errors, 0 warnings across 70 files in `astro check`.
+   - 16/16 Playwright E2E tests passing.
+   - Browser subagent visual inspection confirmed matching layout, typography, and spacing.
+
+
+
 
