@@ -28,8 +28,8 @@ test.describe('Tools & Pages E2E', () => {
     await page.goto('/alternatives/datadog');
     await expect(page.locator('footer')).toBeVisible();
 
-    // 3. Tool detail page
-    await page.goto('/tools/signoz');
+    // 3. Category tools page
+    await page.goto('/category/developer-tools');
     await expect(page.locator('footer')).toBeVisible();
 
     // 4. Submit page
