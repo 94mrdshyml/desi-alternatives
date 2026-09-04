@@ -9,11 +9,11 @@ test.describe('Landing Page & Directory E2E', () => {
 
     // Check main brand heading
     const heading = page.locator('main h1');
-    await expect(heading).toContainText('Replace Global Giants');
-    await expect(heading).toContainText('Indian Tech');
+    await expect(heading).toContainText('World-Class Products');
+    await expect(heading).toContainText('Built in Bharat');
 
     // Check badge
-    const badge = page.locator('main').getByText('Indian Alternatives to Global Giants');
+    const badge = page.locator('main').getByText('The Sovereign Tech Directory');
     await expect(badge).toBeVisible();
   });
 

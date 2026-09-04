@@ -18,11 +18,11 @@ test.describe('Auth Pages E2E', () => {
     await expect(page.locator('a[href="/login"]')).toContainText('Sign in');
   });
 
-  test('navbar Get Started button links to /register and Sign In button links to /login', async ({ page }) => {
+  test('navbar Submit a Tool button links to /submit and Sign In button links to /login', async ({ page }) => {
     await page.goto('/');
-    const getStartedBtn = page.locator('header a[href="/register"]');
+    const submitBtn = page.locator('header a[href="/submit"]');
     const signInBtn = page.locator('header a[href="/login"]');
-    await expect(getStartedBtn).toBeVisible();
+    await expect(submitBtn).toBeVisible();
     await expect(signInBtn).toBeVisible();
   });
 });
