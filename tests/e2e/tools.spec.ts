@@ -17,4 +17,23 @@ test.describe('Tools & Pages E2E', () => {
     await expect(page.locator('main h1')).toContainText('Alternatives to');
     await expect(page.locator('table')).toBeVisible();
   });
+
+  test('renders footer on tools page, alternatives directory, and alternative detail page', async ({ page }) => {
+    // 1. Alternatives directory
+    await page.goto('/alternatives');
+    await expect(page.locator('footer')).toBeVisible();
+    await expect(page.locator('footer')).toContainText('Desi Alternatives');
+
+    // 2. Alternative detail page
+    await page.goto('/alternatives/datadog');
+    await expect(page.locator('footer')).toBeVisible();
+
+    // 3. Tool detail page
+    await page.goto('/tools/signoz');
+    await expect(page.locator('footer')).toBeVisible();
+
+    // 4. Submit page
+    await page.goto('/submit');
+    await expect(page.locator('footer')).toBeVisible();
+  });
 });

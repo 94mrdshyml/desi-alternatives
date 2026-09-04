@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
 import { eq, asc } from 'drizzle-orm';
 import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans } from '@/lib/server/db/schema';
 
@@ -657,6 +658,7 @@ const brandColor = toolResult.primaryColor || '#D97706';
       </div>
     </div>
   </main>
+  <Footer />
 </BaseLayout>
 
 <script>

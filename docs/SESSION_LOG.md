@@ -411,12 +411,36 @@
    - Streamlined logo delivery referencing Cloudflare R2 assets (`desi-assets`) through Worker stream `/api/assets/[...key].ts`.
    - Verified fallback monogram avatar rendering.
 
+
+## Session 20 — Footer Integration Across Tools, Global Alternatives & Core Public Pages
+
+**Date & Time (IST):** 2026-09-04 11:00 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Footer Integration Across All Core Pages**:
+   - Integrated `<Footer />` into Tool Detail page (`src/pages/tools/[slug].astro`).
+   - Integrated `<Footer />` into Global Alternatives Matrix Directory (`src/pages/alternatives/index.astro`).
+   - Integrated `<Footer />` into Global Alternative Comparison page (`src/pages/alternatives/[slug].astro`).
+   - Integrated `<Footer />` into Category Filtered Tools page (`src/pages/category/[slug].astro`).
+   - Integrated `<Footer />` into Tool Submission page (`src/pages/submit.astro`).
+   - Integrated `<Footer />` into User Profile & Settings page (`src/pages/profile.astro`).
+
+2. **Automated Verification & E2E Testing**:
+   - Added automated Playwright test in `tests/e2e/tools.spec.ts` asserting footer visibility and branding text across `/alternatives`, `/alternatives/datadog`, `/tools/signoz`, and `/submit`.
+   - Verified 16/16 Playwright tests passing cleanly.
+   - Verified 24/24 Vitest unit tests passing cleanly.
+   - Verified `astro check` with 0 errors and 0 warnings.
+   - Verified production SSR bundle compilation via `bun run build`.
+   - Captured visual browser screenshots verifying footer rendering at bottom of `/tools/signoz`, `/alternatives`, and `/alternatives/datadog`.
+
 ### Verification & DoD Checklist
 - `bun run test:unit`: 24/24 unit tests passing.
-- `bun run astro check`: 0 errors, 0 warnings, 0 hints across 69 files.
-- `bun run build`: Clean production build with Cloudflare SSR bundle and prerendered static pages.
-- `wrangler d1 migrations apply desi-db --remote`: Verified remote D1 database up to date.
-- `wrangler deploy`: Deployed Worker live to Cloudflare edge.
-- Git repository synced and pushed to `main`.
+- `bun run astro check`: 0 errors, 0 warnings across all files.
+- `bun run test:e2e`: 16/16 Playwright E2E tests passing.
+- `bun run build`: Clean production build with Cloudflare SSR bundle.
+
 
 

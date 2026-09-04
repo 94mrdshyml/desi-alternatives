@@ -3,6 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import CategoryFilter from '@/components/CategoryFilter.astro';
 import ToolCard from '@/components/ToolCard.astro';
+import Footer from '@/components/Footer.astro';
 import { eq } from 'drizzle-orm';
 import { categories, desiTools, globalTools, toolAlternatives } from '@/lib/server/db/schema';
 
@@ -169,4 +170,5 @@ const categoryOptions = allCategories.map((c) => ({
       )}
     </div>
   </main>
+  <Footer />
 </BaseLayout>
