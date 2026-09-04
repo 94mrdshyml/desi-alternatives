@@ -376,4 +376,47 @@
 - Full test suite passed: 17 unit tests, TypeScript typechecking (`astro check`), and Astro production build.
 - Pushed to `main` and verified automated CI/CD deployment to Cloudflare Workers.
 
+---
+
+## Session 19 — Artistic Manifesto Essay, Sovereign Movement Navbar, and Homepage Polish
+
+**Date & Time (IST):** 2026-09-04 10:45 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Artistic Editorial Manifesto Page (`/about`)**:
+   - Designed a single-column high-end editorial essay layout on warm paper tone (`#fcfbf9`) inspired by *The Ken* and *Substack*.
+   - Added radial ambient amber mesh glow and movement seal (`✦ 🇮🇳 ✦ THE MANIFESTO`).
+   - Configured single-line responsive H1 headline (`The Era of` sans bold + `Borrowed Infrastructure` serif bold italic in primary orange + `is Over.` sans bold).
+   - Implemented classical drop cap (**F**) on opening paragraph, left-bordered accent pull-quotes (*"Until it wasn't"*, *"renting our digital sovereignty"*), and stylized asterism divider (`— ✦ —`).
+   - Integrated dual-tone gallery-framed custom illustrations with museum captions (*Fig 01. The Global Default* & *Fig 02. Sovereign Foundations*).
+   - Centered movement CTA section with sovereign pill badge and primary/secondary action buttons.
+
+2. **Movement-Themed Navigation & Mobile Drawer (`src/components/Navbar.astro`)**:
+   - Streamlined desktop navbar layout: `[Logo]` --- `[Search ⌘K]` --- `[Manifesto] [Sign In] [Submit a Tool]`.
+   - Hidden hamburger button on desktop (`md:hidden`), removed "Blog" link from desktop header.
+   - Renamed primary CTA button to `"Submit a Tool"` (`/submit`).
+   - Reorganized mobile drawer under movement headings: **THE STACK** (*Explore the Directory*, *Alternatives Matrix*, *Submit Your Product*) and **THE MOVEMENT** (*The Manifesto*, *The Journal*).
+   - Replaced all drawer emojis with clean Lucide SVG icons (`LayoutGrid`, `ArrowLeftRight`, `Plus`, `FileText`, `Newspaper`).
+   - Updated drawer footer to `"🇮🇳 Curated for Bharat's Builders"`.
+
+3. **Home Page & Footer Copy Enhancements (`src/pages/index.astro`, `src/components/Footer.astro`)**:
+   - Refined hero headline to `"World-Class Products. Built in Bharat, Priced for You."` with colored comma and clean subheading without underlines.
+   - Removed hero action buttons container above directory catalog.
+   - Cleaned footer brand description, removed trust badges row, updated copyright and curation text.
+
+4. **Product Card Asset Streaming (`src/components/ToolCard.astro`)**:
+   - Streamlined logo delivery referencing Cloudflare R2 assets (`desi-assets`) through Worker stream `/api/assets/[...key].ts`.
+   - Verified fallback monogram avatar rendering.
+
+### Verification & DoD Checklist
+- `bun run test:unit`: 24/24 unit tests passing.
+- `bun run astro check`: 0 errors, 0 warnings, 0 hints across 69 files.
+- `bun run build`: Clean production build with Cloudflare SSR bundle and prerendered static pages.
+- `wrangler d1 migrations apply desi-db --remote`: Verified remote D1 database up to date.
+- `wrangler deploy`: Deployed Worker live to Cloudflare edge.
+- Git repository synced and pushed to `main`.
+
 
