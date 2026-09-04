@@ -35,6 +35,12 @@
   "vars": {
     "BETTER_AUTH_URL": "https://da.mrdshyml.xyz"
   },
+  "routes": [
+    {
+      "pattern": "da.mrdshyml.xyz",
+      "custom_domain": true
+    }
+  ],
   "observability": {
     "enabled": true
   }
