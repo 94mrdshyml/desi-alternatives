@@ -466,6 +466,30 @@
    - 16/16 Playwright E2E tests passing.
    - Browser subagent visual inspection confirmed matching layout, typography, and spacing.
 
+## Session 22 — IndexNow Instant Search Engine Indexing & Generative Engine Optimization (llms.txt)
 
+**Date & Time (IST):** 2026-09-04 11:22 IST
+**Status:** Completed
+**Branch:** `main`
 
+### What We Built & Delivered
 
+1. **IndexNow Instant Indexing Protocol (`src/lib/server/indexnow.ts`)**:
+   - Implemented RFC-compliant IndexNow protocol engine supporting automated pinging to Bing, Yandex, Seznam, and IndexNow central indexers.
+   - Domain verification key: `d351a17e89ab4c2f88e1029c45b78f61`.
+   - Served public verification key statically at `public/d351a17e89ab4c2f88e1029c45b78f61.txt` and dynamically at `src/pages/d351a17e89ab4c2f88e1029c45b78f61.txt.ts` for Cloudflare Workers SSR.
+   - Non-blocking batch ping helper with error boundary (`pingIndexNow`).
+
+2. **Automated Admin Hooks & Bulk Ping API (`src/pages/api/admin/indexnow.ts`)**:
+   - Added automatic IndexNow dispatching on Indian tool creation/update (`src/pages/api/admin/tools.ts`).
+   - Added automatic IndexNow dispatching on global alternative creation/update (`src/pages/api/admin/global-tools.ts`).
+   - Created admin endpoint `/api/admin/indexnow` supporting specific URL pings and `ping-all` bulk sync across all tools, alternatives, categories, and blog articles.
+
+3. **Generative Engine Optimization (`/llms.txt` & `/llms-full.txt`)**:
+   - Built `/llms.txt` (`src/pages/llms.txt.ts`) following the open standard for LLM crawlers (Perplexity, ChatGPT Search, Claude, Gemini).
+   - Built `/llms-full.txt` (`src/pages/llms-full.txt.ts`) providing full RAG-ready context including pain-point breakdowns, GST invoice credit (18%), domestic data residency compliance, and detailed Indian tool profiles.
+
+4. **Testing & Quality Assurance**:
+   - Created unit tests in `tests/unit/indexnow.test.ts` (26/26 unit tests passing).
+   - Added E2E tests in `tests/e2e/tools.spec.ts` for `/llms.txt`, `/llms-full.txt`, and verification key (17/17 E2E tests passing).
+   - Clean Astro typecheck (0 errors).

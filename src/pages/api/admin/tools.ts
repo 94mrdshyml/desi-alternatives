@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { desiTools, toolAlternatives } from '@/lib/server/db/schema';
 import { createToolId, createAlternativeId } from '@/lib/server/id';
+import { pingIndexNow } from '@/lib/server/indexnow';
 import { eq } from 'drizzle-orm';
 
 export const POST: APIRoute = async ({ request, locals }) => {
@@ -148,6 +149,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       }
 
+      // Trigger IndexNow auto-ping in background
+      pingIndexNow([`/tools/${generatedSlug}`, '/'], new URL(request.url).origin);
+
       return new Response(JSON.stringify({ success: true, toolId: newToolId, slug: generatedSlug }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -235,6 +239,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           }
         }
       }
+
+      // Trigger IndexNow auto-ping in background
+      pingIndexNow([`/tools/${slug}`, '/'], new URL(request.url).origin);
 
       return new Response(JSON.stringify({ success: true }), {
         status: 200,

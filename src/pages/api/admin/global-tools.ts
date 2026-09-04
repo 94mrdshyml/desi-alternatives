@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { globalTools, toolAlternatives } from '@/lib/server/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import { createGlobalToolId, createAlternativeId } from '@/lib/server/id';
+import { pingIndexNow } from '@/lib/server/indexnow';
 
 export const prerender = false;
 
@@ -89,6 +90,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         }
       }
 
+      // Auto-ping IndexNow for instant search engine indexing
+      pingIndexNow([`/alternatives/${slug}`, '/alternatives'], new URL(request.url).origin);
+
       return new Response(JSON.stringify({ success: true, id: newId, slug }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -160,6 +164,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
           }
         }
       }
+
+      // Auto-ping IndexNow for instant search engine indexing
+      pingIndexNow([`/alternatives/${slug}`, '/alternatives'], new URL(request.url).origin);
 
       return new Response(JSON.stringify({ success: true, id }), {
         status: 200,
