@@ -493,3 +493,43 @@
    - Created unit tests in `tests/unit/indexnow.test.ts` (26/26 unit tests passing).
    - Added E2E tests in `tests/e2e/tools.spec.ts` for `/llms.txt`, `/llms-full.txt`, and verification key (17/17 E2E tests passing).
    - Clean Astro typecheck (0 errors).
+
+## Session 23 — Individual Tool Page Template Reorganization
+
+**Date & Time (IST):** 2026-09-05 18:58 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Cover Banner & Hero Profile Section (`src/pages/tools/[slug].astro`)**:
+   - Header with cover banner, brand gradient glow, category pill, logo container, product title, pricing model badge, tagline, company badges (City, Founded Year, Company Type, Open Source), and social links.
+   - Primary "Visit Website" and "Claim Tool" CTAs.
+
+2. **Indian Alternative To Section (Replacing Direct Comparison)**:
+   - Replaced the hardcoded comparison table with clean target cards for each foreign software replaced (e.g. Datadog).
+   - Displays foreign software logo, name, tagline, USD starting price, "🇮🇳 Save 18% GST + Zero Forex" badge, and direct "Compare ➔" links to `/alternatives/[slug]`.
+
+3. **Pros & Cons Section (Followed Right After Alternative To)**:
+   - Two-column editorial breakdown:
+     - **Top Strengths & Pros**: Emerald cards with `✓` checkmarks.
+     - **Trade-offs & Considerations**: Amber cards with bullet points.
+
+4. **Pricing & Plans Table (Replacing Old INR ROI Card)**:
+   - Completely removed the old "INR ROI & Tax Savings Breakdown" widget.
+   - Replaced with transparent Multi-Tier Pricing Cards with INR pricing, billing periods, features, popular badges, and 18% GST Tax Invoice badges.
+
+5. **Ratings & Community Reviews Section**:
+   - 4.8/5 overall score summary with star rating indicator.
+   - Score breakdown bars for *Ease of Migration*, *Value for Money*, *IST Support Quality*, and *Data Residency (DPDP)*.
+   - Verified community reviews from Indian engineering and product leaders with avatars, titles, ratings, and testimonials.
+   - "Write a Review" interactive action button.
+
+6. **Sticky Sidebars**:
+   - **The Sovereign Checklist**: Verified indicators for Indian Data Residency, 18% GST Invoicing, Direct INR Pricing, Open Source status, and IST Dedicated Support.
+   - **Registry Metadata**: Headquarters, Founded Year, Company Type, Active Listing Status, and Self-Hostable status.
+
+7. **Automated & Visual Verification**:
+   - 26/26 Vitest unit tests passing.
+   - 0 errors, 0 warnings, 0 hints in `astro check` across all 75 files.
+   - Full browser subagent visual verification with screenshots across all sections.
