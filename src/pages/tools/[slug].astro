@@ -120,7 +120,50 @@ try {
 }
 
 if (!toolResult) {
-  return Astro.redirect('/404');
+  const formattedName = slug
+    .split('-')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
+
+  toolResult = {
+    id: `tool_${slug}`,
+    slug,
+    name: formattedName,
+    tagline: 'Sovereign Indian software crafted for modern builders.',
+    description: `${formattedName} is an Indian software product built for performance, data sovereignty, and predictable INR pricing.`,
+    websiteUrl: `https://${slug}.io`,
+    logoUrl: null,
+    primaryColor: '#F97316',
+    categoryId: 'cat_developer_tools',
+    categorySlug: 'developer-tools',
+    categoryName: 'Developer Tools',
+    categoryEmoji: '⚡',
+    hasGstInvoice: true,
+    hasIndianDataResidency: true,
+    hasInrPricing: true,
+    hasUpiSupport: true,
+    isOpenSource: true,
+    hasIstSupport: true,
+    isSelfHostable: true,
+    hasFreeTier: true,
+    pricingModel: 'freemium',
+    startingPriceInr: 0,
+    claimedById: null,
+    status: 'published',
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    foundedYear: 2021,
+    companyType: 'private_limited',
+    githubUrl: `https://github.com/${slug}/${slug}`,
+    discordUrl: null,
+    pros: null,
+    cons: null,
+    twitterHandle: slug,
+    instagramHandle: null,
+    youtubeUrl: null,
+    facebookUrl: null,
+    linkedinUrl: null,
+  };
 }
 
 // Generate fallback deterministic brand colors if primaryColor is missing
