@@ -16,6 +16,8 @@ import {
   createBlogPostId,
   createBlogPostToolId,
   createSearchLogId,
+  createReviewId,
+  createReviewVoteId,
 } from '../id';
 
 // ==========================================
@@ -287,6 +289,43 @@ export const searchLogs = sqliteTable('search_logs', {
   clickedId: text('clicked_id'),
   clickedSlug: text('clicked_slug'),
   userSessionId: text('user_session_id'),
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// ==========================================
+// 10. COMMUNITY REVIEWS & RATINGS ENGINE
+// ==========================================
+
+export const toolReviews = sqliteTable('tool_reviews', {
+  id: text('id').primaryKey().$defaultFn(createReviewId),
+  toolId: text('tool_id').notNull().references(() => desiTools.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  authorName: text('author_name').notNull(),
+  authorRole: text('author_role'), // e.g. "Head of Engineering", "DevOps Architect"
+  authorCompany: text('author_company'), // e.g. "Fintech Scaleup (Bengaluru)"
+  authorAvatarUrl: text('author_avatar_url'),
+  rating: integer('rating').notNull(), // 1 to 5 overall stars
+  title: text('title').notNull(),
+  content: text('content').notNull(),
+  
+  // Dimensional Sub-Scores (1 to 5)
+  easeOfMigrationRating: integer('ease_of_migration_rating').default(5),
+  valueForMoneyRating: integer('value_for_money_rating').default(5),
+  supportRating: integer('support_rating').default(5),
+  dataResidencyRating: integer('data_residency_rating').default(5),
+
+  isVerified: integer('is_verified', { mode: 'boolean' }).default(false).notNull(),
+  helpfulCount: integer('helpful_count').default(0).notNull(),
+  status: text('status', { enum: ['pending', 'published', 'rejected'] }).default('published').notNull(),
+  
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+export const reviewHelpfulVotes = sqliteTable('review_helpful_votes', {
+  id: text('id').primaryKey().$defaultFn(createReviewVoteId),
+  reviewId: text('review_id').notNull().references(() => toolReviews.id, { onDelete: 'cascade' }),
+  voterIdentifier: text('voter_identifier').notNull(), // User ID or IP/client hash
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 

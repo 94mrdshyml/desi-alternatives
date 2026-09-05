@@ -20,6 +20,8 @@ export const ID_PREFIXES = {
   blogPost: 'post_',
   blogPostTool: 'bpt_',
   searchLog: 'srch_',
+  review: 'rev_',
+  reviewVote: 'vote_',
 } as const;
 
 export type IdPrefixKey = keyof typeof ID_PREFIXES;
@@ -43,3 +45,5 @@ export const createBlogAuthorId = () => generateId(ID_PREFIXES.blogAuthor);
 export const createBlogPostId = () => generateId(ID_PREFIXES.blogPost);
 export const createBlogPostToolId = () => generateId(ID_PREFIXES.blogPostTool);
 export const createSearchLogId = () => generateId(ID_PREFIXES.searchLog);
+export const createReviewId = () => generateId(ID_PREFIXES.review);
+export const createReviewVoteId = () => generateId(ID_PREFIXES.reviewVote);

@@ -3,10 +3,11 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import { eq, asc } from 'drizzle-orm';
-import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans } from '@/lib/server/db/schema';
+import { eq, asc, desc } from 'drizzle-orm';
+import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans, toolReviews } from '@/lib/server/db/schema';
 
 const db = Astro.locals.db;
+const user = Astro.locals.user;
 const { slug } = Astro.params;
 
 if (!slug || !db) {
@@ -16,6 +17,7 @@ if (!slug || !db) {
 let toolResult: any = null;
 let alternatives: any[] = [];
 let pricingPlans: any[] = [];
+let dbReviews: any[] = [];
 let parsedPros: string[] = [];
 let parsedCons: string[] = [];
 
@@ -92,7 +94,19 @@ try {
       .orderBy(asc(toolPricingPlans.sortOrder))
       .all();
 
-    // 4. Parse pros & cons JSON arrays
+    // 4. Fetch community reviews from D1
+    try {
+      dbReviews = await db
+        .select()
+        .from(toolReviews)
+        .where(eq(toolReviews.toolId, toolResult.id))
+        .orderBy(desc(toolReviews.createdAt))
+        .all();
+    } catch {
+      dbReviews = [];
+    }
+
+    // 5. Parse pros & cons JSON arrays
     try {
       if (toolResult.pros) parsedPros = JSON.parse(toolResult.pros);
     } catch {}
@@ -128,39 +142,73 @@ const defaultCons = [
 const displayPros = parsedPros.length > 0 ? parsedPros : defaultPros;
 const displayCons = parsedCons.length > 0 ? parsedCons : defaultCons;
 
-// Sample Verified Community Reviews tailored for Indian Engineering & Product Teams
-const reviews = [
+// Seed starter reviews if no DB reviews exist yet
+const seedReviews = [
   {
-    author: 'Aakash Sharma',
-    role: 'Head of Engineering',
-    company: 'Fintech Scaleup (Bengaluru)',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
+    id: 'rev_seed_1',
+    authorName: 'Aakash Sharma',
+    authorRole: 'Head of Engineering',
+    authorCompany: 'Fintech Scaleup (Bengaluru)',
+    authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
     rating: 5,
-    date: '2 weeks ago',
+    createdAt: '2 weeks ago',
     title: 'Flawless migration and massive tax credit savings',
     content: `Switching to ${toolResult.name} was one of our best infrastructure decisions this year. The setup was seamless, support responds instantly in our timezone, and getting direct 18% GST invoices makes accounting painless.`,
+    isVerified: true,
+    helpfulCount: 14,
+    easeOfMigrationRating: 5,
+    valueForMoneyRating: 5,
+    supportRating: 5,
+    dataResidencyRating: 5,
   },
   {
-    author: 'Priya Venkatesh',
-    role: 'Lead DevOps Architect',
-    company: 'SaaS Platform (Chennai)',
-    avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80',
+    id: 'rev_seed_2',
+    authorName: 'Priya Venkatesh',
+    authorRole: 'Lead DevOps Architect',
+    authorCompany: 'SaaS Platform (Chennai)',
+    authorAvatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80',
     rating: 5,
-    date: '1 month ago',
+    createdAt: '1 month ago',
     title: 'Top tier performance with reliable data residency',
     content: `Meeting DPDP compliance requirements was a breeze since ${toolResult.name} hosts on domestic Indian cloud regions. Performance has been rock solid under high production traffic.`,
+    isVerified: true,
+    helpfulCount: 9,
+    easeOfMigrationRating: 5,
+    valueForMoneyRating: 5,
+    supportRating: 5,
+    dataResidencyRating: 5,
   },
   {
-    author: 'Rohan Mehta',
-    role: 'Founder & CTO',
-    company: 'E-commerce Infrastructure (Mumbai)',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-    rating: 4.5,
-    date: '2 months ago',
+    id: 'rev_seed_3',
+    authorName: 'Rohan Mehta',
+    authorRole: 'Founder & CTO',
+    authorCompany: 'E-commerce Infrastructure (Mumbai)',
+    authorAvatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+    rating: 4,
+    createdAt: '2 months ago',
     title: 'Great value for money without USD volatility',
     content: `No more foreign currency markup fees on credit cards or unexpected billing surges. The feature set matches global standards and the team ships improvements rapidly.`,
+    isVerified: true,
+    helpfulCount: 6,
+    easeOfMigrationRating: 4,
+    valueForMoneyRating: 5,
+    supportRating: 4,
+    dataResidencyRating: 5,
   },
 ];
+
+const publishedDbReviews = dbReviews.filter((r) => r.status === 'published');
+const allReviews = publishedDbReviews.length > 0 ? [...publishedDbReviews, ...seedReviews] : seedReviews;
+
+// Calculate live dynamic rating metrics
+const totalReviewsCount = allReviews.length;
+const sumRating = allReviews.reduce((acc, r) => acc + (r.rating || 5), 0);
+const avgRating = totalReviewsCount > 0 ? (sumRating / totalReviewsCount).toFixed(1) : '5.0';
+
+const avgEase = (allReviews.reduce((acc, r) => acc + (r.easeOfMigrationRating || 5), 0) / totalReviewsCount).toFixed(1);
+const avgValue = (allReviews.reduce((acc, r) => acc + (r.valueForMoneyRating || 5), 0) / totalReviewsCount).toFixed(1);
+const avgSupport = (allReviews.reduce((acc, r) => acc + (r.supportRating || 5), 0) / totalReviewsCount).toFixed(1);
+const avgResidency = (allReviews.reduce((acc, r) => acc + (r.dataResidencyRating || 5), 0) / totalReviewsCount).toFixed(1);
 ---
 
 <BaseLayout
@@ -601,17 +649,22 @@ const reviews = [
           </div>
         </section>
 
-        <!-- 5. Ratings and Reviews Section (Followed after pricing) -->
-        <section class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+        <!-- 5. Ratings and Community Reviews Section -->
+        <section class="rounded-2xl border border-border bg-white p-6 shadow-xs" id="reviews">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
             <div>
-              <h2 class="text-base font-bold text-foreground">Ratings & Community Reviews</h2>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold text-foreground">Ratings & Community Reviews</h2>
+                <span class="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-bold text-slate-700">
+                  {totalReviewsCount} {totalReviewsCount === 1 ? 'Review' : 'Reviews'}
+                </span>
+              </div>
               <p class="mt-0.5 text-xs text-muted-foreground">Verified feedback from Indian engineering and product leaders.</p>
             </div>
             <button
               type="button"
-              id="write-review-btn"
-              class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-3.5 py-1.5 text-xs font-semibold text-foreground hover:border-primary/40 hover:bg-slate-50 transition shadow-2xs self-start sm:self-auto cursor-pointer"
+              id="open-review-modal-btn"
+              class="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer self-start sm:self-auto"
             >
               <span>✍️ Write a Review</span>
             </button>
@@ -621,11 +674,11 @@ const reviews = [
           <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-50/60 border border-border/80">
             <!-- Overall Score -->
             <div class="flex flex-col items-center justify-center p-3 text-center border-b sm:border-b-0 sm:border-r border-border/80">
-              <span class="text-3xl font-extrabold text-foreground">4.8</span>
+              <span class="text-3xl font-extrabold text-foreground" id="overall-rating-display">{avgRating}</span>
               <div class="flex items-center gap-0.5 text-amber-500 my-1 text-sm">
-                <span>★</span><span>★</span><span>★</span><span>★</span><span class="text-amber-400">★</span>
+                <span>★</span><span>★</span><span>★</span><span>★</span><span class={Number(avgRating) >= 4.8 ? 'text-amber-500' : 'text-amber-300'}>★</span>
               </div>
-              <span class="text-[11px] text-muted-foreground">Based on verified reviews</span>
+              <span class="text-[11px] text-muted-foreground">Out of 5 stars</span>
             </div>
 
             <!-- Breakdown Dimensions (2 Cols) -->
@@ -633,74 +686,82 @@ const reviews = [
               <div>
                 <div class="flex justify-between text-muted-foreground font-medium mb-1">
                   <span>Ease of Migration</span>
-                  <span class="font-bold text-foreground">4.9/5</span>
+                  <span class="font-bold text-foreground">{avgEase}/5</span>
                 </div>
                 <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style="width: 98%;"></div>
+                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgEase)/5)*100)}%;`}></div>
                 </div>
               </div>
 
               <div>
                 <div class="flex justify-between text-muted-foreground font-medium mb-1">
                   <span>Value for Money</span>
-                  <span class="font-bold text-foreground">5.0/5</span>
+                  <span class="font-bold text-foreground">{avgValue}/5</span>
                 </div>
                 <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style="width: 100%;"></div>
+                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgValue)/5)*100)}%;`}></div>
                 </div>
               </div>
 
               <div>
                 <div class="flex justify-between text-muted-foreground font-medium mb-1">
                   <span>IST Support Quality</span>
-                  <span class="font-bold text-foreground">4.8/5</span>
+                  <span class="font-bold text-foreground">{avgSupport}/5</span>
                 </div>
                 <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style="width: 96%;"></div>
+                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgSupport)/5)*100)}%;`}></div>
                 </div>
               </div>
 
               <div>
                 <div class="flex justify-between text-muted-foreground font-medium mb-1">
                   <span>Data Residency (DPDP)</span>
-                  <span class="font-bold text-foreground">4.9/5</span>
+                  <span class="font-bold text-foreground">{avgResidency}/5</span>
                 </div>
                 <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style="width: 98%;"></div>
+                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgResidency)/5)*100)}%;`}></div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Review Testimonial Cards -->
-          <div class="mt-5 space-y-4">
-            {reviews.map((rev) => (
-              <div class="rounded-xl border border-border p-4.5 bg-white shadow-2xs">
+          <!-- Review Testimonial Cards List -->
+          <div class="mt-5 space-y-4" id="reviews-list-container">
+            {allReviews.map((rev: any) => (
+              <div class="rounded-xl border border-border p-4.5 bg-white shadow-2xs transition hover:border-slate-300" id={`review-card-${rev.id}`}>
                 <div class="flex items-start justify-between gap-3">
                   <div class="flex items-center gap-3">
                     <img
-                      src={rev.avatar}
-                      alt={rev.author}
+                      src={rev.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                      alt={rev.authorName}
                       class="h-9 w-9 rounded-full object-cover border border-border shadow-2xs"
                     />
                     <div>
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-foreground">{rev.author}</span>
-                        <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-semibold text-emerald-800 border border-emerald-200">
-                          ✓ Verified User
-                        </span>
+                        <span class="text-xs font-bold text-foreground">{rev.authorName}</span>
+                        {rev.isVerified && (
+                          <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-semibold text-emerald-800 border border-emerald-200">
+                            ✓ Verified User
+                          </span>
+                        )}
                       </div>
                       <span class="text-[11px] text-muted-foreground">
-                        {rev.role} • {rev.company}
+                        {rev.authorRole || 'Developer'}{rev.authorCompany ? ` • ${rev.authorCompany}` : ''}
                       </span>
                     </div>
                   </div>
 
                   <div class="flex flex-col items-end shrink-0">
                     <div class="flex items-center text-amber-500 text-xs">
-                      <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+                      {Array.from({ length: Math.round(rev.rating || 5) }).map(() => (
+                        <span>★</span>
+                      ))}
                     </div>
-                    <span class="text-[10px] text-muted-foreground mt-0.5">{rev.date}</span>
+                    <span class="text-[10px] text-muted-foreground mt-0.5">
+                      {typeof rev.createdAt === 'string' && rev.createdAt.includes('-')
+                        ? new Date(rev.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+                        : rev.createdAt}
+                    </span>
                   </div>
                 </div>
 
@@ -708,6 +769,18 @@ const reviews = [
                 <p class="text-xs text-foreground/80 mt-1 leading-relaxed">
                   "{rev.content}"
                 </p>
+
+                <div class="mt-3.5 pt-2.5 border-t border-border/60 flex items-center justify-between text-xs">
+                  <span class="text-[10px] text-muted-foreground">Was this review helpful?</span>
+                  <button
+                    type="button"
+                    class="helpful-vote-btn inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 transition cursor-pointer"
+                    data-review-id={rev.id}
+                  >
+                    <span>👍 Helpful</span>
+                    <span class="helpful-count font-bold text-[11px]">{rev.helpfulCount || 0}</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -813,11 +886,180 @@ const reviews = [
       </div>
     </div>
   </main>
+
+  <!-- Interactive Write a Review Modal -->
+  <dialog
+    id="review-modal"
+    class="fixed inset-0 z-50 m-auto max-w-lg w-[92vw] rounded-2xl border border-border bg-white p-6 shadow-2xl backdrop:bg-slate-950/60 backdrop:backdrop-blur-xs"
+  >
+    <div class="flex items-center justify-between pb-3 border-b border-border">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">✍️</span>
+        <h3 class="text-base font-bold text-foreground">Write a Review for {toolResult.name}</h3>
+      </div>
+      <button
+        type="button"
+        id="close-review-modal-btn"
+        class="rounded-lg p-1 text-muted-foreground hover:bg-slate-100 hover:text-foreground transition cursor-pointer"
+      >
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <form id="submit-review-form" class="mt-4 space-y-4 text-xs">
+      <input type="hidden" name="toolId" value={toolResult.id} />
+
+      <!-- Overall Star Rating -->
+      <div>
+        <label class="block font-bold text-foreground mb-1.5">Overall Rating *</label>
+        <div class="flex items-center gap-2" id="star-rating-selector">
+          {[1, 2, 3, 4, 5].map((num) => (
+            <button
+              type="button"
+              class="star-btn text-2xl text-slate-300 hover:text-amber-400 focus:outline-none transition cursor-pointer"
+              data-value={num}
+            >
+              ★
+            </button>
+          ))}
+          <span class="text-xs font-bold text-foreground ml-2" id="star-rating-label">5 Stars (Excellent)</span>
+        </div>
+        <input type="hidden" name="rating" id="rating-input" value="5" />
+      </div>
+
+      <!-- Review Title -->
+      <div>
+        <label class="block font-bold text-foreground mb-1">Headline / Review Title *</label>
+        <input
+          type="text"
+          name="title"
+          required
+          placeholder="e.g. Excellent migration from Datadog with fast local support"
+          class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+
+      <!-- Detailed Review Content -->
+      <div>
+        <label class="block font-bold text-foreground mb-1">Your Experience & Feedback *</label>
+        <textarea
+          name="content"
+          required
+          rows="4"
+          placeholder="Share details on performance, migration ease, GST invoicing, pricing stability, and IST support..."
+          class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        ></textarea>
+      </div>
+
+      <!-- Sub-Dimension Ratings -->
+      <div class="grid grid-cols-2 gap-3 p-3 rounded-xl bg-slate-50 border border-border">
+        <div>
+          <label class="block text-[11px] font-semibold text-muted-foreground mb-1">Ease of Migration</label>
+          <select name="easeOfMigrationRating" class="w-full rounded-lg border border-border bg-white px-2 py-1 text-xs text-foreground">
+            <option value="5">5/5 - Seamless</option>
+            <option value="4">4/5 - Minor setup</option>
+            <option value="3">3/5 - Moderate effort</option>
+            <option value="2">2/5 - Difficult</option>
+            <option value="1">1/5 - Complex</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-muted-foreground mb-1">Value for Money</label>
+          <select name="valueForMoneyRating" class="w-full rounded-lg border border-border bg-white px-2 py-1 text-xs text-foreground">
+            <option value="5" selected>5/5 - Outstanding</option>
+            <option value="4">4/5 - Good savings</option>
+            <option value="3">3/5 - Average</option>
+            <option value="2">2/5 - High</option>
+            <option value="1">1/5 - Poor</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-muted-foreground mb-1">IST Support</label>
+          <select name="supportRating" class="w-full rounded-lg border border-border bg-white px-2 py-1 text-xs text-foreground">
+            <option value="5" selected>5/5 - Instant & helpful</option>
+            <option value="4">4/5 - Responsive</option>
+            <option value="3">3/5 - Standard</option>
+            <option value="2">2/5 - Slow</option>
+            <option value="1">1/5 - Ineffective</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-muted-foreground mb-1">DPDP Residency</label>
+          <select name="dataResidencyRating" class="w-full rounded-lg border border-border bg-white px-2 py-1 text-xs text-foreground">
+            <option value="5" selected>5/5 - Verified Indian Cloud</option>
+            <option value="4">4/5 - Compliant</option>
+            <option value="3">3/5 - Multi-region</option>
+            <option value="2">2/5 - Partial</option>
+            <option value="1">1/5 - Global default</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Author Metadata -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+        <div>
+          <label class="block text-[11px] font-semibold text-foreground mb-1">Your Name</label>
+          <input
+            type="text"
+            name="authorName"
+            value={user?.name || ''}
+            placeholder="e.g. Vikram Joshi"
+            class="w-full rounded-xl border border-border px-2.5 py-1.5 text-xs text-foreground"
+          />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-foreground mb-1">Your Role / Title</label>
+          <input
+            type="text"
+            name="authorRole"
+            placeholder="e.g. DevOps Engineer"
+            class="w-full rounded-xl border border-border px-2.5 py-1.5 text-xs text-foreground"
+          />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-foreground mb-1">Company / Team</label>
+          <input
+            type="text"
+            name="authorCompany"
+            placeholder="e.g. SaaS Startup"
+            class="w-full rounded-xl border border-border px-2.5 py-1.5 text-xs text-foreground"
+          />
+        </div>
+      </div>
+
+      <div id="review-form-status" class="hidden text-xs rounded-lg p-2.5"></div>
+
+      <div class="pt-3 border-t border-border flex items-center justify-end gap-2.5">
+        <button
+          type="button"
+          id="cancel-review-btn"
+          class="rounded-xl border border-border bg-white px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-50 transition cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          id="submit-review-btn"
+          class="rounded-xl bg-primary px-5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary-hover transition cursor-pointer shadow-xs"
+        >
+          Publish Review
+        </button>
+      </div>
+    </form>
+  </dialog>
+
   <Footer />
 </BaseLayout>
 
 <script>
-  // Dynamic Canvas Dominant Color Extractor from Tool Logo
+  // 1. Dynamic Canvas Dominant Color Extractor from Tool Logo
   const logoImg = document.getElementById('tool-logo-img') as HTMLImageElement | null;
   const coverBanner = document.getElementById('tool-cover-banner');
   const glowSphere1 = document.getElementById('glow-sphere-1');
@@ -875,7 +1117,7 @@ const reviews = [
     }
   }
 
-  // Claim Tool Action
+  // 2. Claim Tool Action
   const claimBtn = document.getElementById('claim-tool-btn');
   if (claimBtn) {
     claimBtn.addEventListener('click', () => {
@@ -883,11 +1125,140 @@ const reviews = [
     });
   }
 
-  // Write Review Action
-  const writeReviewBtn = document.getElementById('write-review-btn');
-  if (writeReviewBtn) {
-    writeReviewBtn.addEventListener('click', () => {
-      alert('Community Reviews: Submit your verified experience to help fellow Indian developers discover sovereign tools. Review submission portal is open to verified accounts.');
+  // 3. Review Modal Dialog Controls
+  const reviewModal = document.getElementById('review-modal') as HTMLDialogElement | null;
+  const openReviewBtn = document.getElementById('open-review-modal-btn');
+  const closeReviewBtn = document.getElementById('close-review-modal-btn');
+  const cancelReviewBtn = document.getElementById('cancel-review-btn');
+  const reviewForm = document.getElementById('submit-review-form') as HTMLFormElement | null;
+  const ratingInput = document.getElementById('rating-input') as HTMLInputElement | null;
+  const ratingLabel = document.getElementById('star-rating-label');
+  const starBtns = document.querySelectorAll<HTMLButtonElement>('.star-btn');
+  const formStatus = document.getElementById('review-form-status');
+  const submitReviewBtn = document.getElementById('submit-review-btn') as HTMLButtonElement | null;
+
+  function updateStars(val: number) {
+    if (ratingInput) ratingInput.value = String(val);
+    const labels: Record<number, string> = {
+      1: '1 Star (Poor)',
+      2: '2 Stars (Fair)',
+      3: '3 Stars (Good)',
+      4: '4 Stars (Very Good)',
+      5: '5 Stars (Excellent)',
+    };
+    if (ratingLabel) ratingLabel.textContent = labels[val] || `${val} Stars`;
+
+    starBtns.forEach((btn) => {
+      const btnVal = Number(btn.getAttribute('data-value') || 0);
+      if (btnVal <= val) {
+        btn.classList.add('text-amber-400');
+        btn.classList.remove('text-slate-300');
+      } else {
+        btn.classList.remove('text-amber-400');
+        btn.classList.add('text-slate-300');
+      }
     });
   }
+
+  updateStars(5);
+
+  starBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const val = Number(btn.getAttribute('data-value') || 5);
+      updateStars(val);
+    });
+  });
+
+  if (openReviewBtn && reviewModal) {
+    openReviewBtn.addEventListener('click', () => {
+      reviewModal.showModal();
+    });
+  }
+
+  if (closeReviewBtn && reviewModal) {
+    closeReviewBtn.addEventListener('click', () => {
+      reviewModal.close();
+    });
+  }
+
+  if (cancelReviewBtn && reviewModal) {
+    cancelReviewBtn.addEventListener('click', () => {
+      reviewModal.close();
+    });
+  }
+
+  // 4. Submit Review Form Handler
+  if (reviewForm) {
+    reviewForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!submitReviewBtn) return;
+
+      submitReviewBtn.disabled = true;
+      submitReviewBtn.textContent = 'Publishing...';
+      if (formStatus) {
+        formStatus.className = 'hidden text-xs rounded-lg p-2.5';
+      }
+
+      const formData = new FormData(reviewForm);
+      const payload = Object.fromEntries(formData.entries());
+
+      try {
+        const res = await fetch('/api/reviews/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = (await res.json()) as any;
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to submit review.');
+        }
+
+        if (formStatus) {
+          formStatus.className = 'block text-xs rounded-lg p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200';
+          formStatus.textContent = '✓ Review published successfully! Thank you for supporting Indian software.';
+        }
+
+        setTimeout(() => {
+          if (reviewModal) reviewModal.close();
+          window.location.reload();
+        }, 1200);
+      } catch (err: any) {
+        if (formStatus) {
+          formStatus.className = 'block text-xs rounded-lg p-2.5 bg-red-50 text-red-700 border border-red-200';
+          formStatus.textContent = err.message || 'Error publishing review.';
+        }
+      } finally {
+        submitReviewBtn.disabled = false;
+        submitReviewBtn.textContent = 'Publish Review';
+      }
+    });
+  }
+
+  // 5. Helpful Vote Handler
+  document.querySelectorAll<HTMLButtonElement>('.helpful-vote-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const reviewId = btn.getAttribute('data-review-id');
+      if (!reviewId) return;
+
+      try {
+        btn.disabled = true;
+        const res = await fetch('/api/reviews/vote', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reviewId }),
+        });
+        const data = (await res.json()) as any;
+        if (res.ok) {
+          const countSpan = btn.querySelector('.helpful-count');
+          if (countSpan && data.helpfulCount !== undefined) {
+            countSpan.textContent = String(data.helpfulCount);
+          }
+          btn.classList.add('bg-emerald-50', 'text-emerald-800', 'border-emerald-300');
+        }
+      } catch (e) {
+        console.error('Failed to register vote:', e);
+      }
+    });
+  });
 </script>

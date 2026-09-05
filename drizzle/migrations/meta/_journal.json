@@ -71,6 +71,13 @@
       "when": 1787721756254,
       "tag": "0009_icy_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1788615277450,
+      "tag": "0010_eminent_boom_boom",
+      "breakpoints": true
     }
   ]
 }

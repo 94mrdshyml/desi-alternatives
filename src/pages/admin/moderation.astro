@@ -1,6 +1,6 @@
 ---
 import AdminLayout from '@/layouts/AdminLayout.astro';
-import { claimsQueue, users, desiTools, globalTools, categories } from '@/lib/server/db/schema';
+import { claimsQueue, users, desiTools, globalTools, categories, toolReviews } from '@/lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user;
@@ -12,6 +12,7 @@ if (!user || user.role !== 'admin') {
 
 let pendingClaims: any[] = [];
 let allUsersList: any[] = [];
+let allReviewsList: any[] = [];
 let totalToolsCount = 0;
 let totalGlobalCount = 0;
 let totalCategoriesCount = 0;
@@ -44,6 +45,33 @@ if (db) {
     // 2. All Users
     allUsersList = await db.select().from(users).orderBy(desc(users.createdAt)).all();
 
+    // 3. Community Reviews
+    try {
+      allReviewsList = await db
+        .select({
+          id: toolReviews.id,
+          toolId: toolReviews.toolId,
+          toolName: desiTools.name,
+          toolSlug: desiTools.slug,
+          toolLogoUrl: desiTools.logoUrl,
+          authorName: toolReviews.authorName,
+          authorRole: toolReviews.authorRole,
+          authorCompany: toolReviews.authorCompany,
+          rating: toolReviews.rating,
+          title: toolReviews.title,
+          content: toolReviews.content,
+          helpfulCount: toolReviews.helpfulCount,
+          status: toolReviews.status,
+          createdAt: toolReviews.createdAt,
+        })
+        .from(toolReviews)
+        .leftJoin(desiTools, eq(toolReviews.toolId, desiTools.id))
+        .orderBy(desc(toolReviews.createdAt))
+        .all();
+    } catch {
+      allReviewsList = [];
+    }
+
     // Counts for sidebar badges
     const tools = await db.select().from(desiTools).all();
     totalToolsCount = tools.length;
@@ -60,7 +88,7 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
 ---
 
 <AdminLayout
-  title="Moderation & Users — Admin Control Center"
+  title="Moderation & Reviews — Admin Control Center"
   currentSection="moderation"
   counts={{
     tools: totalToolsCount,
@@ -74,9 +102,9 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold tracking-tight text-foreground">Moderation & Users</h1>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">Moderation & Community</h1>
         <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
-          Review product ownership claim requests, founder verification, and manage user accounts and access levels.
+          Review product ownership claim requests, community product reviews, and manage user accounts.
         </p>
       </div>
     </div>
@@ -93,7 +121,7 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
               : 'text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent'
           }`}
         >
-          <span>📬 Ownership Claims Queue</span>
+          <span>📬 Ownership Claims</span>
           {pendingClaims.length > 0 ? (
             <span class="rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
               {pendingClaims.length}
@@ -103,6 +131,21 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
               0
             </span>
           )}
+        </button>
+
+        <button
+          type="button"
+          data-mod-tab="reviews"
+          class={`mod-tab-btn flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer ${
+            initialTab === 'reviews'
+              ? 'bg-white text-foreground shadow-xs border border-border font-bold'
+              : 'text-muted-foreground hover:text-foreground hover:bg-white/60 border border-transparent'
+          }`}
+        >
+          <span>⭐ Community Reviews</span>
+          <span class="rounded-full bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
+            {allReviewsList.length}
+          </span>
         </button>
 
         <button
@@ -189,7 +232,111 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
       )}
     </section>
 
-    <!-- PANEL 2: USERS & ROLES -->
+    <!-- PANEL 2: REVIEWS MODERATION -->
+    <section id="mod-panel-reviews" class={`mod-panel space-y-4 ${initialTab === 'reviews' ? '' : 'hidden'}`}>
+      {allReviewsList.length === 0 ? (
+        <div class="rounded-2xl border border-border bg-white p-12 text-center shadow-xs">
+          <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-2xl">
+            ⭐
+          </div>
+          <h3 class="mt-4 text-sm font-bold text-foreground">No Reviews in Database Yet</h3>
+          <p class="mt-1 text-xs text-muted-foreground">Community reviews submitted on tool pages will appear here for moderation.</p>
+        </div>
+      ) : (
+        <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead class="border-b border-border bg-secondary/50">
+                <tr>
+                  <th class="py-3 px-4 font-semibold text-foreground">Tool</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Reviewer</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Rating & Headline</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Content</th>
+                  <th class="py-3 px-4 font-semibold text-foreground">Status</th>
+                  <th class="py-3 px-4 font-semibold text-foreground text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-border">
+                {allReviewsList.map((rev) => (
+                  <tr class="hover:bg-slate-50/50 transition">
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-2">
+                        {rev.toolLogoUrl && (
+                          <img src={rev.toolLogoUrl} alt={rev.toolName || 'Tool'} class="h-6 w-6 rounded-md object-contain bg-slate-50 border border-border/60 p-0.5" />
+                        )}
+                        <span class="font-bold text-foreground">{rev.toolName || 'Tool'}</span>
+                      </div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="font-bold text-foreground">{rev.authorName}</div>
+                      <div class="text-[11px] text-muted-foreground">{rev.authorRole || 'User'}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                      <div class="flex items-center text-amber-500 text-xs">
+                        {Array.from({ length: rev.rating || 5 }).map(() => (
+                          <span>★</span>
+                        ))}
+                      </div>
+                      <div class="font-semibold text-foreground mt-0.5 max-w-xs truncate">{rev.title}</div>
+                    </td>
+                    <td class="py-3 px-4 text-muted-foreground max-w-xs truncate">
+                      "{rev.content}"
+                    </td>
+                    <td class="py-3 px-4">
+                      <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                        rev.status === 'published'
+                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                          : rev.status === 'pending'
+                          ? 'bg-amber-50 text-amber-800 border border-amber-200'
+                          : 'bg-red-50 text-red-800 border border-red-200'
+                      }`}>
+                        {rev.status}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <div class="flex items-center justify-end gap-1.5">
+                        {rev.status !== 'published' && (
+                          <button
+                            type="button"
+                            data-review-action="update_status"
+                            data-review-status="published"
+                            data-review-id={rev.id}
+                            class="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-emerald-700 transition cursor-pointer"
+                          >
+                            Approve
+                          </button>
+                        )}
+                        {rev.status === 'published' && (
+                          <button
+                            type="button"
+                            data-review-action="update_status"
+                            data-review-status="rejected"
+                            data-review-id={rev.id}
+                            class="rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100 transition cursor-pointer"
+                          >
+                            Hide
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          data-review-action="delete"
+                          data-review-id={rev.id}
+                          class="rounded-lg border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700 hover:bg-red-100 transition cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </section>
+
+    <!-- PANEL 3: USERS & ROLES -->
     <section id="mod-panel-users" class={`mod-panel space-y-4 ${initialTab === 'users' ? '' : 'hidden'}`}>
       <div class="rounded-2xl border border-border bg-white shadow-xs overflow-hidden">
         <div class="overflow-x-auto">
@@ -199,51 +346,45 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
                 <th class="py-3 px-4 font-semibold text-foreground">User</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Email</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Role</th>
-                <th class="py-3 px-4 font-semibold text-foreground">Joined Date</th>
-                <th class="py-3 px-4 font-semibold text-foreground text-right">Access Controls</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Joined</th>
+                <th class="py-3 px-4 font-semibold text-foreground text-right">Update Role</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border">
               {allUsersList.map((u) => (
                 <tr class="hover:bg-slate-50/50 transition">
-                  <td class="py-3 px-4 font-bold text-foreground">
+                  <td class="py-3 px-4">
                     <div class="flex items-center gap-2.5">
-                      <img
-                        src={u.image || `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(u.name || 'User')}`}
-                        alt={u.name}
-                        class="h-7 w-7 rounded-full bg-slate-100 object-cover"
-                      />
-                      <span>{u.name}</span>
+                      <div class="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-bold text-foreground">
+                        {u.name.slice(0, 1).toUpperCase()}
+                      </div>
+                      <span class="font-bold text-foreground">{u.name}</span>
                     </div>
                   </td>
                   <td class="py-3 px-4 text-muted-foreground font-mono">{u.email}</td>
                   <td class="py-3 px-4">
-                    <span class={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                    <span class={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ${
                       u.role === 'admin'
-                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
                         : u.role === 'author'
-                        ? 'bg-indigo-100 text-indigo-900 border border-indigo-300'
-                        : 'bg-slate-100 text-slate-700'
+                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                        : 'bg-secondary text-secondary-foreground'
                     }`}>
-                      {u.role === 'admin' ? '👑 Admin' : u.role === 'author' ? '✍️ Author' : 'User'}
+                      {u.role.toUpperCase()}
                     </span>
                   </td>
                   <td class="py-3 px-4 text-muted-foreground">
-                    {u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '—'}
+                    {new Date(u.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </td>
                   <td class="py-3 px-4 text-right">
-                    {u.id !== user.id && (
-                      <div class="inline-flex items-center gap-1.5">
-                        <select
-                          data-target-user-id={u.id}
-                          class="user-role-select rounded-lg border border-border bg-white px-2 py-1 text-[11px] font-medium text-foreground hover:bg-slate-50 transition cursor-pointer"
-                        >
-                          <option value="user" selected={u.role === 'user'}>User</option>
-                          <option value="author" selected={u.role === 'author'}>Author</option>
-                          <option value="admin" selected={u.role === 'admin'}>Admin</option>
-                        </select>
-                      </div>
-                    )}
+                    <select
+                      data-target-user-id={u.id}
+                      class="user-role-select rounded-lg border border-border bg-white px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                    >
+                      <option value="user" selected={u.role === 'user'}>User</option>
+                      <option value="author" selected={u.role === 'author'}>Author / Editor</option>
+                      <option value="admin" selected={u.role === 'admin'}>Admin</option>
+                    </select>
                   </td>
                 </tr>
               ))}
@@ -257,7 +398,7 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
 
 <script>
   function switchModTab(tabId: string) {
-    const validTabs = ['claims', 'users'];
+    const validTabs = ['claims', 'reviews', 'users'];
     const activeTab = validTabs.includes(tabId) ? tabId : 'claims';
 
     document.querySelectorAll('.mod-panel').forEach((p) => {
@@ -320,6 +461,37 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
           setTimeout(() => window.location.reload(), 500);
         } else {
           (window as any).showToast?.('Failed to review claim.', 'error');
+        }
+      } catch {
+        (window as any).showToast?.('Network error.', 'error');
+      }
+    });
+  });
+
+  // Review Moderation Actions
+  document.querySelectorAll('[data-review-action]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const reviewId = btn.getAttribute('data-review-id');
+      const action = btn.getAttribute('data-review-action');
+      const status = btn.getAttribute('data-review-status');
+      if (!reviewId || !action) return;
+
+      if (action === 'delete' && !confirm('Are you sure you want to permanently delete this review?')) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reviewId, action, status }),
+        });
+        const data = (await res.json()) as any;
+        if (res.ok && data.success) {
+          (window as any).showToast?.(data.message || 'Review updated.', 'success');
+          setTimeout(() => window.location.reload(), 400);
+        } else {
+          (window as any).showToast?.(data.error || 'Failed to update review.', 'error');
         }
       } catch {
         (window as any).showToast?.('Network error.', 'error');

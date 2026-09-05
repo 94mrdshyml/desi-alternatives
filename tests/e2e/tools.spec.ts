@@ -57,4 +57,20 @@ test.describe('Tools & Pages E2E', () => {
     const text3 = await page.textContent('body');
     expect(text3).toContain('d351a17e89ab4c2f88e1029c45b78f61');
   });
+
+  test('renders ratings and reviews section with write review modal trigger', async ({ page }) => {
+    await page.goto('/tools/signoz');
+    await expect(page.locator('#reviews')).toBeVisible();
+    await expect(page.locator('#reviews')).toContainText('Ratings & Community Reviews');
+    await expect(page.locator('#open-review-modal-btn')).toBeVisible();
+
+    // Verify modal can be opened
+    await page.click('#open-review-modal-btn');
+    await expect(page.locator('#review-modal')).toBeVisible();
+    await expect(page.locator('#review-modal h3')).toContainText('Write a Review');
+
+    // Verify modal cancel/close
+    await page.click('#close-review-modal-btn');
+    await expect(page.locator('#review-modal')).not.toBeVisible();
+  });
 });

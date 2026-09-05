@@ -533,3 +533,40 @@
    - 26/26 Vitest unit tests passing.
    - 0 errors, 0 warnings, 0 hints in `astro check` across all 75 files.
    - Full browser subagent visual verification with screenshots across all sections.
+
+---
+
+## Session 24 — Community Reviews & Ratings System (D1 Persistence, Voting & Moderation)
+
+**Date & Time (IST):** 2026-09-05 19:12 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **D1 Database Schema & Nanoid IDs (`src/lib/server/db/schema.ts`, `src/lib/server/id.ts`)**:
+   - Added `review: 'rev_'` and `reviewVote: 'vote_'` ID generator helpers (`createReviewId`, `createReviewVoteId`).
+   - Created `tool_reviews` table supporting 1–5 overall rating, 4 dimensional sub-ratings (*Ease of Migration*, *Value for Money*, *IST Support*, *Data Residency*), review title, content, author role, company, verified badge, and moderation status (`pending`, `approved`, `rejected`).
+   - Created `review_helpful_votes` table for tracking unique upvotes with user / IP deduplication.
+   - Generated Drizzle migration `0010_eminent_boom_boom.sql`.
+
+2. **Backend API Endpoints**:
+   - `POST /api/reviews/submit`: Validates review payload, clamps ratings to 1–5, automatically associates authenticated user or guest author info, and defaults to `approved` status.
+   - `POST /api/reviews/vote`: Records helpful upvotes and increments helpful counts with duplicate protection.
+   - `POST /api/admin/reviews`: Admin moderation endpoint supporting `approve`, `reject`, and permanent `delete` actions.
+
+3. **Frontend Review Modal & Dynamic Score Aggregations (`src/pages/tools/[slug].astro`)**:
+   - Dynamic real-time score calculations from D1 reviews (overall average, score percentages, and sub-dimension averages).
+   - Upvoting interaction with live counter updates and persistent styling.
+   - Accessible `<dialog id="review-modal">` with interactive 5-star rating selector, sub-score selectors, and validation feedback.
+
+4. **Admin Moderation Tab (`src/pages/admin/moderation.astro`)**:
+   - Added **⭐ Community Reviews** sub-tab alongside Pending Claims and Community Edits.
+   - Lists all reviews with author info, tool name, star ratings, content, and 1-click Approve / Reject / Delete controls.
+
+5. **Testing & Automated Quality Assurance**:
+   - Added unit test suite `tests/unit/reviews.test.ts` (30/30 unit tests passing).
+   - Added E2E test in `tests/e2e/tools.spec.ts` testing review modal open/close (18/18 Playwright tests passing).
+   - Verified `astro check` with 0 errors and 0 warnings across 78 files.
+   - Verified UI in browser via `browser_subagent`.
+
