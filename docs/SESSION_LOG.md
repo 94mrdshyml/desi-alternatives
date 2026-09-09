@@ -570,3 +570,42 @@
    - Verified `astro check` with 0 errors and 0 warnings across 78 files.
    - Verified UI in browser via `browser_subagent`.
 
+---
+
+## Session 25 — Notion-Style WYSIWYG Blog Editor (Live Slash Menu, Rich Blocks & Markdown Serialization)
+
+**Date & Time (IST):** 2026-09-09 18:18 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **WYSIWYG Writing Canvas (`src/pages/admin/blog/editor.astro`)**:
+   - Upgraded from plain markdown `<textarea>` to interactive Notion-style `contenteditable` WYSIWYG writing canvas with Tailwind typography (`prose prose-slate`).
+   - Sticky formatting toolbar with one-click actions for Bold, Italic, Strikethrough, Inline Code, Links, Headings (H2, H3), Paragraphs, Numbered Lists (`<ol>`), Bullet Lists (`<ul>`), Editorial Blockquotes, Callouts, Code Blocks, Comparison Tables, and Live Tool Embeds.
+
+2. **Interactive Cursor Slash Command (`/`) System**:
+   - Real-time slash trigger positioning at exact cursor bounding box.
+   - Filterable command menu with Arrow key navigation (`↑`/`↓`), `Enter`/`Tab` selection, and `Escape` dismiss.
+   - Commands:
+     - `/numbered-list` or `/ol` — Numbered list
+     - `/bullet-list` or `/ul` — Bullet list
+     - `/quote` or `/blockquote` — Editorial blockquote
+     - `/callout` — Sovereign alert / takeaway box
+     - `/h2`, `/h3` — Headings
+     - `/table` — Comparison matrix table
+     - `/code` — Monospace syntax block
+     - `/divider` — Horizontal rule
+     - `/tool` — Search & Embed Indian Tool Card
+
+3. **Bidirectional Markdown <-> WYSIWYG DOM Serialization**:
+   - Converts stored SQLite D1 Markdown content into rich interactive DOM blocks on initial editor load.
+   - Serializes rich DOM back to clean, standardized Markdown on Draft Save or Live Publish, maintaining 100% backward compatibility with `src/pages/blog/[slug].astro`.
+   - Reader Preview mode toggle for viewing exact visitor experience.
+   - Live word count and reading time calculations.
+
+4. **Testing & Automated Verification**:
+   - 30/30 Vitest unit tests passing.
+   - 0 errors and 0 warnings in `astro check` across all 78 files.
+
+

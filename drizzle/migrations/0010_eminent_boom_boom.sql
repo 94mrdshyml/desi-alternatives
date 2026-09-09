@@ -1,4 +1,4 @@
-CREATE TABLE `review_helpful_votes` (
+CREATE TABLE IF NOT EXISTS `review_helpful_votes` (
 	`id` text PRIMARY KEY NOT NULL,
 	`review_id` text NOT NULL,
 	`voter_identifier` text NOT NULL,
@@ -6,7 +6,7 @@ CREATE TABLE `review_helpful_votes` (
 	FOREIGN KEY (`review_id`) REFERENCES `tool_reviews`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE TABLE `search_logs` (
+CREATE TABLE IF NOT EXISTS `search_logs` (
 	`id` text PRIMARY KEY NOT NULL,
 	`query` text NOT NULL,
 	`normalized_query` text NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE `search_logs` (
 	`created_at` text DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `tool_reviews` (
+CREATE TABLE IF NOT EXISTS `tool_reviews` (
 	`id` text PRIMARY KEY NOT NULL,
 	`tool_id` text NOT NULL,
 	`user_id` text,
