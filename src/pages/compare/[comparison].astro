@@ -3,8 +3,8 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import { desiTools, globalTools } from '@/lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { desiTools, globalTools, toolPricingPlans, categories, toolAlternatives } from '@/lib/server/db/schema';
+import { eq, asc } from 'drizzle-orm';
 
 const db = Astro.locals.db;
 const { comparison } = Astro.params;
@@ -21,100 +21,72 @@ if (!slugA || !slugB) {
   return Astro.redirect('/compare');
 }
 
-let toolA: any = null;
-let toolB: any = null;
+let desiTool: any = null;
+let globalTool: any = null;
+let pricingPlansDesi: any[] = [];
+let categoryInfo: any = null;
+let relatedComparisons: any[] = [];
 
 const USD_TO_INR_RATE = 86;
 
 if (db) {
   try {
-    // 1. Resolve Tool A (Desi first, then Global)
-    const desiA = await db
-      .select()
-      .from(desiTools)
-      .where(eq(desiTools.slug, slugA))
-      .get();
+    // 1. Fetch potential Desi and Global candidates
+    const [foundDesiA, foundGlobalA, foundDesiB, foundGlobalB] = await Promise.all([
+      db.select().from(desiTools).where(eq(desiTools.slug, slugA)).get(),
+      db.select().from(globalTools).where(eq(globalTools.slug, slugA)).get(),
+      db.select().from(desiTools).where(eq(desiTools.slug, slugB)).get(),
+      db.select().from(globalTools).where(eq(globalTools.slug, slugB)).get(),
+    ]);
 
-    if (desiA) {
-      toolA = {
-        ...desiA,
-        isDesi: true,
-        country: 'India',
-        originBadge: '🇮🇳 India',
-        hqLocation: desiA.city ? `${desiA.city}, ${desiA.state || 'India'}` : 'India',
-        startingPriceInr: desiA.startingPriceInr ?? 0,
-        startingPriceUsd: desiA.startingPriceInr ? Math.round(desiA.startingPriceInr / USD_TO_INR_RATE) : 0,
-      };
-    } else {
-      const globalA = await db
-        .select()
-        .from(globalTools)
-        .where(eq(globalTools.slug, slugA))
-        .get();
-
-      if (globalA) {
-        toolA = {
-          ...globalA,
-          isDesi: false,
-          country: globalA.country || 'Global',
-          originBadge: `🌐 ${globalA.country || 'Global'}`,
-          hqLocation: globalA.city ? `${globalA.city}, ${globalA.country || ''}` : (globalA.country || 'Global'),
-          startingPriceUsd: globalA.startingPriceUsd ?? 0,
-          startingPriceInr: globalA.startingPriceUsd ? Math.round(globalA.startingPriceUsd * USD_TO_INR_RATE) : 0,
-          hasGstInvoice: false,
-          hasIndianDataResidency: false,
-          hasInrPricing: false,
-          hasUpiSupport: false,
-          hasIstSupport: false,
-          isSelfHostable: globalA.isOpenSource,
-          hasFreeTier: false,
-          pricingModel: 'Paid / USD',
-        };
-      }
+    if (foundDesiA && foundGlobalB) {
+      desiTool = foundDesiA;
+      globalTool = foundGlobalB;
+    } else if (foundGlobalA && foundDesiB) {
+      desiTool = foundDesiB;
+      globalTool = foundGlobalA;
     }
 
-    // 2. Resolve Tool B (Desi first, then Global)
-    const desiB = await db
-      .select()
-      .from(desiTools)
-      .where(eq(desiTools.slug, slugB))
-      .get();
-
-    if (desiB) {
-      toolB = {
-        ...desiB,
-        isDesi: true,
-        country: 'India',
-        originBadge: '🇮🇳 India',
-        hqLocation: desiB.city ? `${desiB.city}, ${desiB.state || 'India'}` : 'India',
-        startingPriceInr: desiB.startingPriceInr ?? 0,
-        startingPriceUsd: desiB.startingPriceInr ? Math.round(desiB.startingPriceInr / USD_TO_INR_RATE) : 0,
-      };
-    } else {
-      const globalB = await db
+    if (desiTool && globalTool) {
+      // Fetch pricing plans for the Desi tool
+      pricingPlansDesi = await db
         .select()
-        .from(globalTools)
-        .where(eq(globalTools.slug, slugB))
-        .get();
+        .from(toolPricingPlans)
+        .where(eq(toolPricingPlans.toolId, desiTool.id))
+        .orderBy(asc(toolPricingPlans.sortOrder))
+        .all();
 
-      if (globalB) {
-        toolB = {
-          ...globalB,
-          isDesi: false,
-          country: globalB.country || 'Global',
-          originBadge: `🌐 ${globalB.country || 'Global'}`,
-          hqLocation: globalB.city ? `${globalB.city}, ${globalB.country || ''}` : (globalB.country || 'Global'),
-          startingPriceUsd: globalB.startingPriceUsd ?? 0,
-          startingPriceInr: globalB.startingPriceUsd ? Math.round(globalB.startingPriceUsd * USD_TO_INR_RATE) : 0,
-          hasGstInvoice: false,
-          hasIndianDataResidency: false,
-          hasInrPricing: false,
-          hasUpiSupport: false,
-          hasIstSupport: false,
-          isSelfHostable: globalB.isOpenSource,
-          hasFreeTier: false,
-          pricingModel: 'Paid / USD',
-        };
+      // Fetch category info
+      if (desiTool.categoryId) {
+        categoryInfo = await db
+          .select()
+          .from(categories)
+          .where(eq(categories.id, desiTool.categoryId))
+          .get();
+
+        // Fetch related comparisons in same category
+        try {
+          const rawRelated = await db
+            .select({
+              desiSlug: desiTools.slug,
+              desiName: desiTools.name,
+              desiLogo: desiTools.logoUrl,
+              globalSlug: globalTools.slug,
+              globalName: globalTools.name,
+              globalLogo: globalTools.logoUrl,
+            })
+            .from(toolAlternatives)
+            .leftJoin(desiTools, eq(toolAlternatives.desiToolId, desiTools.id))
+            .leftJoin(globalTools, eq(toolAlternatives.globalToolId, globalTools.id))
+            .where(eq(desiTools.categoryId, desiTool.categoryId))
+            .all();
+
+          relatedComparisons = rawRelated
+            .filter((r) => r.desiSlug && r.globalSlug && !(r.desiSlug === desiTool.slug && r.globalSlug === globalTool.slug))
+            .slice(0, 4);
+        } catch {
+          relatedComparisons = [];
+        }
       }
     }
   } catch (e) {
@@ -122,9 +94,14 @@ if (db) {
   }
 }
 
-if (!toolA || !toolB) {
+// If not a valid Indian vs Global comparison, redirect to hub
+if (!desiTool || !globalTool) {
   return Astro.redirect('/compare');
 }
+
+// Canonical URL is always [desi-slug]-vs-[global-slug]
+const canonicalSlug = `${desiTool.slug}-vs-${globalTool.slug}`;
+const canonicalUrl = `https://desialternatives.in/compare/${canonicalSlug}`;
 
 // Helper: parse JSON array safely
 function parseJsonArray(input: any): string[] {
@@ -150,623 +127,587 @@ function parsePricingPlans(input: any): Array<{ planName?: string; priceInr?: nu
   }
 }
 
-const prosA = parseJsonArray(toolA.pros);
-let consA = parseJsonArray(toolA.cons);
-if (consA.length === 0 && toolA.foreignPainPoints) {
-  consA = parseJsonArray(toolA.foreignPainPoints);
-}
-const plansA = parsePricingPlans(toolA.pricingPlans);
+const desiPros = parseJsonArray(desiTool.pros);
+const desiCons = parseJsonArray(desiTool.cons);
+const globalPros = parseJsonArray(globalTool.pros);
+const globalCons = parseJsonArray(globalTool.cons || globalTool.foreignPainPoints);
+const globalPricingList = parsePricingPlans(globalTool.pricingPlans);
 
-const prosB = parseJsonArray(toolB.pros);
-let consB = parseJsonArray(toolB.cons);
-if (consB.length === 0 && toolB.foreignPainPoints) {
-  consB = parseJsonArray(toolB.foreignPainPoints);
-}
-const plansB = parsePricingPlans(toolB.pricingPlans);
+// Default Pros & Cons fallbacks
+const defaultDesiPros = [
+  'Direct 18% GST input tax credit invoices for Indian businesses',
+  'Zero foreign exchange markups (3.5%) or unpredictable USD billing surge',
+  'Domestic Indian data residency compliant with DPDP regulations',
+  'Dedicated engineering support operating during Indian Standard Time (IST)',
+];
 
-// Default fallback pros/cons if DB records are sparse
-if (prosA.length === 0) {
-  prosA.push(toolA.isDesi ? 'Designed for Indian workflows & currency' : 'Mature global feature ecosystem');
-  prosA.push(toolA.isOpenSource ? 'Open-source code transparency' : 'Enterprise reliability');
-}
-if (consA.length === 0) {
-  consA.push(toolA.isDesi ? 'Younger ecosystem than decade-old global incumbents' : 'Foreign billing without 18% GST input credit');
+const defaultDesiCons = [
+  'Ecosystem of third-party plugins is still expanding compared to decades-old incumbents',
+  'Brand recognition in Western enterprise markets is emerging',
+];
+
+const defaultGlobalPros = [
+  'Extensive global brand recognition and massive third-party integration catalog',
+  'Decade-long feature development history and enterprise adoption',
+];
+
+const defaultGlobalCons = [
+  'Invoices billed in USD with no 18% Indian GST input tax credit eligibility',
+  'High cross-border forex fees and unpredictable USD-to-INR inflation surges',
+  'Foreign cloud hosting regions creating friction for strict DPDP compliance',
+  'Customer support ticket response times misaligned with Indian working hours',
+];
+
+const finalDesiPros = desiPros.length > 0 ? desiPros : defaultDesiPros;
+const finalDesiCons = desiCons.length > 0 ? desiCons : defaultDesiCons;
+const finalGlobalPros = globalPros.length > 0 ? globalPros : defaultGlobalPros;
+const finalGlobalCons = globalCons.length > 0 ? globalCons : defaultGlobalCons;
+
+// TCO Pricing Calculations
+const desiMonthlyInr = desiTool.startingPriceInr ?? 0;
+const globalMonthlyUsd = globalTool.startingPriceUsd ?? 0;
+const globalMonthlyInr = globalMonthlyUsd * USD_TO_INR_RATE;
+
+const monthlyDifferenceInr = Math.max(0, globalMonthlyInr - desiMonthlyInr);
+const annualSavingsInr = monthlyDifferenceInr * 12;
+const gstSavingsAnnualInr = desiMonthlyInr > 0 ? Math.round(desiMonthlyInr * 12 * 0.18) : 0;
+
+// Programmatic FAQ Generation for JSON-LD & Rich Snippets
+const programmaticFaqs = [
+  {
+    question: `Is ${desiTool.name} cheaper than ${globalTool.name}?`,
+    answer: `${desiTool.name} starts from ${desiTool.startingPriceInr === 0 ? 'a generous Free tier' : `₹${desiTool.startingPriceInr.toLocaleString('en-IN')}/mo`}, while ${globalTool.name} starts from $${globalToolMonthlyUsd(globalTool.startingPriceUsd)}/mo (approx ₹${globalMonthlyInr.toLocaleString('en-IN')}/mo). Indian teams typically save significant software expenditure along with 18% GST tax credits.`,
+  },
+  {
+    question: `Does ${desiTool.name} provide 18% GST tax invoices for Indian companies?`,
+    answer: `Yes. ${desiTool.name} is an Indian entity providing official GST invoices with input tax credit (ITC) eligibility. ${globalTool.name} is billed in foreign currency (USD) without direct 18% Indian GST input tax credit.`,
+  },
+  {
+    question: `Where is data stored for ${desiTool.name} vs ${globalTool.name}?`,
+    answer: `${desiTool.name} offers domestic cloud hosting within Indian data regions, satisfying the requirements of India's Digital Personal Data Protection (DPDP) Act. ${globalTool.name} primarily hosts customer data in foreign cloud regions.`,
+  },
+  {
+    question: `Can I migrate from ${globalTool.name} to ${desiTool.name}?`,
+    answer: `Yes, ${desiTool.name} offers migration utilities, API integrations, and direct onboarding support to transition workloads from ${globalTool.name} with minimal friction.`,
+  },
+];
+
+function globalToolMonthlyUsd(usd: number | null | undefined): string {
+  return usd !== null && usd !== undefined ? usd.toString() : '0';
 }
 
-if (prosB.length === 0) {
-  prosB.push(toolB.isDesi ? 'Designed for Indian workflows & currency' : 'Mature global feature ecosystem');
-  prosB.push(toolB.isOpenSource ? 'Open-source code transparency' : 'Enterprise reliability');
-}
-if (consB.length === 0) {
-  consB.push(toolB.isDesi ? 'Younger ecosystem than decade-old global incumbents' : 'Foreign billing without 18% GST input credit');
-}
-
-// TCO Calculations
-const teamSizes = [5, 20, 50, 100];
-const monthlyCostA = toolA.startingPriceInr || (toolA.startingPriceUsd * USD_TO_INR_RATE);
-const monthlyCostB = toolB.startingPriceInr || (toolB.startingPriceUsd * USD_TO_INR_RATE);
-
-const gstSavingsA = toolA.hasGstInvoice ? Math.round(monthlyCostA * 12 * 0.18) : 0;
-const gstSavingsB = toolB.hasGstInvoice ? Math.round(monthlyCostB * 12 * 0.18) : 0;
-
-const pageTitle = `${toolA.name} vs ${toolB.name} Comparison (2026) — Pricing, Pros, Cons & DPDP`;
-const pageDescription = `Compare ${toolA.name} vs ${toolB.name} head-to-head. Database teardown of features, INR vs USD pricing, 18% GST savings, pros & cons, and Indian data sovereignty.`;
+// Structured JSON-LD Data for SEO
+const jsonLdData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'BreadcrumbList',
+      'itemListElement': [
+        {
+          '@type': 'ListItem',
+          'position': 1,
+          'name': 'Home',
+          'item': 'https://desialternatives.in',
+        },
+        {
+          '@type': 'ListItem',
+          'position': 2,
+          'name': 'Comparison Engine',
+          'item': 'https://desialternatives.in/compare',
+        },
+        {
+          '@type': 'ListItem',
+          'position': 3,
+          'name': `${desiTool.name} vs ${globalTool.name}`,
+          'item': canonicalUrl,
+        },
+      ],
+    },
+    {
+      '@type': 'SoftwareApplication',
+      'name': desiTool.name,
+      'applicationCategory': categoryInfo?.name || 'Software',
+      'operatingSystem': 'Web, Cloud',
+      'offers': {
+        '@type': 'Offer',
+        'price': (desiTool.startingPriceInr ?? 0).toString(),
+        'priceCurrency': 'INR',
+      },
+    },
+    {
+      '@type': 'SoftwareApplication',
+      'name': globalTool.name,
+      'applicationCategory': categoryInfo?.name || 'Software',
+      'operatingSystem': 'Web, Cloud',
+      'offers': {
+        '@type': 'Offer',
+        'price': (globalTool.startingPriceUsd ?? 0).toString(),
+        'priceCurrency': 'USD',
+      },
+    },
+    {
+      '@type': 'FAQPage',
+      'mainEntity': programmaticFaqs.map((faq) => ({
+        '@type': 'Question',
+        'name': faq.question,
+        'acceptedAnswer': {
+          '@type': 'Answer',
+          'text': faq.answer,
+        },
+      })),
+    },
+  ],
+};
 ---
 
-<BaseLayout title={pageTitle} description={pageDescription}>
+<BaseLayout
+  title={`${desiTool.name} vs ${globalTool.name} (2026): Detailed Breakdown, Pricing & 18% GST Savings`}
+  description={`Comprehensive 2026 comparison: ${desiTool.name} (Indian Sovereign SaaS) vs ${globalTool.name}. Compare ₹ INR vs $ USD pricing, 18% GST tax credit, DPDP compliance, and feature pros & cons.`}
+  canonicalUrl={canonicalUrl}
+  ogImage={`/api/og/tool/${desiTool.slug}.png`}
+  ogType="product"
+>
+  <!-- Schema.org Programmatic JSON-LD -->
+  <script is:inline type="application/ld+json" set:html={JSON.stringify(jsonLdData)} />
+
   <Navbar />
 
-  <main class="min-h-screen bg-slate-50/50 pb-24 pt-8 sm:pt-12">
-    <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 space-y-12">
+  <main class="min-h-screen bg-slate-50/50 pb-20 pt-6 sm:pt-10">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
       <!-- Breadcrumbs -->
       <Breadcrumbs
         items={[
           { label: 'Home', href: '/' },
-          { label: 'Compare', href: '/compare' },
-          { label: `${toolA.name} vs ${toolB.name}` },
+          { label: 'Comparison Engine', href: '/compare' },
+          { label: `${desiTool.name} vs ${globalTool.name}` },
         ]}
-        class="mb-4"
+        class="mb-6"
       />
 
-      <!-- Head-to-Head Masthead Card -->
-      <section class="rounded-3xl border border-border bg-white p-6 sm:p-10 shadow-sm text-center relative overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-b from-amber-500/[0.02] to-transparent pointer-events-none"></div>
+      <!-- Hero Header Card -->
+      <div class="rounded-3xl border border-border/80 bg-white p-6 sm:p-10 shadow-sm overflow-hidden relative">
+        <div class="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-amber-500/5 blur-3xl pointer-events-none"></div>
 
-        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1 text-xs font-semibold text-amber-900 shadow-2xs">
-          <span>⚖️ Head-to-Head Teardown</span>
-          <span class="text-amber-300">•</span>
-          <span>Verified Database Specs</span>
-        </div>
-
-        <h1 class="text-2xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
-          <span>{toolA.name}</span>
-          <span class="font-serif-editorial italic font-normal text-primary mx-2 sm:mx-3">vs</span>
-          <span>{toolB.name}</span>
-        </h1>
-
-        <p class="mx-auto mt-3 max-w-2xl text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Comprehensive comparison of features, pricing tiers, pros & cons, and Indian sovereign compliance readiness.
-        </p>
-
-        <!-- Head-to-Head Logos & Quick Specs Matchup -->
-        <div class="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 relative">
-          <!-- Tool A Column -->
-          <div class={`rounded-2xl border p-6 text-left flex flex-col justify-between ${toolA.isDesi ? 'border-amber-200 bg-amber-50/20' : 'border-border bg-white'}`}>
-            <div>
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-white p-2 shadow-2xs overflow-hidden">
-                  <img src={toolA.logoUrl} alt={toolA.name} class="h-full w-full object-contain" />
-                </div>
-                <span class={`rounded-md px-2.5 py-1 text-[11px] font-bold ${toolA.isDesi ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-700'}`}>
-                  {toolA.originBadge}
-                </span>
-              </div>
-
-              <h2 class="mt-4 text-xl font-bold text-foreground">{toolA.name}</h2>
-              <p class="mt-1 text-xs text-muted-foreground leading-relaxed">{toolA.tagline || toolA.description}</p>
-            </div>
-
-            <div class="mt-6 border-t border-border/80 pt-4 space-y-2 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">HQ Location:</span>
-                <span class="font-semibold text-foreground">{toolA.hqLocation}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Starting Price:</span>
-                <span class="font-bold text-foreground font-mono">
-                  {toolA.startingPriceInr > 0 ? `₹${toolA.startingPriceInr.toLocaleString('en-IN')}/mo` : 'Free / Open-Source'}
-                  {toolA.startingPriceUsd > 0 && <span class="text-muted-foreground font-normal"> (${toolA.startingPriceUsd}/mo)</span>}
-                </span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Open Source:</span>
-                <span class={`font-semibold ${toolA.isOpenSource ? 'text-emerald-700' : 'text-slate-600'}`}>
-                  {toolA.isOpenSource ? '✓ Yes (Public Repo)' : 'Proprietary'}
-                </span>
-              </div>
-            </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div class="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3.5 py-1 text-xs font-semibold text-amber-900">
+            <span>⚖️</span>
+            <span>Head-to-Head Teardown</span>
+            <span class="text-amber-300">•</span>
+            <span>{categoryInfo?.name || 'SaaS'}</span>
           </div>
 
-          <!-- VS Badge Desktop Center -->
-          <div class="hidden md:flex absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-slate-900 text-white font-extrabold text-xs shadow-md z-10 font-mono">
-            VS
-          </div>
-
-          <!-- Tool B Column -->
-          <div class={`rounded-2xl border p-6 text-left flex flex-col justify-between ${toolB.isDesi ? 'border-amber-200 bg-amber-50/20' : 'border-border bg-white'}`}>
-            <div>
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-white p-2 shadow-2xs overflow-hidden">
-                  {toolB.logoUrl ? (
-                    <img src={toolB.logoUrl} alt={toolB.name} class="h-full w-full object-contain" />
-                  ) : (
-                    <span class="text-base font-bold text-slate-600 uppercase">{toolB.name.slice(0, 2)}</span>
-                  )}
-                </div>
-                <span class={`rounded-md px-2.5 py-1 text-[11px] font-bold ${toolB.isDesi ? 'bg-amber-100 text-amber-900 border border-amber-200' : 'bg-slate-100 text-slate-700'}`}>
-                  {toolB.originBadge}
-                </span>
-              </div>
-
-              <h2 class="mt-4 text-xl font-bold text-foreground">{toolB.name}</h2>
-              <p class="mt-1 text-xs text-muted-foreground leading-relaxed">{toolB.tagline || toolB.description}</p>
-            </div>
-
-            <div class="mt-6 border-t border-border/80 pt-4 space-y-2 text-xs">
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">HQ Location:</span>
-                <span class="font-semibold text-foreground">{toolB.hqLocation}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Starting Price:</span>
-                <span class="font-bold text-foreground font-mono">
-                  {toolB.startingPriceInr > 0 ? `₹${toolB.startingPriceInr.toLocaleString('en-IN')}/mo` : 'Free / Open-Source'}
-                  {toolB.startingPriceUsd > 0 && <span class="text-muted-foreground font-normal"> (${toolB.startingPriceUsd}/mo)</span>}
-                </span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-muted-foreground">Open Source:</span>
-                <span class={`font-semibold ${toolB.isOpenSource ? 'text-emerald-700' : 'text-slate-600'}`}>
-                  {toolB.isOpenSource ? '✓ Yes (Public Repo)' : 'Proprietary'}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 1: Executive Verdict & Recommendations -->
-      <section class="rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs space-y-6">
-        <div class="flex items-center gap-2.5 border-b border-border pb-4">
-          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 text-base">
-            🎯
-          </span>
-          <div>
-            <h2 class="text-lg font-bold text-foreground">Executive Verdict</h2>
-            <p class="text-xs text-muted-foreground">Which solution is right for your engineering stack?</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Choose Tool A -->
-          <div class="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5 space-y-3">
-            <h3 class="text-sm font-bold text-emerald-950 flex items-center gap-2">
-              <span>Choose {toolA.name} if:</span>
-            </h3>
-            <ul class="space-y-2 text-xs text-emerald-900/90 leading-relaxed">
-              {toolA.isDesi && (
-                <li class="flex items-start gap-2">
-                  <span class="text-emerald-600 font-bold">✓</span>
-                  <span>You want <strong>18% GST tax input credit</strong> and domestic INR/UPI invoicing.</span>
-                </li>
-              )}
-              {toolA.hasIndianDataResidency && (
-                <li class="flex items-start gap-2">
-                  <span class="text-emerald-600 font-bold">✓</span>
-                  <span>You require <strong>100% Indian Data Residency</strong> for RBI or DPDP compliance.</span>
-                </li>
-              )}
-              {prosA.slice(0, 3).map((p) => (
-                <li class="flex items-start gap-2">
-                  <span class="text-emerald-600 font-bold">✓</span>
-                  <span>{p}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <!-- Choose Tool B -->
-          <div class="rounded-2xl border border-slate-200 bg-slate-50/70 p-5 space-y-3">
-            <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <span>Choose {toolB.name} if:</span>
-            </h3>
-            <ul class="space-y-2 text-xs text-slate-800 leading-relaxed">
-              {toolB.isDesi && (
-                <li class="flex items-start gap-2">
-                  <span class="text-primary font-bold">✓</span>
-                  <span>You want <strong>18% GST tax input credit</strong> and domestic INR invoicing.</span>
-                </li>
-              )}
-              {prosB.slice(0, 3).map((p) => (
-                <li class="flex items-start gap-2">
-                  <span class="text-primary font-bold">✓</span>
-                  <span>{p}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 2: Pricing & Total Cost of Ownership (TCO) Simulator -->
-      <section class="rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs space-y-6">
-        <div class="flex items-center gap-2.5 border-b border-border pb-4">
-          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700 text-base">
-            💰
-          </span>
-          <div>
-            <h2 class="text-lg font-bold text-foreground">Pricing & Total Cost of Ownership (TCO)</h2>
-            <p class="text-xs text-muted-foreground">Standardized comparison calculated at ₹86 = $1 USD benchmark</p>
-          </div>
-        </div>
-
-        <!-- Annualized Team Cost Table -->
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="border-b border-border bg-secondary/50">
-              <tr>
-                <th class="py-3 px-4 font-semibold text-foreground">Team Size</th>
-                <th class="py-3 px-4 font-semibold text-foreground">{toolA.name} Annual Est.</th>
-                <th class="py-3 px-4 font-semibold text-foreground">{toolB.name} Annual Est.</th>
-                <th class="py-3 px-4 font-semibold text-foreground text-right">Potential Difference</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border">
-              {teamSizes.map((seats) => {
-                const costA = monthlyCostA * seats * 12;
-                const costB = monthlyCostB * seats * 12;
-                const diff = costB - costA;
-                return (
-                  <tr class="hover:bg-slate-50/50 transition">
-                    <td class="py-3 px-4 font-bold text-foreground">{seats} Seats</td>
-                    <td class="py-3 px-4 font-mono font-semibold">
-                      ₹{costA.toLocaleString('en-IN')}
-                      {toolA.hasGstInvoice && (
-                        <span class="ml-1 text-[10px] text-emerald-700 font-normal">(-18% GST credit)</span>
-                      )}
-                    </td>
-                    <td class="py-3 px-4 font-mono font-semibold">
-                      ₹{costB.toLocaleString('en-IN')}
-                      {toolB.hasGstInvoice && (
-                        <span class="ml-1 text-[10px] text-emerald-700 font-normal">(-18% GST credit)</span>
-                      )}
-                    </td>
-                    <td class="py-3 px-4 text-right font-mono font-bold">
-                      {diff > 0 ? (
-                        <span class="text-emerald-700">Save ₹{diff.toLocaleString('en-IN')}/yr with {toolA.name}</span>
-                      ) : diff < 0 ? (
-                        <span class="text-amber-800">Save ₹{Math.abs(diff).toLocaleString('en-IN')}/yr with {toolB.name}</span>
-                      ) : (
-                        <span class="text-muted-foreground">Parity</span>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <!-- GST Tax Input Credit Box -->
-        {(gstSavingsA > 0 || gstSavingsB > 0) && (
-          <div class="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div class="space-y-1">
-              <h4 class="text-xs font-bold text-amber-950 uppercase tracking-wider">
-                🇮🇳 18% GST Input Tax Credit Advantage
-              </h4>
-              <p class="text-xs text-amber-900 leading-relaxed">
-                Indian businesses purchasing from GST-compliant Indian entities reclaim 18% of their entire software bill as input tax credit on GSTR-2B. Foreign USD billing offers zero GST input credit.
-              </p>
-            </div>
-            <span class="shrink-0 rounded-xl bg-amber-200/80 px-3 py-1.5 text-xs font-bold text-amber-950">
-              18% Direct Tax Savings
-            </span>
-          </div>
-        )}
-
-        <!-- Pricing Plans Breakdown (if available in DB) -->
-        {(plansA.length > 0 || plansB.length > 0) && (
-          <div class="pt-4 border-t border-border space-y-4">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Official Tiered Pricing Plans
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- Plans A -->
-              <div class="space-y-2.5">
-                <h5 class="text-xs font-bold text-foreground">{toolA.name} Plans ({plansA.length})</h5>
-                {plansA.length === 0 ? (
-                  <p class="text-xs text-muted-foreground italic">Custom or single-tier model.</p>
-                ) : (
-                  <div class="space-y-2">
-                    {plansA.map((p) => (
-                      <div class="rounded-xl border border-border bg-slate-50/70 p-3 text-xs">
-                        <div class="flex items-center justify-between font-semibold">
-                          <span class="text-foreground font-bold">{p.planName || 'Plan'}</span>
-                          <span class="text-primary font-mono font-bold">
-                            {p.priceInr !== undefined && p.priceInr !== null
-                              ? `₹${p.priceInr.toLocaleString('en-IN')}/mo`
-                              : p.priceUsd !== undefined && p.priceUsd !== null
-                              ? `$${p.priceUsd}/mo`
-                              : 'Custom'}
-                          </span>
-                        </div>
-                        {p.highlights && p.highlights.length > 0 && (
-                          <ul class="mt-1.5 space-y-0.5 text-[11px] text-muted-foreground">
-                            {p.highlights.map((h) => <li>• {h}</li>)}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <!-- Plans B -->
-              <div class="space-y-2.5">
-                <h5 class="text-xs font-bold text-foreground">{toolB.name} Plans ({plansB.length})</h5>
-                {plansB.length === 0 ? (
-                  <p class="text-xs text-muted-foreground italic">Custom or single-tier model.</p>
-                ) : (
-                  <div class="space-y-2">
-                    {plansB.map((p) => (
-                      <div class="rounded-xl border border-border bg-slate-50/70 p-3 text-xs">
-                        <div class="flex items-center justify-between font-semibold">
-                          <span class="text-foreground font-bold">{p.planName || 'Plan'}</span>
-                          <span class="text-primary font-mono font-bold">
-                            {p.priceInr !== undefined && p.priceInr !== null
-                              ? `₹${p.priceInr.toLocaleString('en-IN')}/mo`
-                              : p.priceUsd !== undefined && p.priceUsd !== null
-                              ? `$${p.priceUsd}/mo`
-                              : 'Custom'}
-                          </span>
-                        </div>
-                        {p.highlights && p.highlights.length > 0 && (
-                          <ul class="mt-1.5 space-y-0.5 text-[11px] text-muted-foreground">
-                            {p.highlights.map((h) => <li>• {h}</li>)}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
-
-      <!-- Section 3: Side-by-Side Pros (Database-driven) -->
-      <section class="rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs space-y-6">
-        <div class="flex items-center gap-2.5 border-b border-border pb-4">
-          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-700 text-base">
-            👍
-          </span>
-          <div>
-            <h2 class="text-lg font-bold text-foreground">Pros & Key Superpowers</h2>
-            <p class="text-xs text-muted-foreground">Database-curated strengths and architectural advantages</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Pros A -->
-          <div class="rounded-2xl border border-border bg-slate-50/50 p-5 space-y-3">
-            <div class="flex items-center gap-2 border-b border-border pb-3">
-              <img src={toolA.logoUrl} alt={toolA.name} class="h-6 w-6 object-contain" />
-              <h3 class="text-sm font-bold text-foreground">{toolA.name} Strengths</h3>
-            </div>
-            <ul class="space-y-2.5 text-xs text-foreground/90 leading-relaxed">
-              {prosA.map((pro) => (
-                <li class="flex items-start gap-2.5">
-                  <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">✓</span>
-                  <span>{pro}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <!-- Pros B -->
-          <div class="rounded-2xl border border-border bg-slate-50/50 p-5 space-y-3">
-            <div class="flex items-center gap-2 border-b border-border pb-3">
-              {toolB.logoUrl && <img src={toolB.logoUrl} alt={toolB.name} class="h-6 w-6 object-contain" />}
-              <h3 class="text-sm font-bold text-foreground">{toolB.name} Strengths</h3>
-            </div>
-            <ul class="space-y-2.5 text-xs text-foreground/90 leading-relaxed">
-              {prosB.map((pro) => (
-                <li class="flex items-start gap-2.5">
-                  <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px]">✓</span>
-                  <span>{pro}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 4: Side-by-Side Cons (Database-driven) -->
-      <section class="rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs space-y-6">
-        <div class="flex items-center gap-2.5 border-b border-border pb-4">
-          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-red-500/10 text-red-700 text-base">
-            ⚠️
-          </span>
-          <div>
-            <h2 class="text-lg font-bold text-foreground">Cons & Limitations</h2>
-            <p class="text-xs text-muted-foreground">Tradeoffs, friction points, and constraints to consider</p>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Cons A -->
-          <div class="rounded-2xl border border-border bg-slate-50/50 p-5 space-y-3">
-            <div class="flex items-center gap-2 border-b border-border pb-3">
-              <img src={toolA.logoUrl} alt={toolA.name} class="h-6 w-6 object-contain" />
-              <h3 class="text-sm font-bold text-foreground">{toolA.name} Limitations</h3>
-            </div>
-            <ul class="space-y-2.5 text-xs text-foreground/90 leading-relaxed">
-              {consA.map((con) => (
-                <li class="flex items-start gap-2.5">
-                  <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 font-bold text-[10px]">✕</span>
-                  <span>{con}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <!-- Cons B -->
-          <div class="rounded-2xl border border-border bg-slate-50/50 p-5 space-y-3">
-            <div class="flex items-center gap-2 border-b border-border pb-3">
-              {toolB.logoUrl && <img src={toolB.logoUrl} alt={toolB.name} class="h-6 w-6 object-contain" />}
-              <h3 class="text-sm font-bold text-foreground">{toolB.name} Limitations</h3>
-            </div>
-            <ul class="space-y-2.5 text-xs text-foreground/90 leading-relaxed">
-              {consB.map((con) => (
-                <li class="flex items-start gap-2.5">
-                  <span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-700 font-bold text-[10px]">✕</span>
-                  <span>{con}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      </section>
-
-      <!-- Section 5: Sovereign & DPDP Compliance Checklist -->
-      <section class="rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs space-y-6">
-        <div class="flex items-center gap-2.5 border-b border-border pb-4">
-          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-700 text-base">
-            🛡️
-          </span>
-          <div>
-            <h2 class="text-lg font-bold text-foreground">Sovereign Compliance & Features Matrix</h2>
-            <p class="text-xs text-muted-foreground">Regulatory checklist for Indian engineering scaleups and enterprises</p>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs">
-            <thead class="border-b border-border bg-secondary/50">
-              <tr>
-                <th class="py-3 px-4 font-semibold text-foreground">Compliance Dimension</th>
-                <th class="py-3 px-4 font-semibold text-foreground text-center">{toolA.name}</th>
-                <th class="py-3 px-4 font-semibold text-foreground text-center">{toolB.name}</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-border">
-              <!-- Dimension 1: GST Tax Invoice -->
-              <tr class="hover:bg-slate-50/50 transition">
-                <td class="py-3 px-4 font-medium text-foreground">
-                  <div class="font-bold">GST Tax Invoice (18% Input Credit)</div>
-                  <div class="text-[11px] text-muted-foreground">Direct tax deduction for Indian registered companies</div>
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolA.hasGstInvoice ? <span class="text-emerald-700">✓ Supported</span> : <span class="text-muted-foreground">✕ No</span>}
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolB.hasGstInvoice ? <span class="text-emerald-700">✓ Supported</span> : <span class="text-muted-foreground">✕ No</span>}
-                </td>
-              </tr>
-
-              <!-- Dimension 2: Indian Data Residency -->
-              <tr class="hover:bg-slate-50/50 transition">
-                <td class="py-3 px-4 font-medium text-foreground">
-                  <div class="font-bold">Indian Data Residency (DPDP 2023)</div>
-                  <div class="text-[11px] text-muted-foreground">Data hosted in Mumbai/Pune/Delhi cloud regions</div>
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolA.hasIndianDataResidency ? <span class="text-emerald-700">✓ Sovereign (India)</span> : <span class="text-muted-foreground">Foreign Clouds</span>}
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolB.hasIndianDataResidency ? <span class="text-emerald-700">✓ Sovereign (India)</span> : <span class="text-muted-foreground">Foreign Clouds</span>}
-                </td>
-              </tr>
-
-              <!-- Dimension 3: INR Pricing & UPI -->
-              <tr class="hover:bg-slate-50/50 transition">
-                <td class="py-3 px-4 font-medium text-foreground">
-                  <div class="font-bold">INR Domestic Billing & UPI Payments</div>
-                  <div class="text-[11px] text-muted-foreground">Zero foreign exchange (FX) conversion markup</div>
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolA.hasInrPricing || toolA.hasUpiSupport ? <span class="text-emerald-700">✓ INR / UPI</span> : <span class="text-muted-foreground">USD Only</span>}
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolB.hasInrPricing || toolB.hasUpiSupport ? <span class="text-emerald-700">✓ INR / UPI</span> : <span class="text-muted-foreground">USD Only</span>}
-                </td>
-              </tr>
-
-              <!-- Dimension 4: Open Source & Self-Hostable -->
-              <tr class="hover:bg-slate-50/50 transition">
-                <td class="py-3 px-4 font-medium text-foreground">
-                  <div class="font-bold">Self-Hostable on Private Infrastructure</div>
-                  <div class="text-[11px] text-muted-foreground">Deployable on private Kubernetes / VPC clusters</div>
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolA.isSelfHostable || toolA.isOpenSource ? <span class="text-emerald-700">✓ Yes</span> : <span class="text-muted-foreground">Cloud SaaS Only</span>}
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolB.isSelfHostable || toolB.isOpenSource ? <span class="text-emerald-700">✓ Yes</span> : <span class="text-muted-foreground">Cloud SaaS Only</span>}
-                </td>
-              </tr>
-
-              <!-- Dimension 5: IST Support -->
-              <tr class="hover:bg-slate-50/50 transition">
-                <td class="py-3 px-4 font-medium text-foreground">
-                  <div class="font-bold">IST Business Hours Engineering Support</div>
-                  <div class="text-[11px] text-muted-foreground">Dedicated domestic timezone SLA</div>
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolA.hasIstSupport ? <span class="text-emerald-700">✓ IST Native</span> : <span class="text-muted-foreground">US / Global Hours</span>}
-                </td>
-                <td class="py-3 px-4 text-center font-bold">
-                  {toolB.hasIstSupport ? <span class="text-emerald-700">✓ IST Native</span> : <span class="text-muted-foreground">US / Global Hours</span>}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- Section 6: Actionable Links & Next Steps -->
-      <section class="rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div>
-            <h3 class="text-base font-bold text-foreground">Explore Full Profiles</h3>
-            <p class="text-xs text-muted-foreground">View detailed teardowns, screenshots, and community reviews.</p>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-3">
-            {toolA.isDesi ? (
-              <a
-                href={`/tools/${toolA.slug}`}
-                class="rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition"
-              >
-                View {toolA.name} Profile →
-              </a>
-            ) : (
-              <a
-                href={`/alternatives/${toolA.slug}`}
-                class="rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition"
-              >
-                {toolA.name} Alternatives →
-              </a>
-            )}
-
-            {toolB.isDesi ? (
-              <a
-                href={`/tools/${toolB.slug}`}
-                class="rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition"
-              >
-                View {toolB.name} Profile →
-              </a>
-            ) : (
-              <a
-                href={`/alternatives/${toolB.slug}`}
-                class="rounded-xl border border-border bg-white px-4 py-2.5 text-xs font-semibold text-foreground shadow-2xs hover:bg-slate-50 transition"
-              >
-                {toolB.name} Alternatives →
-              </a>
-            )}
-
+          <div class="flex items-center gap-2">
             <a
               href="/compare"
-              class="rounded-xl bg-primary px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition"
+              class="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:text-foreground transition"
             >
-              New Comparison ⚖️
+              <span>← All Comparisons</span>
             </a>
           </div>
         </div>
+
+        <h1 class="text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
+          {desiTool.name} <span class="font-serif-editorial italic font-normal text-muted-foreground">vs</span> {globalTool.name}
+        </h1>
+
+        <p class="mt-3 text-sm sm:text-base text-muted-foreground max-w-3xl leading-relaxed">
+          Comprehensive database comparison between sovereign Indian software <strong class="text-foreground">{desiTool.name}</strong> and global incumbent <strong class="text-foreground">{globalTool.name}</strong>.
+        </p>
+
+        <!-- Head to Head Matchup Cards -->
+        <div class="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 relative">
+          <!-- Desi Tool Hero Pill -->
+          <div class="rounded-2xl border-2 border-primary/30 bg-amber-50/20 p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-800 border border-emerald-200">
+                  🇮🇳 Indian Sovereign SaaS
+                </span>
+                <span class="text-xs font-mono font-bold text-primary">RECOMMENDED</span>
+              </div>
+
+              <div class="mt-4 flex items-center gap-3">
+                <div class="h-12 w-12 rounded-xl bg-white border border-border p-2 shadow-2xs shrink-0">
+                  <img src={desiTool.logoUrl} alt={desiTool.name} class="h-full w-full object-contain" />
+                </div>
+                <div>
+                  <h2 class="text-lg font-bold text-foreground">{desiTool.name}</h2>
+                  <p class="text-xs text-muted-foreground line-clamp-1">{desiTool.tagline}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-border/60 flex items-baseline justify-between text-xs">
+              <span class="text-muted-foreground">Starting price:</span>
+              <span class="font-extrabold text-foreground text-sm">
+                {desiTool.startingPriceInr === 0 ? 'Free Tier' : `₹${desiTool.startingPriceInr?.toLocaleString('en-IN')}/mo`}
+              </span>
+            </div>
+          </div>
+
+          <!-- Global Tool Hero Pill -->
+          <div class="rounded-2xl border border-border bg-slate-50/60 p-5 flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="inline-flex items-center gap-1 rounded-full bg-slate-200 px-2.5 py-0.5 text-[11px] font-medium text-slate-700">
+                  🌐 Global Incumbent
+                </span>
+                <span class="text-xs text-muted-foreground">{globalTool.country || 'Foreign'}</span>
+              </div>
+
+              <div class="mt-4 flex items-center gap-3">
+                <div class="h-12 w-12 rounded-xl bg-white border border-border p-2 shadow-2xs shrink-0 flex items-center justify-center">
+                  {globalTool.logoUrl ? (
+                    <img src={globalTool.logoUrl} alt={globalTool.name} class="h-full w-full object-contain" />
+                  ) : (
+                    <span class="text-sm font-bold text-slate-500">{globalTool.name.slice(0, 2).toUpperCase()}</span>
+                  )}
+                </div>
+                <div>
+                  <h2 class="text-lg font-bold text-foreground">{globalTool.name}</h2>
+                  <p class="text-xs text-muted-foreground line-clamp-1">{globalTool.tagline || 'Global software standard'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-border/60 flex items-baseline justify-between text-xs">
+              <span class="text-muted-foreground">Starting price:</span>
+              <span class="font-extrabold text-foreground text-sm">
+                {globalTool.startingPriceUsd ? `$${globalTool.startingPriceUsd}/mo (approx ₹${globalMonthlyInr.toLocaleString('en-IN')})` : 'Custom Quote'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Executive Verdict Box -->
+      <div class="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/40 p-6 shadow-2xs">
+        <div class="flex items-start gap-3">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-800 text-lg font-bold">
+            💡
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-emerald-950">
+              Executive Verdict: Why Choose {desiTool.name} over {globalTool.name}?
+            </h3>
+            <p class="mt-1 text-xs text-emerald-900/90 leading-relaxed">
+              Choosing <strong>{desiTool.name}</strong> provides domestic Indian data residency for full DPDP Act compliance, 18% GST input credit recovery, direct INR billing with zero foreign transaction fees, and responsive IST timezone support.
+              {annualSavingsInr > 0 && ` A typical team saves approx ₹${annualSavingsInr.toLocaleString('en-IN')} annually on baseline software licenses alone.`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1. Side-by-Side Pros and Cons Matrix -->
+      <section class="mt-10 rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs">
+        <div class="border-b border-border pb-4 mb-6">
+          <h2 class="text-lg font-bold text-foreground">
+            Pros & Cons Comparison
+          </h2>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Database-stored feature superpowers and trade-offs
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <!-- Desi Tool Column -->
+          <div class="rounded-2xl border border-emerald-200/80 bg-emerald-50/20 p-5 space-y-4">
+            <div class="flex items-center gap-2 font-bold text-xs text-emerald-900 uppercase tracking-wider">
+              <span>🇮🇳</span>
+              <span>{desiTool.name} (Strengths & Trade-offs)</span>
+            </div>
+
+            <div>
+              <div class="text-xs font-bold text-emerald-800 mb-2">Strengths & Pros:</div>
+              <ul class="space-y-2 text-xs sm:text-sm text-foreground">
+                {finalDesiPros.map((pro) => (
+                  <li class="flex items-start gap-2">
+                    <span class="text-emerald-600 font-bold shrink-0">✓</span>
+                    <span>{pro}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div class="pt-3 border-t border-emerald-200/60">
+              <div class="text-xs font-bold text-amber-800 mb-2">Trade-offs & Considerations:</div>
+              <ul class="space-y-2 text-xs sm:text-sm text-foreground/80">
+                {finalDesiCons.map((con) => (
+                  <li class="flex items-start gap-2">
+                    <span class="text-amber-600 font-bold shrink-0">•</span>
+                    <span>{con}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          <!-- Global Tool Column -->
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/50 p-5 space-y-4">
+            <div class="flex items-center gap-2 font-bold text-xs text-slate-800 uppercase tracking-wider">
+              <span>🌐</span>
+              <span>{globalTool.name} (Strengths & Trade-offs)</span>
+            </div>
+
+            <div>
+              <div class="text-xs font-bold text-slate-800 mb-2">Strengths & Pros:</div>
+              <ul class="space-y-2 text-xs sm:text-sm text-foreground">
+                {finalGlobalPros.map((pro) => (
+                  <li class="flex items-start gap-2">
+                    <span class="text-blue-600 font-bold shrink-0">✓</span>
+                    <span>{pro}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200">
+              <div class="text-xs font-bold text-rose-800 mb-2">Trade-offs & Limitations for Indian Teams:</div>
+              <ul class="space-y-2 text-xs sm:text-sm text-foreground/80">
+                {finalGlobalCons.map((con) => (
+                  <li class="flex items-start gap-2">
+                    <span class="text-rose-500 font-bold shrink-0">✗</span>
+                    <span>{con}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
       </section>
+
+      <!-- 2. Interactive TCO Calculator & 18% GST Benefit -->
+      <section class="mt-10 rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs">
+        <div class="border-b border-border pb-4 mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-lg font-bold text-foreground">
+              Total Cost of Ownership (TCO) Simulator
+            </h2>
+            <p class="text-xs text-muted-foreground mt-0.5">
+              Annual expenditure modeling benchmarked at ₹{USD_TO_INR_RATE} / $1 USD
+            </p>
+          </div>
+          <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-bold text-emerald-800 border border-emerald-200">
+            18% GST Tax Recoverable
+          </span>
+        </div>
+
+        <!-- Team Size Switcher Buttons -->
+        <div class="mb-6 flex flex-wrap items-center gap-2">
+          <span class="text-xs font-bold text-muted-foreground mr-2">Simulate Team Size:</span>
+          <button type="button" data-seats="5" class="tco-btn rounded-xl px-3.5 py-1.5 text-xs font-bold bg-primary text-primary-foreground shadow-xs cursor-pointer">5 Seats</button>
+          <button type="button" data-seats="20" class="tco-btn rounded-xl px-3.5 py-1.5 text-xs font-bold bg-slate-100 text-foreground hover:bg-slate-200 transition cursor-pointer">20 Seats</button>
+          <button type="button" data-seats="50" class="tco-btn rounded-xl px-3.5 py-1.5 text-xs font-bold bg-slate-100 text-foreground hover:bg-slate-200 transition cursor-pointer">50 Seats</button>
+          <button type="button" data-seats="100" class="tco-btn rounded-xl px-3.5 py-1.5 text-xs font-bold bg-slate-100 text-foreground hover:bg-slate-200 transition cursor-pointer">100 Seats</button>
+        </div>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <!-- Desi Cost Box -->
+          <div class="rounded-2xl border-2 border-primary/40 bg-amber-50/20 p-5">
+            <div class="text-xs font-bold text-emerald-800 uppercase tracking-wider">🇮🇳 {desiTool.name}</div>
+            <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-foreground" id="tco-desi-annual">
+              ₹{(desiMonthlyInr * 12 * 5).toLocaleString('en-IN')}
+            </div>
+            <div class="text-xs text-muted-foreground mt-1">Est. annual license cost</div>
+            <div class="mt-4 pt-3 border-t border-border/60 text-xs text-emerald-700 font-semibold">
+              + ₹<span id="tco-gst-benefit">{Math.round(desiMonthlyInr * 12 * 5 * 0.18).toLocaleString('en-IN')}</span> recoverable via 18% GST ITC
+            </div>
+          </div>
+
+          <!-- Global Cost Box -->
+          <div class="rounded-2xl border border-slate-200 bg-slate-50/60 p-5">
+            <div class="text-xs font-bold text-slate-700 uppercase tracking-wider">🌐 {globalTool.name}</div>
+            <div class="mt-2 text-2xl sm:text-3xl font-extrabold text-foreground" id="tco-global-annual">
+              ₹{(globalMonthlyInr * 12 * 5).toLocaleString('en-IN')}
+            </div>
+            <div class="text-xs text-muted-foreground mt-1">Approx ($<span id="tco-global-usd">{(globalMonthlyUsd * 12 * 5).toLocaleString('en-US')}</span>/yr)</div>
+            <div class="mt-4 pt-3 border-t border-border/60 text-xs text-rose-600 font-medium">
+              Zero Indian GST credit + foreign currency markup
+            </div>
+          </div>
+
+          <!-- Net Annual Savings Highlight -->
+          <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 flex flex-col justify-between">
+            <div>
+              <div class="text-xs font-bold text-emerald-900 uppercase tracking-wider">Estimated Annual Savings</div>
+              <div class="mt-2 text-2xl sm:text-3xl font-black text-emerald-800" id="tco-net-savings">
+                ₹{Math.max(0, (globalMonthlyInr - desiMonthlyInr) * 12 * 5).toLocaleString('en-IN')}
+              </div>
+              <div class="text-xs text-emerald-700 mt-1">Direct software budget saved</div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-emerald-200 text-[11px] text-emerald-900 font-medium">
+              Reinvest software savings into domestic team growth.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Sovereign Compliance & Feature Matrix -->
+      <section class="mt-10 rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs">
+        <div class="border-b border-border pb-4 mb-6">
+          <h2 class="text-lg font-bold text-foreground">
+            Sovereign & DPDP Compliance Checklist
+          </h2>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Key regulatory and infrastructure differences
+          </p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs sm:text-sm border-collapse">
+            <thead>
+              <tr class="border-b border-border bg-slate-50/80">
+                <th class="py-3 px-4 font-bold text-foreground">Compliance Criterion</th>
+                <th class="py-3 px-4 font-bold text-primary">🇮🇳 {desiTool.name}</th>
+                <th class="py-3 px-4 font-bold text-slate-600">🌐 {globalTool.name}</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border">
+              <tr>
+                <td class="py-3.5 px-4 font-semibold text-foreground">18% GST Tax Invoicing (ITC Eligible)</td>
+                <td class="py-3.5 px-4 font-bold text-emerald-700">✓ Yes (Direct Indian GSTIN)</td>
+                <td class="py-3.5 px-4 text-rose-600 font-medium">✗ No (Foreign USD Invoice)</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-4 font-semibold text-foreground">Domestic Indian Cloud Data Residency</td>
+                <td class="py-3.5 px-4 font-bold text-emerald-700">✓ Yes (DPDP Compliant)</td>
+                <td class="py-3.5 px-4 text-slate-500">Foreign Region Default</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-4 font-semibold text-foreground">Direct INR & UPI / NetBanking Support</td>
+                <td class="py-3.5 px-4 font-bold text-emerald-700">✓ Native INR & UPI</td>
+                <td class="py-3.5 px-4 text-slate-500">Credit Card / USD Only</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-4 font-semibold text-foreground">IST Timezone Engineering Support</td>
+                <td class="py-3.5 px-4 font-bold text-emerald-700">✓ Realtime IST Support</td>
+                <td class="py-3.5 px-4 text-slate-500">Delayed US/EU Shifts</td>
+              </tr>
+              <tr>
+                <td class="py-3.5 px-4 font-semibold text-foreground">Self-Hostable / Open Source Option</td>
+                <td class="py-3.5 px-4 font-semibold text-foreground">{desiTool.isOpenSource || desiTool.isSelfHostable ? '✓ Available' : 'Cloud SaaS'}</td>
+                <td class="py-3.5 px-4 text-slate-500">{globalTool.isOpenSource ? 'Open Source' : 'Proprietary Cloud'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- 4. Programmatic FAQ Section -->
+      <section class="mt-10 rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-xs">
+        <div class="border-b border-border pb-4 mb-6">
+          <h2 class="text-lg font-bold text-foreground">
+            Frequently Asked Questions: {desiTool.name} vs {globalTool.name}
+          </h2>
+          <p class="text-xs text-muted-foreground mt-0.5">
+            Key questions Indian engineering teams and CTOs ask before migrating
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          {programmaticFaqs.map((faq) => (
+            <div class="rounded-2xl border border-border/80 bg-slate-50/50 p-4.5">
+              <h3 class="text-sm font-bold text-foreground">{faq.question}</h3>
+              <p class="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                {faq.answer}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <!-- 5. Related Programmatic Comparisons (Internal Links) -->
+      {relatedComparisons.length > 0 && (
+        <section class="mt-10">
+          <div class="border-b border-border pb-3 mb-5 flex items-center justify-between">
+            <h2 class="text-base font-bold text-foreground">
+              Related Comparisons in {categoryInfo?.name || 'this category'}
+            </h2>
+            <a href="/compare" class="text-xs font-semibold text-primary hover:underline">
+              View All Comparisons →
+            </a>
+          </div>
+
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {relatedComparisons.map((rc) => (
+              <a
+                href={`/compare/${rc.desiSlug}-vs-${rc.globalSlug}`}
+                class="rounded-2xl border border-border bg-white p-4 shadow-2xs hover:border-primary/40 hover:shadow-xs transition"
+              >
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="text-xs font-bold text-foreground truncate">{rc.desiName}</span>
+                  <span class="text-[10px] text-muted-foreground font-mono">VS</span>
+                  <span class="text-xs font-bold text-foreground truncate">{rc.globalName}</span>
+                </div>
+                <div class="text-[11px] text-emerald-700 font-semibold">
+                  Save 18% GST • Teardown →
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <!-- Action Footer CTA Card -->
+      <div class="mt-12 rounded-3xl bg-slate-900 p-8 sm:p-10 text-white text-center shadow-xl">
+        <h2 class="text-xl sm:text-2xl font-bold">
+          Ready to migrate to {desiTool.name}?
+        </h2>
+        <p class="mt-2 text-xs sm:text-sm text-slate-300 max-w-xl mx-auto">
+          Explore the full profile of {desiTool.name}, check verified Indian customer reviews, or visit their official site.
+        </p>
+        <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+          <a
+            href={`/tools/${desiTool.slug}`}
+            class="rounded-xl bg-white px-5 py-2.5 text-xs font-bold text-slate-900 hover:bg-slate-100 transition shadow-xs"
+          >
+            View {desiTool.name} Profile →
+          </a>
+          <a
+            href={desiTool.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover transition shadow-xs"
+          >
+            Visit {desiTool.name} Official Website ↗
+          </a>
+        </div>
+      </div>
     </div>
   </main>
 
   <Footer />
 </BaseLayout>
+
+<script is:inline define:vars={{ desiMonthlyInr, globalMonthlyInr, globalMonthlyUsd }}>
+  const seatButtons = document.querySelectorAll('.tco-btn');
+  const desiAnnualEl = document.getElementById('tco-desi-annual');
+  const globalAnnualEl = document.getElementById('tco-global-annual');
+  const globalUsdEl = document.getElementById('tco-global-usd');
+  const netSavingsEl = document.getElementById('tco-net-savings');
+  const gstBenefitEl = document.getElementById('tco-gst-benefit');
+
+  seatButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      seatButtons.forEach((b) => {
+        b.classList.remove('bg-primary', 'text-primary-foreground');
+        b.classList.add('bg-slate-100', 'text-foreground');
+      });
+      btn.classList.add('bg-primary', 'text-primary-foreground');
+      btn.classList.remove('bg-slate-100', 'text-foreground');
+
+      const seats = parseInt(btn.getAttribute('data-seats') || '5', 10);
+      const desiTotal = desiMonthlyInr * 12 * seats;
+      const globalTotalInr = globalMonthlyInr * 12 * seats;
+      const globalTotalUsd = globalMonthlyUsd * 12 * seats;
+      const netSavings = Math.max(0, globalTotalInr - desiTotal);
+      const gstBenefit = Math.round(desiTotal * 0.18);
+
+      if (desiAnnualEl) desiAnnualEl.textContent = `₹${desiTotal.toLocaleString('en-IN')}`;
+      if (globalAnnualEl) globalAnnualEl.textContent = `₹${globalTotalInr.toLocaleString('en-IN')}`;
+      if (globalUsdEl) globalUsdEl.textContent = globalTotalUsd.toLocaleString('en-US');
+      if (netSavingsEl) netSavingsEl.textContent = `₹${netSavings.toLocaleString('en-IN')}`;
+      if (gstBenefitEl) gstBenefitEl.textContent = gstBenefit.toLocaleString('en-IN');
+    });
+  });
+</script>

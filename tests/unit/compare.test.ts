@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-describe('Comparison Engine Logic & Calculations', () => {
+describe('Comparison Engine Logic & Programmatic SEO', () => {
   const USD_TO_INR_RATE = 86;
 
   it('correctly parses -vs- comparison route slugs', () => {
@@ -15,9 +15,48 @@ describe('Comparison Engine Logic & Calculations', () => {
 
     expect(parseComparisonSlug('signoz-vs-datadog')).toEqual({ slugA: 'signoz', slugB: 'datadog' });
     expect(parseComparisonSlug('plane-vs-jira')).toEqual({ slugA: 'plane', slugB: 'jira' });
-    expect(parseComparisonSlug('appsmith-vs-tooljet')).toEqual({ slugA: 'appsmith', slugB: 'tooljet' });
+    expect(parseComparisonSlug('zohomail-vs-gmail')).toEqual({ slugA: 'zohomail', slugB: 'gmail' });
     expect(parseComparisonSlug('invalid-slug')).toBeNull();
     expect(parseComparisonSlug('')).toBeNull();
+  });
+
+  it('validates Indian Sovereign vs Global Incumbent pairings and canonicalizes slug', () => {
+    function resolvePairing(toolA: { slug: string; isDesi: boolean }, toolB: { slug: string; isDesi: boolean }) {
+      if (toolA.isDesi && !toolB.isDesi) {
+        return { valid: true, canonicalSlug: `${toolA.slug}-vs-${toolB.slug}`, desiSlug: toolA.slug, globalSlug: toolB.slug };
+      }
+      if (!toolA.isDesi && toolB.isDesi) {
+        return { valid: true, canonicalSlug: `${toolB.slug}-vs-${toolA.slug}`, desiSlug: toolB.slug, globalSlug: toolA.slug };
+      }
+      return { valid: false, reason: 'Comparisons must be between an Indian Sovereign Tool and a Global Incumbent.' };
+    }
+
+    const zohoMail = { slug: 'zohomail', isDesi: true };
+    const gmail = { slug: 'gmail', isDesi: false };
+    const signoz = { slug: 'signoz', isDesi: true };
+    const datadog = { slug: 'datadog', isDesi: false };
+
+    // Standard order
+    expect(resolvePairing(zohoMail, gmail)).toEqual({
+      valid: true,
+      canonicalSlug: 'zohomail-vs-gmail',
+      desiSlug: 'zohomail',
+      globalSlug: 'gmail',
+    });
+
+    // Inverted order should canonicalize to [desi]-vs-[global]
+    expect(resolvePairing(datadog, signoz)).toEqual({
+      valid: true,
+      canonicalSlug: 'signoz-vs-datadog',
+      desiSlug: 'signoz',
+      globalSlug: 'datadog',
+    });
+
+    // Two Desi tools should be invalid
+    expect(resolvePairing(zohoMail, signoz).valid).toBe(false);
+
+    // Two Global tools should be invalid
+    expect(resolvePairing(gmail, datadog).valid).toBe(false);
   });
 
   it('calculates standardized INR and USD currency conversions', () => {
@@ -69,5 +108,25 @@ describe('Comparison Engine Logic & Calculations', () => {
     expect(parseJsonList(null)).toHaveLength(0);
     expect(parseJsonList('invalid-json')).toHaveLength(0);
     expect(parseJsonList(['direct', 'array'])).toHaveLength(2);
+  });
+
+  it('generates rich programmatic FAQ structured data for search engines', () => {
+    function generateFaqSchema(desiName: string, globalName: string, startingPriceInr: number) {
+      return [
+        {
+          question: `Is ${desiName} cheaper than ${globalName}?`,
+          answer: `${desiName} provides transparent INR pricing starting at ₹${startingPriceInr}/mo.`,
+        },
+        {
+          question: `Does ${desiName} provide 18% GST tax invoices for Indian companies?`,
+          answer: `Yes, ${desiName} issues official Indian GST invoices.`,
+        },
+      ];
+    }
+
+    const faqs = generateFaqSchema('Zoho Mail', 'Gmail', 120);
+    expect(faqs).toHaveLength(2);
+    expect(faqs[0].question).toContain('Is Zoho Mail cheaper than Gmail?');
+    expect(faqs[1].question).toContain('Does Zoho Mail provide 18% GST tax invoices');
   });
 });

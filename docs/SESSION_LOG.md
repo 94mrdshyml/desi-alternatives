@@ -768,4 +768,43 @@
    - Vitest unit tests: 41/41 passing across all 12 test files.
    - `astro check`: 0 errors, 0 warnings across all 85 files.
 
+---
+
+## Session 31 — Programmatic SEO (pSEO), Indian vs Global Constraints & Simplified Navbar
+
+**Date & Time (IST):** 2026-09-09 22:45 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Simplified & Prominent Navbar (`Navbar.astro`)**:
+   - **Desktop Layout (`md+`)**:
+     - Left: Sovereign brand logo mark (`Desi Alternatives`).
+     - Center: Big, centered search pill with search icon, placeholder *"Search Indian alternatives & global software..."*, and `⌘K` keyboard shortcut pill.
+     - Right: Single clean Hamburger `Menu` button (rendering user avatar indicator when logged in).
+   - **Mobile Layout (`<md`)**:
+     - Left: Clean brand mark.
+     - Right: Hamburger menu button only (no search bar clutter in the mobile navbar).
+   - **Slide-out Navigation Drawer**:
+     - Integrated Mobile Search trigger box at the top.
+     - Complete user session and auth buttons (`Sign In`, `Register`, `Profile`, `Submit Tool`, `Writer Studio / Admin`).
+     - Clear categorized navigation links (Comparison Engine, Sovereign Directory, Dispatch Newsletter, The Manifesto, The Journal).
+
+2. **Indian Sovereign vs Global Incumbent Constraint**:
+   - In `/compare`: 2-way linked dropdown pickers where choosing an Indian SaaS tool dynamically filters the Global tool dropdown to its mapped targets (e.g. Zoho Mail -> Gmail; SigNoz -> Datadog), and vice versa.
+   - In `/compare/[comparison]`: Strict route resolution validating that comparisons are strictly between Indian sovereign tools and global incumbents, with automatic canonicalization to `[desiSlug]-vs-[globalSlug]`.
+
+3. **Programmatic SEO (pSEO) Infrastructure**:
+   - **Dynamic Metadata & OG Tags**: Structured titles, meta descriptions, and canonical links.
+   - **Schema.org Structured Data (JSON-LD)**: Multi-entity `BreadcrumbList`, `SoftwareApplication` comparison schema, and `FAQPage` schema with 4 high-ranking Q&A pairs (Pricing diff, 18% GST invoice eligibility, DPDP data residency, migration ease).
+   - **Internal Crawl Equity**: Related comparison cards linking to other Indian SaaS vs Global tool teardowns in the same category.
+   - **Programmatic XML Sitemap (`src/pages/sitemap.xml.ts`)**: Dynamically queries Cloudflare D1 for all `toolAlternatives` pairs, generating `<url>` entries for all programmatic comparisons alongside tools, alternatives, categories, and articles.
+   - **Robots.txt (`src/pages/robots.txt.ts`)**: Clean crawler rules directing search engine bots to `https://desialternatives.in/sitemap.xml`.
+
+4. **Testing & Quality Assurance**:
+   - Vitest unit tests: **43/43 tests passing** across 12 test suites.
+   - `astro check`: **0 errors, 0 warnings** across all 87 files.
+
+
 

@@ -11,10 +11,12 @@ const db = Astro.locals.db;
 let allDesi: any[] = [];
 let allGlobal: any[] = [];
 let popularComparisons: any[] = [];
+let categoriesList: any[] = [];
+let mappingMatrix: Array<{ desiSlug: string; desiName: string; globalSlug: string; globalName: string }> = [];
 
 if (db) {
   try {
-    const [desiList, globalList, altList] = await Promise.all([
+    const [desiList, globalList, altList, catList] = await Promise.all([
       db
         .select({
           id: desiTools.id,
@@ -46,11 +48,17 @@ if (db) {
           desiName: desiTools.name,
           desiLogo: desiTools.logoUrl,
           desiTagline: desiTools.tagline,
+          desiStartingPriceInr: desiTools.startingPriceInr,
+          desiHasGstInvoice: desiTools.hasGstInvoice,
+          desiHasIndianDataResidency: desiTools.hasIndianDataResidency,
           globalId: toolAlternatives.globalToolId,
           globalSlug: globalTools.slug,
           globalName: globalTools.name,
           globalLogo: globalTools.logoUrl,
           globalTagline: globalTools.tagline,
+          globalStartingPriceUsd: globalTools.startingPriceUsd,
+          categoryId: categories.id,
+          categorySlug: categories.slug,
           categoryName: categories.name,
           categoryEmoji: categories.emoji,
         })
@@ -59,26 +67,56 @@ if (db) {
         .leftJoin(globalTools, eq(toolAlternatives.globalToolId, globalTools.id))
         .leftJoin(categories, eq(desiTools.categoryId, categories.id))
         .all(),
+      db.select().from(categories).all(),
     ]);
 
     allDesi = desiList;
     allGlobal = globalList;
     popularComparisons = altList.filter((a) => a.desiSlug && a.globalSlug);
+    categoriesList = catList;
+
+    mappingMatrix = popularComparisons.map((c) => ({
+      desiSlug: c.desiSlug,
+      desiName: c.desiName,
+      globalSlug: c.globalSlug,
+      globalName: c.globalName,
+    }));
   } catch (e) {
     console.error('Failed to load comparison hub data:', e);
   }
 }
 
-// Combine all selectable tools
-const selectableTools = [
-  ...allDesi.map((t) => ({ ...t, type: 'Indian Sovereign Tool (🇮🇳)', origin: 'desi' })),
-  ...allGlobal.map((t) => ({ ...t, type: 'Global Giant (🌐)', origin: 'global' })),
-].sort((a, b) => a.name.localeCompare(b.name));
+// Group comparisons by Category for Programmatic SEO Directory
+const comparisonsByCategory: Record<string, { categoryName: string; categoryEmoji: string; categorySlug: string; items: any[] }> = {};
+
+for (const comp of popularComparisons) {
+  const catKey = comp.categorySlug || 'general';
+  if (!comparisonsByCategory[catKey]) {
+    comparisonsByCategory[catKey] = {
+      categoryName: comp.categoryName || 'General Software',
+      categoryEmoji: comp.categoryEmoji || '⚡',
+      categorySlug: comp.categorySlug || 'general',
+      items: [],
+    };
+  }
+  comparisonsByCategory[catKey].items.push(comp);
+}
+
+// Extract unique Desi tools that have mapped global alternatives
+const desiToolsWithAlternatives = Array.from(
+  new Map(popularComparisons.map((c) => [c.desiSlug, { slug: c.desiSlug, name: c.desiName, logoUrl: c.desiLogo }])).values()
+).sort((a, b) => a.name.localeCompare(b.name));
+
+// Extract unique Global tools that have mapped Indian alternatives
+const globalToolsWithAlternatives = Array.from(
+  new Map(popularComparisons.map((c) => [c.globalSlug, { slug: c.globalSlug, name: c.globalName, logoUrl: c.globalLogo }])).values()
+).sort((a, b) => a.name.localeCompare(b.name));
 ---
 
 <BaseLayout
-  title="Software Comparison Engine — Indian SaaS vs Global Giants"
-  description="Compare Indian sovereign SaaS tools head-to-head with US/global giants. Side-by-side database breakdowns of pros, cons, pricing, GST tax savings, and DPDP compliance."
+  title="Software Comparison Engine — Sovereign Indian SaaS vs Global Giants"
+  description="Head-to-head database comparisons between sovereign Indian software and global incumbents. Compare pricing in ₹ INR vs $ USD, 18% GST tax credits, and DPDP compliance."
+  canonicalUrl="https://desialternatives.in/compare"
 >
   <Navbar />
 
@@ -97,9 +135,9 @@ const selectableTools = [
       <div class="mx-auto max-w-3xl text-center">
         <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1 text-xs font-semibold text-amber-900 shadow-2xs">
           <span>⚖️</span>
-          <span>Sovereign Intelligence Engine</span>
+          <span>Sovereign Teardown Engine</span>
           <span class="text-amber-300">•</span>
-          <span>DB-Driven Teardowns</span>
+          <span>Indian SaaS vs Global Giants</span>
         </div>
 
         <h1 class="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
@@ -107,58 +145,65 @@ const selectableTools = [
         </h1>
 
         <p class="mx-auto mt-4 max-w-2xl text-sm sm:text-base text-muted-foreground leading-relaxed">
-          Compare pricing in INR vs USD, side-by-side pros and cons, 18% GST input credit savings, and DPDP sovereign compliance between any two tools.
+          Compare sovereign Indian software with foreign incumbents. See side-by-side database pros & cons, ₹ INR vs $ USD pricing, 18% GST input credit savings, and DPDP compliance.
         </p>
       </div>
 
-      <!-- Interactive Tool Picker Card -->
+      <!-- Smart 2-Way Linked Tool Picker Card -->
       <div class="mx-auto mt-10 max-w-3xl rounded-3xl border border-border/80 bg-white p-6 sm:p-8 shadow-xl shadow-amber-500/5">
-        <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground text-center mb-6">
-          Select Any Two Tools to Compare
-        </h2>
+        <div class="text-center mb-6">
+          <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Select Indian Sovereign Tool vs Global Counterpart
+          </h2>
+          <p class="text-[11px] text-muted-foreground mt-1">
+            Pick an Indian tool to filter its global targets, or select a foreign tool to find its Indian replacements.
+          </p>
+        </div>
 
         <form id="compare-selector-form" class="space-y-6">
           <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 items-center relative">
-            <!-- Tool 1 Selector -->
+            <!-- Indian Tool Selector -->
             <div class="space-y-2">
-              <label for="tool-a-select" class="block text-xs font-bold uppercase tracking-wider text-foreground">
-                Tool 1 (Primary)
+              <label for="desi-select" class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
+                <span>🇮🇳 Indian Sovereign Tool</span>
+                <span class="text-[10px] text-amber-700 font-semibold lowercase">Homegrown</span>
               </label>
               <select
-                id="tool-a-select"
+                id="desi-select"
                 required
                 class="block w-full rounded-xl border border-border bg-white px-3.5 py-3 text-xs sm:text-sm font-semibold text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
               >
-                <option value="" disabled selected>Select first tool...</option>
-                {selectableTools.map((t) => (
-                  <option value={t.slug} data-logo={t.logoUrl}>
-                    {t.name} ({t.origin === 'desi' ? '🇮🇳 Indian' : '🌐 Global'})
+                <option value="" selected>Choose Indian SaaS...</option>
+                {desiToolsWithAlternatives.map((t) => (
+                  <option value={t.slug}>
+                    {t.name}
                   </option>
                 ))}
               </select>
             </div>
 
             <!-- VS Badge (Desktop Center / Mobile Separator) -->
-            <div class="sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 flex items-center justify-center pointer-events-none">
+            <div class="sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 flex items-center justify-center pointer-events-none pt-2 sm:pt-4">
               <span class="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-amber-50 text-xs font-extrabold text-amber-800 shadow-xs font-mono">
                 VS
               </span>
             </div>
 
-            <!-- Tool 2 Selector -->
+            <!-- Global Tool Selector -->
             <div class="space-y-2">
-              <label for="tool-b-select" class="block text-xs font-bold uppercase tracking-wider text-foreground">
-                Tool 2 (Comparison)
+              <label for="global-select" class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-foreground">
+                <span>🌐 Global Incumbent</span>
+                <span class="text-[10px] text-slate-500 font-semibold lowercase">Foreign Target</span>
               </label>
               <select
-                id="tool-b-select"
+                id="global-select"
                 required
                 class="block w-full rounded-xl border border-border bg-white px-3.5 py-3 text-xs sm:text-sm font-semibold text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
               >
-                <option value="" disabled selected>Select second tool...</option>
-                {selectableTools.map((t) => (
-                  <option value={t.slug} data-logo={t.logoUrl}>
-                    {t.name} ({t.origin === 'desi' ? '🇮🇳 Indian' : '🌐 Global'})
+                <option value="" selected>Choose Global Incumbent...</option>
+                {globalToolsWithAlternatives.map((t) => (
+                  <option value={t.slug}>
+                    {t.name}
                   </option>
                 ))}
               </select>
@@ -180,84 +225,132 @@ const selectableTools = [
         </form>
       </div>
 
-      <!-- Popular Head-to-Head Comparisons Grid -->
-      <div class="mt-16">
-        <div class="flex items-center justify-between border-b border-border pb-4 mb-8">
+      <!-- Sovereign Advantage Banner -->
+      <div class="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div class="rounded-2xl border border-border bg-white p-5 shadow-2xs">
+          <div class="flex items-center gap-2.5 text-xs font-bold text-emerald-800">
+            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">🇮🇳</span>
+            <span>18% GST Input Credit</span>
+          </div>
+          <p class="mt-2 text-xs text-muted-foreground leading-relaxed">
+            Direct GST tax invoices with reverse charge credit eligibility for all Indian registered entities.
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-white p-5 shadow-2xs">
+          <div class="flex items-center gap-2.5 text-xs font-bold text-blue-800">
+            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-700">🔒</span>
+            <span>DPDP Act Compliance</span>
+          </div>
+          <p class="mt-2 text-xs text-muted-foreground leading-relaxed">
+            Data hosted in domestic Indian cloud regions with full sovereign data protection and audit trails.
+          </p>
+        </div>
+
+        <div class="rounded-2xl border border-border bg-white p-5 shadow-2xs">
+          <div class="flex items-center gap-2.5 text-xs font-bold text-amber-800">
+            <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-700">₹</span>
+            <span>Zero Forex Volatility</span>
+          </div>
+          <p class="mt-2 text-xs text-muted-foreground leading-relaxed">
+            Direct INR invoicing without 3.5% foreign transaction fees, USD markups, or currency fluctuations.
+          </p>
+        </div>
+      </div>
+
+      <!-- Programmatic Comparison Directory (Grouped by Category) -->
+      <div class="mt-16 space-y-12">
+        <div class="flex items-center justify-between border-b border-border pb-4">
           <div>
             <h2 class="text-xl font-bold tracking-tight text-foreground">
-              Popular Head-to-Head Teardowns
+              Directory of Sovereign Comparisons
             </h2>
             <p class="mt-1 text-xs text-muted-foreground">
-              Direct comparisons mapped by engineering teams and community founders
+              Programmatic teardowns mapped across {popularComparisons.length} sovereign pairings
             </p>
           </div>
           <span class="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-muted-foreground">
-            {popularComparisons.length} Comparisons
+            {popularComparisons.length} Matchups
           </span>
         </div>
 
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {popularComparisons.map((c) => (
-            <a
-              href={`/compare/${c.desiSlug}-vs-${c.globalSlug}`}
-              class="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-5 shadow-xs hover:border-primary/50 hover:shadow-md transition duration-200"
-            >
-              <div>
-                <!-- Category Badge -->
-                <div class="flex items-center justify-between gap-2 mb-4">
-                  <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
-                    <span>{c.categoryEmoji || '⚡'}</span>
-                    <span>{c.categoryName || 'Software'}</span>
-                  </span>
-                  <span class="text-[10px] font-mono text-muted-foreground">Detailed Teardown →</span>
-                </div>
+        {Object.entries(comparisonsByCategory).map(([catKey, categoryGroup]) => (
+          <section class="space-y-4">
+            <div class="flex items-center gap-2">
+              <span class="text-base">{categoryGroup.categoryEmoji}</span>
+              <h3 class="text-base font-bold text-foreground">
+                {categoryGroup.categoryName}
+              </h3>
+              <span class="text-xs text-muted-foreground font-mono">
+                ({categoryGroup.items.length} {categoryGroup.items.length === 1 ? 'comparison' : 'comparisons'})
+              </span>
+            </div>
 
-                <!-- Matchup Card -->
-                <div class="flex items-center justify-between gap-3 py-2">
-                  <!-- Desi Tool -->
-                  <div class="flex-1 text-center">
-                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-slate-50 p-1.5 shadow-2xs overflow-hidden">
-                      <img src={c.desiLogo} alt={c.desiName} class="h-full w-full object-contain" />
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {categoryGroup.items.map((c) => (
+                <a
+                  href={`/compare/${c.desiSlug}-vs-${c.globalSlug}`}
+                  class="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-5 shadow-2xs hover:border-primary/50 hover:shadow-md transition duration-200"
+                >
+                  <div>
+                    <!-- Header Badges -->
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                      <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800 border border-emerald-200">
+                        🇮🇳 18% GST Invoicing
+                      </span>
+                      <span class="text-[10px] font-mono text-muted-foreground group-hover:text-primary transition">
+                        Teardown →
+                      </span>
                     </div>
-                    <div class="mt-2 font-bold text-xs text-foreground truncate">{c.desiName}</div>
-                    <span class="inline-block rounded bg-amber-50 px-1 py-0.2 text-[9px] font-bold text-amber-800">
-                      🇮🇳 India
-                    </span>
-                  </div>
 
-                  <!-- VS Circle -->
-                  <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-black text-slate-500 font-mono">
-                    VS
-                  </div>
+                    <!-- Matchup Row -->
+                    <div class="flex items-center justify-between gap-3 py-2">
+                      <!-- Desi Tool -->
+                      <div class="flex-1 text-center">
+                        <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-slate-50 p-1.5 shadow-2xs overflow-hidden">
+                          <img src={c.desiLogo} alt={c.desiName} class="h-full w-full object-contain" />
+                        </div>
+                        <div class="mt-1.5 font-bold text-xs text-foreground truncate">{c.desiName}</div>
+                        <span class="text-[10px] text-emerald-700 font-semibold">
+                          {c.desiStartingPriceInr === 0 ? 'Free tier' : c.desiStartingPriceInr ? `₹${c.desiStartingPriceInr}/mo` : 'INR Pricing'}
+                        </span>
+                      </div>
 
-                  <!-- Global Tool -->
-                  <div class="flex-1 text-center">
-                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-slate-50 p-1.5 shadow-2xs overflow-hidden">
-                      {c.globalLogo ? (
-                        <img src={c.globalLogo} alt={c.globalName} class="h-full w-full object-contain" />
-                      ) : (
-                        <span class="text-xs font-bold text-slate-500 uppercase">{c.globalName.slice(0, 2)}</span>
-                      )}
+                      <!-- VS Badge -->
+                      <div class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[9px] font-black text-slate-500 font-mono">
+                        VS
+                      </div>
+
+                      <!-- Global Tool -->
+                      <div class="flex-1 text-center">
+                        <div class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-slate-50 p-1.5 shadow-2xs overflow-hidden">
+                          {c.globalLogo ? (
+                            <img src={c.globalLogo} alt={c.globalName} class="h-full w-full object-contain" />
+                          ) : (
+                            <span class="text-xs font-bold text-slate-500 uppercase">{c.globalName.slice(0, 2)}</span>
+                          )}
+                        </div>
+                        <div class="mt-1.5 font-bold text-xs text-foreground truncate">{c.globalName}</div>
+                        <span class="text-[10px] text-muted-foreground font-medium">
+                          {c.globalStartingPriceUsd ? `$${c.globalStartingPriceUsd}/mo` : 'USD Pricing'}
+                        </span>
+                      </div>
                     </div>
-                    <div class="mt-2 font-bold text-xs text-foreground truncate">{c.globalName}</div>
-                    <span class="inline-block rounded bg-slate-100 px-1 py-0.2 text-[9px] font-bold text-slate-600">
-                      🌐 Global
-                    </span>
+
+                    <p class="mt-3 text-[11px] text-muted-foreground line-clamp-2">
+                      {c.desiName} vs {c.globalName}: pricing breakdown, 18% GST savings, DPDP data residency, and migration friction.
+                    </p>
                   </div>
-                </div>
 
-                <p class="mt-4 text-[11px] text-muted-foreground line-clamp-2">
-                  Compare {c.desiName} vs {c.globalName} on pricing, pros & cons, DPDP compliance, and migration friction.
-                </p>
-              </div>
-
-              <div class="mt-4 border-t border-border pt-3 flex items-center justify-between text-xs font-semibold text-primary group-hover:text-primary-hover">
-                <span>View Full Comparison</span>
-                <span>→</span>
-              </div>
-            </a>
-          ))}
-        </div>
+                  <div class="mt-3.5 pt-2.5 border-t border-border/60 flex items-center justify-between text-[11px]">
+                    <span class="font-medium text-emerald-700">Save 18% GST</span>
+                    <span class="font-bold text-primary group-hover:underline">Compare {c.desiName} vs {c.globalName} →</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   </main>
@@ -265,28 +358,86 @@ const selectableTools = [
   <Footer />
 </BaseLayout>
 
-<script>
-  const form = document.getElementById('compare-selector-form') as HTMLFormElement | null;
-  const selectA = document.getElementById('tool-a-select') as HTMLSelectElement | null;
-  const selectB = document.getElementById('tool-b-select') as HTMLSelectElement | null;
+<!-- Client Script for 2-Way Linked Dynamic Filtering -->
+<script is:inline define:vars={{ mappingMatrix, desiToolsWithAlternatives, globalToolsWithAlternatives }}>
+  const desiSelect = document.getElementById('desi-select');
+  const globalSelect = document.getElementById('global-select');
+  const form = document.getElementById('compare-selector-form');
 
-  if (form && selectA && selectB) {
+  if (desiSelect && globalSelect && form) {
+    // When Indian tool is chosen, filter Global tool options to only its mapped competitors
+    desiSelect.addEventListener('change', () => {
+      const selectedDesi = desiSelect.value;
+      if (!selectedDesi) {
+        // Reset global options
+        populateGlobalOptions(globalToolsWithAlternatives);
+        return;
+      }
+
+      const mappedGlobals = mappingMatrix
+        .filter((m) => m.desiSlug === selectedDesi)
+        .map((m) => ({ slug: m.globalSlug, name: m.globalName }));
+
+      populateGlobalOptions(mappedGlobals);
+      if (mappedGlobals.length === 1) {
+        globalSelect.value = mappedGlobals[0].slug;
+      }
+    });
+
+    // When Global tool is chosen, filter Indian tool options to only its mapped alternatives
+    globalSelect.addEventListener('change', () => {
+      const selectedGlobal = globalSelect.value;
+      if (!selectedGlobal) {
+        // Reset desi options
+        populateDesiOptions(desiToolsWithAlternatives);
+        return;
+      }
+
+      const mappedDesis = mappingMatrix
+        .filter((m) => m.globalSlug === selectedGlobal)
+        .map((m) => ({ slug: m.desiSlug, name: m.desiName }));
+
+      populateDesiOptions(mappedDesis);
+      if (mappedDesis.length === 1) {
+        desiSelect.value = mappedDesis[0].slug;
+      }
+    });
+
+    function populateGlobalOptions(items) {
+      const currentValue = globalSelect.value;
+      globalSelect.innerHTML = '<option value="" selected>Choose Global Incumbent...</option>';
+      items.forEach((item) => {
+        const opt = document.createElement('option');
+        opt.value = item.slug;
+        opt.textContent = item.name;
+        if (item.slug === currentValue) opt.selected = true;
+        globalSelect.appendChild(opt);
+      });
+    }
+
+    function populateDesiOptions(items) {
+      const currentValue = desiSelect.value;
+      desiSelect.innerHTML = '<option value="" selected>Choose Indian SaaS...</option>';
+      items.forEach((item) => {
+        const opt = document.createElement('option');
+        opt.value = item.slug;
+        opt.textContent = item.name;
+        if (item.slug === currentValue) opt.selected = true;
+        desiSelect.appendChild(opt);
+      });
+    }
+
     form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const slugA = selectA.value;
-      const slugB = selectB.value;
+      const desiVal = desiSelect.value;
+      const globalVal = globalSelect.value;
 
-      if (!slugA || !slugB) {
-        alert('Please select both tools to compare.');
+      if (!desiVal || !globalVal) {
+        alert('Please select both an Indian Sovereign tool and a Global Incumbent tool.');
         return;
       }
 
-      if (slugA === slugB) {
-        alert('Please select two different tools to compare.');
-        return;
-      }
-
-      window.location.href = `/compare/${slugA}-vs-${slugB}`;
+      window.location.href = `/compare/${desiVal}-vs-${globalVal}`;
     });
   }
 </script>
