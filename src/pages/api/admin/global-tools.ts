@@ -434,6 +434,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
               youtubeUrl: youtubeUrl || existingTool.youtubeUrl,
               facebookUrl: facebookUrl || existingTool.facebookUrl,
               instagramHandle: instagramHandle || existingTool.instagramHandle,
+              isJsonImported: true,
               updatedAt: sql`CURRENT_TIMESTAMP`,
             })
             .where(eq(globalTools.id, existingTool.id));
@@ -468,6 +469,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
             youtubeUrl,
             facebookUrl,
             instagramHandle,
+            isJsonImported: true,
           });
 
           importedTools.push({ id: newId, name, slug, action: 'created' });

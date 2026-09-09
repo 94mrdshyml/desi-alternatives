@@ -47,6 +47,7 @@ if (db) {
         isSelfHostable: desiTools.isSelfHostable,
         hasFreeTier: desiTools.hasFreeTier,
         isFeatured: desiTools.isFeatured,
+        isJsonImported: desiTools.isJsonImported,
         status: desiTools.status,
         claimedById: desiTools.claimedById,
         createdAt: desiTools.createdAt,
@@ -271,6 +272,12 @@ const initialTab = Astro.url.searchParams.get('tab') || 'indian-tools';
                           {t.isFeatured && (
                             <span class="rounded bg-amber-100 px-1 py-0.2 text-[9px] font-bold text-amber-800">Featured</span>
                           )}
+                          {t.isJsonImported && (
+                            <span class="inline-flex items-center gap-0.5 rounded bg-violet-100 text-violet-800 px-1.5 py-0.2 text-[9px] font-bold border border-violet-200 shadow-2xs" title="Created/Enriched via AI JSON Import">
+                              <span>⚡</span>
+                              <span>AI JSON</span>
+                            </span>
+                          )}
                         </div>
                         <p class="text-[11px] text-muted-foreground line-clamp-1 max-w-xs">{t.tagline}</p>
                       </div>
@@ -390,7 +397,15 @@ const initialTab = Astro.url.searchParams.get('tab') || 'indian-tools';
                       <div class="flex items-center gap-3">
                         <img src={g.logoUrl || `https://t2.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&url=${encodeURIComponent(g.websiteUrl || 'https://google.com')}&size=128`} alt={g.name} class="h-8 w-8 rounded-lg object-contain bg-slate-50 border border-border/60 p-0.5" />
                         <div>
-                          <div class="font-bold text-foreground">{g.name}</div>
+                          <div class="flex items-center gap-1.5">
+                            <span class="font-bold text-foreground">{g.name}</span>
+                            {g.isJsonImported && (
+                              <span class="inline-flex items-center gap-0.5 rounded bg-violet-100 text-violet-800 px-1.5 py-0.2 text-[9px] font-bold border border-violet-200 shadow-2xs" title="Created/Enriched via AI JSON Import">
+                                <span>⚡</span>
+                                <span>AI JSON</span>
+                              </span>
+                            )}
+                          </div>
                           <p class="text-[11px] text-muted-foreground line-clamp-1 max-w-xs">{g.tagline || g.websiteUrl}</p>
                           {featuresList.length > 0 && (
                             <div class="mt-1 flex flex-wrap gap-1">

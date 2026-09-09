@@ -134,6 +134,9 @@ export const globalTools = sqliteTable('global_tools', {
   facebookUrl: text('facebook_url'),
   linkedinUrl: text('linkedin_url'),
 
+  // Import / Provenance metadata
+  isJsonImported: integer('is_json_imported', { mode: 'boolean' }).default(false).notNull(),
+
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text('updated_at'),
 });
@@ -187,6 +190,9 @@ export const desiTools = sqliteTable('desi_tools', {
   youtubeUrl: text('youtube_url'),
   facebookUrl: text('facebook_url'),
   linkedinUrl: text('linkedin_url'),
+
+  // Import / Provenance metadata
+  isJsonImported: integer('is_json_imported', { mode: 'boolean' }).default(false).notNull(),
 
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),

@@ -207,6 +207,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         facebookUrl,
         linkedinUrl,
         claimedById: user.id,
+        isJsonImported: true,
         status: 'draft',
       });
 

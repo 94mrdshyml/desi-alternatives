@@ -659,3 +659,29 @@
 2. **Testing & Verification**:
    - Vitest unit tests: 31/31 passed across all 10 test files.
    - `astro check`: 0 errors, 0 warnings across all 78 files.
+
+---
+
+## Session 28 — AI JSON Import Badges & Retroactive D1 Backfill
+
+**Date & Time (IST):** 2026-09-09 20:50 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Schema & Migration Layer (`schema.ts` & `0012_json_import_badges.sql`)**:
+   - Added `isJsonImported` boolean column to both `desiTools` and `globalTools` schemas.
+   - Created Drizzle migration `0012_json_import_badges.sql` with automatic retroactive D1 backfill SQL queries marking tools with rich JSON metadata as `is_json_imported = 1`.
+   - Registered migration in journal.
+
+2. **Backend Ingestion Pipeline Updates**:
+   - Updated `src/pages/api/admin/tools/import-json.ts` to flag imported Indian sovereign tools with `isJsonImported: true`.
+   - Updated `src/pages/api/admin/global-tools.ts` to flag created/updated Global Giants with `isJsonImported: true`.
+
+3. **Admin Catalog UI Badges (`src/pages/admin/catalog.astro`)**:
+   - Rendered sleek, admin-only `⚡ AI JSON` badges next to tool names across both Indian Sovereign Tools and Global Giants tables.
+
+4. **Testing & Quality Assurance**:
+   - 31/31 Vitest unit tests passing across 10 test suites.
+   - `astro check`: 0 errors, 0 warnings across all 78 files.
