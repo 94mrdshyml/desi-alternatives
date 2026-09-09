@@ -15,7 +15,8 @@ test.describe('Tools & Pages E2E', () => {
   test('renders programmatic SEO alternative comparison page', async ({ page }) => {
     await page.goto('/alternatives/datadog');
     await expect(page.locator('main h1')).toContainText('Alternatives to');
-    await expect(page.locator('table')).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'About Datadog' })).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'Ranked Indian Alternatives' })).toBeVisible();
   });
 
   test('renders footer on tools page, alternatives directory, and alternative detail page', async ({ page }) => {
