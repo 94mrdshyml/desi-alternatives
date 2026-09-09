@@ -68,6 +68,20 @@ if (user) {
             </p>
           </div>
 
+          <!-- Newsletter Opt-in Checkbox -->
+          <div class="flex items-start gap-2.5 pt-1">
+            <input
+              id="newsletter-opt-in"
+              name="newsletterOptIn"
+              type="checkbox"
+              checked
+              class="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
+            />
+            <label for="newsletter-opt-in" class="text-xs text-muted-foreground leading-normal cursor-pointer select-none">
+              Subscribe to <strong class="text-foreground">Desi Alternatives Dispatch</strong> — weekly curated sovereign SaaS teardowns & tech blueprints.
+            </label>
+          </div>
+
           <div>
             <button
               type="submit"
@@ -199,6 +213,7 @@ if (user) {
     const errorDiv = document.getElementById('error-message') as HTMLDivElement;
     const infoDiv = document.getElementById('info-message') as HTMLDivElement;
     const otpBoxes = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-box'));
+    const newsletterOptIn = document.getElementById('newsletter-opt-in') as HTMLInputElement | null;
 
     let currentEmail = '';
     let resendTimer: any = null;
@@ -368,6 +383,24 @@ if (user) {
           otpBoxes.forEach((b) => (b.value = ''));
           otpBoxes[0]?.focus();
           return;
+        }
+
+        // Handle newsletter subscription if opted in
+        if (newsletterOptIn?.checked) {
+          try {
+            const pendingName = localStorage.getItem('desi_pending_name') || '';
+            await fetch('/api/newsletter/subscribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                email: currentEmail,
+                name: pendingName,
+                source: 'registration',
+              }),
+            });
+          } catch (e) {
+            // Non-blocking for registration flow
+          }
         }
 
         showInfo('Verified successfully! Redirecting...');

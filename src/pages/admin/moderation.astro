@@ -1,6 +1,6 @@
 ---
 import AdminLayout from '@/layouts/AdminLayout.astro';
-import { claimsQueue, users, desiTools, globalTools, categories, toolReviews } from '@/lib/server/db/schema';
+import { claimsQueue, users, desiTools, globalTools, categories, toolReviews, newsletterSubscribers } from '@/lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user;
@@ -13,6 +13,7 @@ if (!user || user.role !== 'admin') {
 let pendingClaims: any[] = [];
 let allUsersList: any[] = [];
 let allReviewsList: any[] = [];
+let subscriberMap: Record<string, any> = {};
 let totalToolsCount = 0;
 let totalGlobalCount = 0;
 let totalCategoriesCount = 0;
@@ -44,6 +45,19 @@ if (db) {
 
     // 2. All Users
     allUsersList = await db.select().from(users).orderBy(desc(users.createdAt)).all();
+
+    // 2b. Newsletter Subscribers mapping
+    try {
+      const allSubs = await db.select().from(newsletterSubscribers).all();
+      allSubs.forEach((s) => {
+        subscriberMap[s.email.toLowerCase()] = s;
+        if (s.userId) {
+          subscriberMap[s.userId] = s;
+        }
+      });
+    } catch (e) {
+      console.error('Failed to load newsletter subscribers mapping:', e);
+    }
 
     // 3. Community Reviews
     try {
@@ -345,49 +359,78 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
               <tr>
                 <th class="py-3 px-4 font-semibold text-foreground">User</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Email</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Newsletter</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Role</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Joined</th>
                 <th class="py-3 px-4 font-semibold text-foreground text-right">Update Role</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border">
-              {allUsersList.map((u) => (
-                <tr class="hover:bg-slate-50/50 transition">
-                  <td class="py-3 px-4">
-                    <div class="flex items-center gap-2.5">
-                      <div class="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-bold text-foreground">
-                        {u.name.slice(0, 1).toUpperCase()}
+              {allUsersList.map((u) => {
+                const sub = subscriberMap[u.id] || subscriberMap[u.email?.toLowerCase()];
+                return (
+                  <tr class="hover:bg-slate-50/50 transition">
+                    <td class="py-3 px-4">
+                      <div class="flex items-center gap-2.5">
+                        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-secondary text-xs font-bold text-foreground">
+                          {u.name.slice(0, 1).toUpperCase()}
+                        </div>
+                        <span class="font-bold text-foreground">{u.name}</span>
                       </div>
-                      <span class="font-bold text-foreground">{u.name}</span>
-                    </div>
-                  </td>
-                  <td class="py-3 px-4 text-muted-foreground font-mono">{u.email}</td>
-                  <td class="py-3 px-4">
-                    <span class={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ${
-                      u.role === 'admin'
-                        ? 'bg-purple-50 text-purple-700 border border-purple-200'
-                        : u.role === 'author'
-                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                        : 'bg-secondary text-secondary-foreground'
-                    }`}>
-                      {u.role.toUpperCase()}
-                    </span>
-                  </td>
-                  <td class="py-3 px-4 text-muted-foreground">
-                    {new Date(u.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
-                  </td>
-                  <td class="py-3 px-4 text-right">
-                    <select
-                      data-target-user-id={u.id}
-                      class="user-role-select rounded-lg border border-border bg-white px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
-                    >
-                      <option value="user" selected={u.role === 'user'}>User</option>
-                      <option value="author" selected={u.role === 'author'}>Author / Editor</option>
-                      <option value="admin" selected={u.role === 'admin'}>Admin</option>
-                    </select>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td class="py-3 px-4 text-muted-foreground font-mono">{u.email}</td>
+                    <td class="py-3 px-4">
+                      {sub && sub.status === 'subscribed' ? (
+                        sub.source === 'registration' ? (
+                          <span class="inline-flex items-center gap-1 rounded-md bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[10px] font-bold text-indigo-700" title="Subscribed via Registration Checkbox">
+                            <span>📝</span> Registration
+                          </span>
+                        ) : sub.source === 'profile' ? (
+                          <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700" title="Subscribed via Profile Settings">
+                            <span>👤</span> Profile
+                          </span>
+                        ) : (
+                          <span class="inline-flex items-center gap-1 rounded-md bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700" title="Subscribed via Dedicated Newsletter Page">
+                            <span>📬</span> Newsletter Page
+                          </span>
+                        )
+                      ) : sub && sub.status === 'unsubscribed' ? (
+                        <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-medium">
+                          Unsubscribed
+                        </span>
+                      ) : (
+                        <span class="text-[11px] text-muted-foreground/60 font-mono">
+                          Not Subscribed
+                        </span>
+                      )}
+                    </td>
+                    <td class="py-3 px-4">
+                      <span class={`inline-flex items-center rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                        u.role === 'admin'
+                          ? 'bg-purple-50 text-purple-700 border border-purple-200'
+                          : u.role === 'author'
+                          ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                          : 'bg-secondary text-secondary-foreground'
+                      }`}>
+                        {u.role.toUpperCase()}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-muted-foreground">
+                      {new Date(u.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </td>
+                    <td class="py-3 px-4 text-right">
+                      <select
+                        data-target-user-id={u.id}
+                        class="user-role-select rounded-lg border border-border bg-white px-2 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+                      >
+                        <option value="user" selected={u.role === 'user'}>User</option>
+                        <option value="author" selected={u.role === 'author'}>Author / Editor</option>
+                        <option value="admin" selected={u.role === 'admin'}>Admin</option>
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

@@ -685,3 +685,49 @@
 4. **Testing & Quality Assurance**:
    - 31/31 Vitest unit tests passing across 10 test suites.
    - `astro check`: 0 errors, 0 warnings across all 78 files.
+
+---
+
+## Session 29 — Desi Alternatives Dispatch: Full Newsletter System & Attribution Intelligence
+
+**Date & Time (IST):** 2026-09-09 21:25 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Branding & Visual Identity**:
+   - **Name**: *Desi Alternatives Dispatch* (*The Sovereign Stack*)
+   - **Tagline**: *Curated weekly intelligence on sovereign Indian software, SaaS alternatives, and engineering blueprints.*
+   - **Emblem**: Dynamic SVG sovereign postal seal & dispatch badge.
+
+2. **D1 Schema & Migration Layer (`schema.ts` & `0013_newsletter_subscribers.sql`)**:
+   - Created `newsletter_subscribers` table with fields: `id` (`sub_...`), `email`, `name`, `userId`, `source` (`'registration' | 'profile' | 'newsletter_page'`), `status` (`'subscribed' | 'unsubscribed'`), `token`, `subscribedAt`, `unsubscribedAt`.
+   - Indexed `email`, `token`, `user_id`, `status`, and `source` for sub-millisecond lookups on Cloudflare D1.
+   - Generated migration `0013_newsletter_subscribers.sql` and applied locally and remotely to Cloudflare D1.
+
+3. **Backend API Endpoints**:
+   - `POST /api/newsletter/subscribe`: Idempotent subscription endpoint supporting source tracking, guest & logged-in user associations, reactivation of unsubscribed emails, and email format validation.
+   - `POST /api/newsletter/unsubscribe`: Secure unsubscription handler accepting either a secure subscriber token (`sub_tok_...`) or email session.
+
+4. **Multi-Channel Frontend Integration**:
+   - **Registration Checkbox (`/register`)**: Added checked-by-default opt-in checkbox to the account creation form; automatically subscribes user with `source: 'registration'` upon successful OTP verification.
+   - **Profile Subscription Management (`/profile`)**: Added "Desi Alternatives Dispatch" card with real-time status pill (`SUBSCRIBED` / `NOT SUBSCRIBED`), origin indicator, and 1-click toggle button (`source: 'profile'`).
+   - **Dedicated Public Landing Page (`/newsletter`)**: High-converting public newsletter page featuring value pillars (Sovereign Tech Radar, Cost Savings Case Studies, DPDP Guides), sample issue highlights, and AJAX subscription form (`source: 'newsletter_page'`).
+   - **1-Click Public Unsubscribe Flow (`/unsubscribe`)**: Clean confirmation page supporting `?token=...` query parameters with instant unsubscribe and re-subscribe capability.
+   - **Footer Navigation Link (`Footer.astro`)**: Added `📬 Weekly Dispatch` link under Editorial & Legal.
+
+5. **Admin Control Center & Attribution Intelligence**:
+   - **Sidebar Navigation (`AdminLayout.astro`)**: Added `📬 Newsletter` tab to Admin sidebar with live active subscriber count badge.
+   - **Admin Control Dashboard (`/admin/newsletter.astro`)**:
+     - Key metric cards: Total Active Subscribers, Registration Conversions, Profile Conversions, Public Page Conversions.
+     - Acquisition Source distribution progress bars.
+     - Searchable & filterable subscriber table with Email, Name, Linked User badge, Origin Pill (`Registration Checkbox`, `Profile Settings`, `Dedicated Page`), and manual Unsubscribe/Reactivate controls.
+     - Instant CSV export for list portability.
+   - **Moderation Users & Roles Table (`/admin/moderation.astro`)**: Added `Newsletter` column to the admin user list displaying exact subscription status and origin badge per user.
+
+6. **Testing & Quality Assurance**:
+   - Added unit test suite `tests/unit/newsletter.test.ts` and updated `tests/unit/id.test.ts`.
+   - Vitest unit tests: 36/36 passing across all 11 test suites.
+   - `astro check`: 0 errors across all 83 files.
+

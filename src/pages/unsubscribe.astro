@@ -1,0 +1,201 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
+import { newsletterSubscribers } from '@/lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+
+const db = Astro.locals.db;
+const token = Astro.url.searchParams.get('token') || '';
+const emailQuery = Astro.url.searchParams.get('email') || '';
+
+let subscriber: any = null;
+if (db && (token || emailQuery)) {
+  try {
+    if (token) {
+      subscriber = await db
+        .select()
+        .from(newsletterSubscribers)
+        .where(eq(newsletterSubscribers.token, token))
+        .get();
+    } else if (emailQuery) {
+      subscriber = await db
+        .select()
+        .from(newsletterSubscribers)
+        .where(eq(newsletterSubscribers.email, emailQuery.toLowerCase()))
+        .get();
+    }
+  } catch (e) {}
+}
+---
+
+<BaseLayout
+  title="Unsubscribe — Desi Alternatives Dispatch"
+  description="Manage your email subscription preferences for Desi Alternatives Dispatch."
+>
+  <Navbar />
+
+  <main class="flex min-h-[70vh] flex-col items-center justify-center px-4 py-16 sm:px-6 lg:px-8 bg-slate-50/50">
+    <div class="w-full max-w-md rounded-3xl border border-border bg-white p-6 sm:p-8 shadow-sm text-center">
+      <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
+        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      </div>
+
+      <h1 class="text-xl font-bold tracking-tight text-foreground sm:text-2xl">
+        Manage Subscription
+      </h1>
+      <p class="mt-1 text-xs text-muted-foreground">
+        Desi Alternatives Dispatch — Sovereign SaaS & Tech Intelligence
+      </p>
+
+      <div id="unsub-status" class="hidden my-4 rounded-xl p-3 text-xs font-semibold"></div>
+
+      {subscriber ? (
+        <div id="active-subscriber-panel" class="mt-6 space-y-4 text-left">
+          <div class="rounded-xl border border-border bg-slate-50 p-4">
+            <p class="text-xs text-muted-foreground">Subscribed Email:</p>
+            <p class="text-sm font-bold font-mono text-foreground">{subscriber.email}</p>
+            <p class="mt-2 text-[11px] text-muted-foreground">
+              Current Status:{' '}
+              <span id="current-status-badge" class={`font-bold ${subscriber.status === 'subscribed' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                {subscriber.status.toUpperCase()}
+              </span>
+            </p>
+          </div>
+
+          {subscriber.status === 'subscribed' ? (
+            <button
+              type="button"
+              id="confirm-unsub-btn"
+              data-token={subscriber.token}
+              data-email={subscriber.email}
+              class="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-bold text-red-700 hover:bg-red-100 transition cursor-pointer shadow-2xs"
+            >
+              Unsubscribe from Dispatch
+            </button>
+          ) : (
+            <button
+              type="button"
+              id="resub-btn"
+              data-email={subscriber.email}
+              class="w-full rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary-hover transition cursor-pointer shadow-xs"
+            >
+              Re-subscribe to Dispatch
+            </button>
+          )}
+        </div>
+      ) : (
+        <form id="manual-unsub-form" class="mt-6 space-y-4 text-left">
+          <div>
+            <label for="manual-email" class="block text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Enter your email address
+            </label>
+            <input
+              type="email"
+              id="manual-email"
+              required
+              placeholder="name@company.in"
+              class="mt-1.5 block w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            id="manual-unsub-btn"
+            class="w-full rounded-xl border border-red-200 bg-red-50 py-2.5 text-xs font-bold text-red-700 hover:bg-red-100 transition cursor-pointer"
+          >
+            Unsubscribe Me
+          </button>
+        </form>
+      )}
+
+      <div class="mt-6 border-t border-border pt-4 text-center">
+        <a href="/" class="text-xs font-semibold text-primary hover:underline">
+          ← Return to Directory
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<script>
+  const statusBox = document.getElementById('unsub-status');
+  const confirmUnsubBtn = document.getElementById('confirm-unsub-btn') as HTMLButtonElement | null;
+  const resubBtn = document.getElementById('resub-btn') as HTMLButtonElement | null;
+  const manualForm = document.getElementById('manual-unsub-form') as HTMLFormElement | null;
+
+  async function handleUnsubscribe(token?: string, email?: string) {
+    if (!statusBox) return;
+    statusBox.className = 'hidden my-4 rounded-xl p-3 text-xs font-semibold';
+
+    try {
+      const res = await fetch('/api/newsletter/unsubscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, email }),
+      });
+      const data = (await res.json()) as any;
+
+      if (res.ok) {
+        statusBox.textContent = data.message || 'You have been unsubscribed successfully.';
+        statusBox.className = 'my-4 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 p-3 text-xs font-semibold block';
+        if (confirmUnsubBtn) confirmUnsubBtn.classList.add('hidden');
+      } else {
+        statusBox.textContent = data.error || 'Failed to unsubscribe.';
+        statusBox.className = 'my-4 rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold block';
+      }
+    } catch {
+      statusBox.textContent = 'Network error. Please try again.';
+      statusBox.className = 'my-4 rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold block';
+    }
+  }
+
+  if (confirmUnsubBtn) {
+    confirmUnsubBtn.addEventListener('click', () => {
+      confirmUnsubBtn.disabled = true;
+      confirmUnsubBtn.textContent = 'Unsubscribing...';
+      handleUnsubscribe(confirmUnsubBtn.dataset.token, confirmUnsubBtn.dataset.email);
+    });
+  }
+
+  if (resubBtn) {
+    resubBtn.addEventListener('click', async () => {
+      resubBtn.disabled = true;
+      resubBtn.textContent = 'Re-subscribing...';
+      try {
+        const res = await fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: resubBtn.dataset.email, source: 'profile' }),
+        });
+        const data = (await res.json()) as any;
+        if (res.ok) {
+          if (statusBox) {
+            statusBox.textContent = data.message || 'Successfully re-subscribed!';
+            statusBox.className = 'my-4 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 text-xs font-semibold block';
+          }
+          resubBtn.classList.add('hidden');
+        }
+      } catch {
+        if (statusBox) {
+          statusBox.textContent = 'Network error. Please try again.';
+          statusBox.className = 'my-4 rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold block';
+        }
+      }
+    });
+  }
+
+  if (manualForm) {
+    manualForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const emailInput = document.getElementById('manual-email') as HTMLInputElement;
+      if (emailInput?.value) {
+        handleUnsubscribe(undefined, emailInput.value.trim());
+      }
+    });
+  }
+</script>

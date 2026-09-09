@@ -2,8 +2,8 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
-import { users } from '@/lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, newsletterSubscribers } from '@/lib/server/db/schema';
+import { eq, or } from 'drizzle-orm';
 
 const user = Astro.locals.user;
 const db = Astro.locals.db;
@@ -13,15 +13,23 @@ if (!user) {
 }
 
 let dbUser: any = null;
+let userSubscriber: any = null;
+
 if (db) {
   try {
     dbUser = await db.select().from(users).where(eq(users.id, user.id)).get();
+    userSubscriber = await db
+      .select()
+      .from(newsletterSubscribers)
+      .where(or(eq(newsletterSubscribers.userId, user.id), eq(newsletterSubscribers.email, user.email.toLowerCase())))
+      .get();
   } catch (e) {
-    console.error('Failed to load user profile:', e);
+    console.error('Failed to load user profile data:', e);
   }
 }
 
 const currentUser = dbUser || user;
+const isSubscribed = userSubscriber?.status === 'subscribed';
 const avatarUrl = currentUser.image || `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(currentUser.name || 'Desi')}`;
 ---
 
@@ -228,6 +236,72 @@ const avatarUrl = currentUser.image || `https://api.dicebear.com/9.x/identicon/s
             </button>
           </form>
         </section>
+
+        <!-- 3. Newsletter & Tech Digest -->
+        <section class="rounded-2xl border border-border bg-white p-6 sm:p-7 shadow-xs">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <h2 class="text-base font-bold text-foreground">Desi Alternatives Dispatch</h2>
+                <span class="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 uppercase tracking-wider">
+                  Weekly Digest
+                </span>
+              </div>
+              <p class="mt-1 text-xs text-muted-foreground">
+                Curated weekly intelligence on sovereign Indian software, SaaS alternatives, and engineering blueprints.
+              </p>
+            </div>
+            <div class="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-700">
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+          </div>
+
+          <div class="mt-5 rounded-xl border border-border bg-slate-50/70 p-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-semibold text-foreground">Subscription Status:</span>
+                  <span
+                    id="newsletter-status-pill"
+                    class={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold ${
+                      isSubscribed
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    <span class={`h-1.5 w-1.5 rounded-full ${isSubscribed ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
+                    <span id="newsletter-status-text">{isSubscribed ? 'SUBSCRIBED' : 'NOT SUBSCRIBED'}</span>
+                  </span>
+                </div>
+                {userSubscriber && isSubscribed && (
+                  <p class="mt-1 text-[11px] text-muted-foreground">
+                    Origin: <span class="font-semibold capitalize">{userSubscriber.source.replace('_', ' ')}</span>
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  id="newsletter-toggle-btn"
+                  data-subscribed={isSubscribed ? 'true' : 'false'}
+                  data-email={currentUser.email}
+                  data-name={currentUser.name}
+                  class={`rounded-xl px-4 py-2 text-xs font-semibold transition cursor-pointer shadow-2xs ${
+                    isSubscribed
+                      ? 'border border-red-200 bg-white text-red-700 hover:bg-red-50'
+                      : 'bg-primary text-primary-foreground hover:bg-primary-hover shadow-xs'
+                  }`}
+                >
+                  {isSubscribed ? 'Unsubscribe from Dispatch' : 'Subscribe to Dispatch'}
+                </button>
+              </div>
+            </div>
+            <div id="newsletter-feedback" class="hidden mt-3 rounded-lg p-2.5 text-xs font-medium"></div>
+          </div>
+        </section>
       </div>
     </div>
   </main>
@@ -396,6 +470,82 @@ const avatarUrl = currentUser.image || `https://api.dicebear.com/9.x/identicon/s
       } finally {
         savePasswordBtn.disabled = false;
         savePasswordBtn.textContent = 'Update Password';
+      }
+    });
+  }
+
+  // 6. Newsletter Subscription Toggle
+  const newsletterToggleBtn = document.getElementById('newsletter-toggle-btn') as HTMLButtonElement | null;
+  const newsletterFeedback = document.getElementById('newsletter-feedback');
+  const newsletterStatusPill = document.getElementById('newsletter-status-pill');
+  const newsletterStatusText = document.getElementById('newsletter-status-text');
+
+  if (newsletterToggleBtn && newsletterFeedback && newsletterStatusPill && newsletterStatusText) {
+    newsletterToggleBtn.addEventListener('click', async () => {
+      const currentlySubscribed = newsletterToggleBtn.dataset.subscribed === 'true';
+      const email = newsletterToggleBtn.dataset.email;
+      const name = newsletterToggleBtn.dataset.name;
+
+      newsletterToggleBtn.disabled = true;
+      newsletterToggleBtn.textContent = currentlySubscribed ? 'Unsubscribing...' : 'Subscribing...';
+      newsletterFeedback.className = 'hidden mt-3 rounded-lg p-2.5 text-xs font-medium';
+
+      try {
+        if (currentlySubscribed) {
+          // Unsubscribe call
+          const res = await fetch('/api/newsletter/unsubscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          const data = (await res.json()) as any;
+
+          if (res.ok) {
+            newsletterToggleBtn.dataset.subscribed = 'false';
+            newsletterToggleBtn.textContent = 'Subscribe to Dispatch';
+            newsletterToggleBtn.className = 'rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary-hover shadow-xs transition cursor-pointer';
+            
+            newsletterStatusPill.className = 'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold bg-slate-200 text-slate-700';
+            newsletterStatusText.textContent = 'NOT SUBSCRIBED';
+
+            newsletterFeedback.textContent = data.message || 'You have been unsubscribed.';
+            newsletterFeedback.className = 'mt-3 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 p-2.5 text-xs font-semibold block';
+          } else {
+            newsletterFeedback.textContent = data.error || 'Failed to unsubscribe.';
+            newsletterFeedback.className = 'mt-3 rounded-lg bg-red-50 text-red-800 border border-red-200 p-2.5 text-xs font-semibold block';
+            newsletterToggleBtn.textContent = 'Unsubscribe from Dispatch';
+          }
+        } else {
+          // Subscribe call
+          const res = await fetch('/api/newsletter/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, name, source: 'profile' }),
+          });
+          const data = (await res.json()) as any;
+
+          if (res.ok) {
+            newsletterToggleBtn.dataset.subscribed = 'true';
+            newsletterToggleBtn.textContent = 'Unsubscribe from Dispatch';
+            newsletterToggleBtn.className = 'rounded-xl border border-red-200 bg-white px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 shadow-2xs transition cursor-pointer';
+
+            newsletterStatusPill.className = 'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200';
+            newsletterStatusText.textContent = 'SUBSCRIBED';
+
+            newsletterFeedback.textContent = data.message || 'Subscribed successfully to the Dispatch!';
+            newsletterFeedback.className = 'mt-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 p-2.5 text-xs font-semibold block';
+          } else {
+            newsletterFeedback.textContent = data.error || 'Failed to subscribe.';
+            newsletterFeedback.className = 'mt-3 rounded-lg bg-red-50 text-red-800 border border-red-200 p-2.5 text-xs font-semibold block';
+            newsletterToggleBtn.textContent = 'Subscribe to Dispatch';
+          }
+        }
+      } catch (err) {
+        newsletterFeedback.textContent = 'Network error. Please try again.';
+        newsletterFeedback.className = 'mt-3 rounded-lg bg-red-50 text-red-800 border border-red-200 p-2.5 text-xs font-semibold block';
+        newsletterToggleBtn.textContent = currentlySubscribed ? 'Unsubscribe from Dispatch' : 'Subscribe to Dispatch';
+      } finally {
+        newsletterToggleBtn.disabled = false;
       }
     });
   }

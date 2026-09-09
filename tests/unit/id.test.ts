@@ -11,6 +11,7 @@ import {
   createVerificationId,
   createAccountId,
   createSearchLogId,
+  createNewsletterSubscriberId,
   ID_PREFIXES,
 } from '@/lib/server/id';
 
@@ -59,6 +60,10 @@ describe('Stripe-Style Prefixed ID Generator', () => {
     const searchLogId = createSearchLogId();
     expect(searchLogId.startsWith(ID_PREFIXES.searchLog)).toBe(true);
     expect(searchLogId.length).toBe(ID_PREFIXES.searchLog.length + 24);
+
+    const subId = createNewsletterSubscriberId();
+    expect(subId.startsWith(ID_PREFIXES.newsletterSubscriber)).toBe(true);
+    expect(subId.length).toBe(ID_PREFIXES.newsletterSubscriber.length + 24);
   });
 
   it('generates unique random IDs consecutively', () => {

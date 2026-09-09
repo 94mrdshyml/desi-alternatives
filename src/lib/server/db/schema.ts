@@ -18,6 +18,7 @@ import {
   createSearchLogId,
   createReviewId,
   createReviewVoteId,
+  createNewsletterSubscriberId,
 } from '../id';
 
 // ==========================================
@@ -356,6 +357,28 @@ export const reviewHelpfulVotes = sqliteTable('review_helpful_votes', {
   reviewId: text('review_id').notNull().references(() => toolReviews.id, { onDelete: 'cascade' }),
   voterIdentifier: text('voter_identifier').notNull(), // User ID or IP/client hash
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+});
+
+// ==========================================
+// 11. NEWSLETTER DISPATCH & SUBSCRIBERS
+// ==========================================
+
+export const newsletterSources = ['registration', 'profile', 'newsletter_page'] as const;
+export type NewsletterSource = (typeof newsletterSources)[number];
+
+export const newsletterStatuses = ['subscribed', 'unsubscribed'] as const;
+export type NewsletterStatus = (typeof newsletterStatuses)[number];
+
+export const newsletterSubscribers = sqliteTable('newsletter_subscribers', {
+  id: text('id').primaryKey().$defaultFn(createNewsletterSubscriberId),
+  email: text('email').notNull().unique(),
+  name: text('name'),
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+  source: text('source', { enum: ['registration', 'profile', 'newsletter_page'] }).notNull().default('newsletter_page'),
+  status: text('status', { enum: ['subscribed', 'unsubscribed'] }).notNull().default('subscribed'),
+  token: text('token').notNull().unique(), // Secure nanoid token for 1-click unsubscribe links
+  subscribedAt: text('subscribed_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
+  unsubscribedAt: text('unsubscribed_at'),
 });
 
 
