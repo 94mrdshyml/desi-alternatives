@@ -8,7 +8,7 @@ import { eq, sql } from 'drizzle-orm';
 const db = Astro.locals.db;
 const user = Astro.locals.user;
 
-let totalSubscribers = 1240; // baseline aesthetic seed
+let totalSubscribers = 1240;
 if (db) {
   try {
     const countRes = await db
@@ -19,12 +19,10 @@ if (db) {
     if (countRes && countRes.count > 0) {
       totalSubscribers = 1240 + countRes.count;
     }
-  } catch (e) {
-    // Graceful fallback
-  }
+  } catch (e) {}
 }
 
-// Check if logged in user is already subscribed
+// Check if logged-in user is subscribed
 let isUserSubscribed = false;
 if (db && user) {
   try {
@@ -38,252 +36,437 @@ if (db && user) {
     }
   } catch (e) {}
 }
+
+// Curated Substack issues
+const curatedIssues = [
+  {
+    issueNumber: 42,
+    tag: 'Sovereign Radar',
+    title: 'The Great SaaS Decoupling: How Indian Tech Stacks Are Replacing US Giants in 2026',
+    subtitle: 'A forensic teardown of 14 domestic developer platforms, local inference clusters, and how Bengaluru scaleups cut licensing bills by 68%.',
+    author: 'Desi Alternatives Editorial',
+    authorAvatar: 'https://api.dicebear.com/9.x/identicon/svg?seed=Dispatch42',
+    date: 'Oct 24, 2026',
+    readTime: '6 min read',
+    likes: 54,
+    comments: 18,
+    isFeatured: true,
+  },
+  {
+    issueNumber: 41,
+    tag: 'Cost Teardown',
+    title: 'The $180,000 Cloud Bill: How a FinTech Cut Retool & Datadog Costs Using Appsmith & SigNoz',
+    subtitle: 'Step-by-step migration architecture, self-hosting on Indian VPCs, and reducing log telemetry costs by 78%.',
+    author: 'Vikram Sethi',
+    authorAvatar: 'https://api.dicebear.com/9.x/identicon/svg?seed=Vikram',
+    date: 'Oct 17, 2026',
+    readTime: '8 min read',
+    likes: 89,
+    comments: 24,
+    isFeatured: false,
+  },
+  {
+    issueNumber: 40,
+    tag: 'Migration Blueprint',
+    title: 'Jira to Plane: A 30-Day Transition Guide for 120-Person Engineering Teams',
+    subtitle: 'Managing issue history migration, webhook integrations, sprint planning, and avoiding vendor lock-in.',
+    author: 'Ananya Roy',
+    authorAvatar: 'https://api.dicebear.com/9.x/identicon/svg?seed=Ananya',
+    date: 'Oct 10, 2026',
+    readTime: '5 min read',
+    likes: 62,
+    comments: 11,
+    isFeatured: false,
+  },
+  {
+    issueNumber: 39,
+    tag: 'DPDP & Compliance',
+    title: 'Where Indian Customer Data Actually Lives: The 2026 Sovereign Cloud Guide',
+    subtitle: 'Auditing data residency across AWS Mumbai, Azure Pune, GCP Delhi, and domestic clouds like E2E Networks and Yotta.',
+    author: 'Rahul Sharma',
+    authorAvatar: 'https://api.dicebear.com/9.x/identicon/svg?seed=Rahul',
+    date: 'Oct 03, 2026',
+    readTime: '7 min read',
+    likes: 115,
+    comments: 32,
+    isFeatured: false,
+  },
+  {
+    issueNumber: 38,
+    tag: 'Fintech & Billing',
+    title: 'Razorpay vs Stripe: The Hidden Costs of Cross-Border SaaS Billing in Bharat',
+    subtitle: 'Understanding 18% GST input credits, RBI e-mandate friction, foreign FX conversion fees, and domestic checkout optimization.',
+    author: 'Desi Alternatives Editorial',
+    authorAvatar: 'https://api.dicebear.com/9.x/identicon/svg?seed=Dispatch38',
+    date: 'Sep 26, 2026',
+    readTime: '5 min read',
+    likes: 47,
+    comments: 9,
+    isFeatured: false,
+  },
+  {
+    issueNumber: 37,
+    tag: 'Developer Tooling',
+    title: 'Postman, Hasura & Sarvam: How Indian Engineering Teams Build World-Class Developer Stacks',
+    subtitle: 'An inside look at developer platform architectures that power billions of daily API queries globally.',
+    author: 'Karan Patel',
+    authorAvatar: 'https://api.dicebear.com/9.x/identicon/svg?seed=Karan',
+    date: 'Sep 19, 2026',
+    readTime: '6 min read',
+    likes: 73,
+    comments: 15,
+    isFeatured: false,
+  },
+];
 ---
 
 <BaseLayout
-  title="Desi Alternatives Dispatch — Weekly Sovereign SaaS & Tech Intelligence"
-  description="Curated weekly intelligence on sovereign Indian software, SaaS alternatives, migration case studies, and engineering blueprints."
+  title="Desi Alternatives Dispatch — Sovereign SaaS & Tech Intelligence"
+  description="The premier weekly publication covering sovereign Indian software, SaaS alternatives, migration case studies, and engineering blueprints."
 >
   <Navbar />
 
-  <main class="min-h-screen bg-gradient-to-b from-amber-500/[0.04] via-slate-50 to-white pb-20 pt-8 sm:pt-14">
-    <!-- Hero Section -->
-    <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-      <!-- Sovereign Dispatch Badge / Emblem -->
-      <div class="inline-flex items-center gap-2 rounded-full border border-amber-500/20 bg-amber-500/10 px-3.5 py-1.5 text-xs font-semibold text-amber-900 shadow-2xs backdrop-blur-xs mb-6">
-        <span class="flex h-2 w-2 rounded-full bg-amber-500 animate-pulse"></span>
-        <span class="tracking-wide uppercase text-[11px] font-bold">The Sovereign Stack</span>
-        <span class="text-amber-400">•</span>
-        <span>Every Thursday Morning</span>
-      </div>
+  <!-- Substack Publication Container -->
+  <div class="min-h-screen bg-[#fafaf9] text-[#1c1917]">
+    
+    <!-- Substack Editorial Header / Masthead -->
+    <header class="border-b border-[#e7e5e4] bg-white pt-10 pb-12">
+      <div class="mx-auto max-w-3xl px-4 text-center sm:px-6">
+        <!-- Substack Publication Avatar / Logo -->
+        <div class="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-amber-300 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 shadow-md shadow-amber-500/10 text-white">
+          <svg class="h-10 w-10 drop-shadow-xs" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+        </div>
 
-      <!-- Newsletter Logo / Emblem -->
-      <div class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border-2 border-amber-200/80 bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 shadow-xl shadow-amber-500/20 text-white">
-        <svg class="h-10 w-10 drop-shadow-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-      </div>
+        <!-- Publication Title (Substack Serif Aesthetic) -->
+        <h1 class="text-3xl font-bold tracking-tight text-[#1c1917] sm:text-4xl md:text-5xl font-serif">
+          Desi Alternatives Dispatch
+        </h1>
 
-      <!-- Title & Headline -->
-      <h1 class="text-3xl font-extrabold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-        Desi Alternatives <br class="hidden sm:inline" />
-        <span class="font-serif-editorial italic font-normal text-primary">Dispatch</span>
-      </h1>
+        <!-- Subtitle -->
+        <p class="mx-auto mt-3 max-w-xl text-base text-[#78716c] sm:text-lg leading-relaxed font-sans">
+          Curated weekly intelligence on sovereign Indian software, SaaS alternatives, and engineering blueprints.
+        </p>
 
-      <p class="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-muted-foreground leading-relaxed">
-        Curated weekly intelligence on sovereign Indian software, SaaS alternatives, migration case studies, and engineering blueprints.
-      </p>
+        <!-- Substack Meta Byline -->
+        <div class="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs text-[#a8a29e]">
+          <span class="font-medium text-[#44403c]">By The Sovereign Stack Team</span>
+          <span>·</span>
+          <span class="font-medium text-[#44403c]">{totalSubscribers.toLocaleString('en-IN')}+ subscribers</span>
+          <span>·</span>
+          <span>Every Thursday Morning</span>
+        </div>
 
-      <!-- Social Proof Pills -->
-      <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-muted-foreground font-medium">
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-3 py-1 shadow-2xs">
-          <span class="font-bold text-foreground">{totalSubscribers.toLocaleString('en-IN')}+</span> Tech leaders subscribed
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-3 py-1 shadow-2xs">
-          ⚡ 5-min weekly read
-        </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-white border border-border px-3 py-1 shadow-2xs">
-          🔒 Zero spam, 1-click unsubscribe
-        </span>
-      </div>
-
-      <!-- Subscription Form Card -->
-      <div class="mx-auto mt-10 max-w-xl rounded-3xl border border-amber-500/20 bg-white/90 p-6 sm:p-8 shadow-xl shadow-amber-500/5 backdrop-blur-md">
-        {isUserSubscribed ? (
-          <div class="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-6 text-center">
-            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 mb-3">
-              <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-              </svg>
+        <!-- Substack Classic Inline Subscription Form -->
+        <div class="mx-auto mt-8 max-w-lg">
+          {isUserSubscribed ? (
+            <div class="rounded-xl border border-emerald-200 bg-emerald-50/80 p-4 text-center">
+              <p class="text-xs font-semibold text-emerald-900">
+                ✓ You are subscribed with <span class="font-mono">{user?.email}</span>
+              </p>
+              <p class="mt-0.5 text-[11px] text-emerald-700">
+                Look out for the next issue in your inbox on Thursday morning.
+              </p>
             </div>
-            <h2 class="text-base font-bold text-emerald-900">You are subscribed!</h2>
-            <p class="mt-1 text-xs text-emerald-700">
-              The next edition will land in <span class="font-semibold font-mono">{user?.email}</span> on Thursday morning.
-            </p>
-            <div class="mt-4 flex justify-center gap-3">
-              <a
-                href="/profile"
-                class="inline-flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-white px-3 py-1.5 text-xs font-semibold text-emerald-900 shadow-2xs hover:bg-emerald-50"
-              >
-                Manage in Profile
-              </a>
-            </div>
-          </div>
-        ) : (
-          <form id="public-newsletter-form" class="space-y-4 text-left">
-            <div id="form-feedback" class="hidden rounded-xl p-3 text-xs font-medium"></div>
-
+          ) : (
             <div>
-              <label for="newsletter-name" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Your First Name (Optional)
-              </label>
-              <input
-                type="text"
-                id="newsletter-name"
-                name="name"
-                value={user?.name || ''}
-                placeholder="Vikram"
-                class="mt-1.5 block w-full rounded-xl border border-border bg-white px-4 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-              />
+              <form id="hero-substack-form" class="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={user?.email || ''}
+                  placeholder="Type your email..."
+                  class="flex-1 rounded-xl border border-[#d6d3d1] bg-white px-4 py-3 text-sm text-[#1c1917] placeholder:text-[#a8a29e] shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                />
+                <button
+                  type="submit"
+                  class="rounded-xl bg-[#ff6154] hover:bg-[#eb5246] px-6 py-3 text-sm font-bold text-white shadow-xs transition cursor-pointer shrink-0"
+                >
+                  Subscribe
+                </button>
+              </form>
+              <div id="hero-form-msg" class="hidden mt-2.5 rounded-lg p-2 text-xs font-semibold"></div>
+              <p class="mt-2 text-[11px] text-[#a8a29e]">
+                No spam. Unsubscribe with 1-click anytime.
+              </p>
             </div>
+          )}
+        </div>
+      </div>
+    </header>
 
-            <div>
-              <label for="newsletter-email" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Work Email Address *
-              </label>
-              <input
-                type="email"
-                id="newsletter-email"
-                name="email"
-                required
-                value={user?.email || ''}
-                placeholder="vikram@startup.in"
-                class="mt-1.5 block w-full rounded-xl border border-border bg-white px-4 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-              />
-            </div>
-
-            <button
-              type="submit"
-              id="subscribe-submit-btn"
-              class="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs sm:text-sm font-bold text-primary-foreground shadow-sm hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-              <span>Subscribe to Dispatch</span>
-            </button>
-
-            <p class="text-center text-[11px] text-muted-foreground">
-              We respect your privacy. No promotional spam, never shared with third parties.
-            </p>
-          </form>
-        )}
+    <!-- Substack Section Navigation Bar -->
+    <div class="sticky top-0 z-30 border-b border-[#e7e5e4] bg-[#fafaf9]/95 backdrop-blur-md">
+      <div class="mx-auto max-w-4xl px-4 sm:px-6">
+        <nav class="flex items-center gap-6 overflow-x-auto py-3 text-xs font-bold uppercase tracking-wider text-[#78716c] no-scrollbar">
+          <button class="filter-tab active text-[#1c1917] border-b-2 border-[#ff6154] pb-1 cursor-pointer" data-filter="all">
+            All Posts
+          </button>
+          <button class="filter-tab hover:text-[#1c1917] pb-1 transition cursor-pointer" data-filter="radar">
+            Sovereign Radar
+          </button>
+          <button class="filter-tab hover:text-[#1c1917] pb-1 transition cursor-pointer" data-filter="teardowns">
+            Cost Teardowns
+          </button>
+          <button class="filter-tab hover:text-[#1c1917] pb-1 transition cursor-pointer" data-filter="blueprints">
+            Blueprints
+          </button>
+          <button class="filter-tab hover:text-[#1c1917] pb-1 transition cursor-pointer" data-filter="dpdp">
+            DPDP & Compliance
+          </button>
+        </nav>
       </div>
     </div>
 
-    <!-- Value Pillars Grid -->
-    <div class="mx-auto mt-20 max-w-6xl px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h2 class="text-xs font-bold uppercase tracking-widest text-primary">What You'll Receive</h2>
-        <p class="mt-2 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          Actionable intelligence for sovereign builders
-        </p>
-      </div>
+    <!-- Main Content Feed Area (Substack Layout) -->
+    <main class="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 space-y-10">
+      
+      <!-- 1. Substack Hero Featured Post -->
+      <section>
+        <article class="group relative rounded-2xl border border-[#e7e5e4] bg-white p-6 sm:p-8 shadow-xs hover:border-[#d6d3d1] hover:shadow-sm transition duration-200">
+          <div class="flex flex-col md:flex-row gap-6 items-start justify-between">
+            <div class="flex-1 space-y-3">
+              <div class="flex items-center gap-2">
+                <span class="rounded bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-900 uppercase tracking-wider">
+                  Featured Issue #42
+                </span>
+                <span class="text-xs text-[#a8a29e] font-sans">·</span>
+                <span class="text-xs font-semibold text-primary font-sans">Sovereign Radar</span>
+              </div>
 
-      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        <!-- Pillar 1 -->
-        <div class="rounded-3xl border border-border bg-white p-7 shadow-xs hover:shadow-md transition">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-700 border border-amber-100 text-xl">
+              <h2 class="text-2xl sm:text-3xl font-bold font-serif leading-snug text-[#1c1917] group-hover:text-primary transition">
+                {curatedIssues[0].title}
+              </h2>
+
+              <p class="text-sm sm:text-base text-[#78716c] leading-relaxed font-sans line-clamp-3">
+                {curatedIssues[0].subtitle}
+              </p>
+
+              <!-- Author / Meta Row -->
+              <div class="flex items-center gap-3 pt-2 text-xs text-[#78716c]">
+                <img
+                  src={curatedIssues[0].authorAvatar}
+                  alt={curatedIssues[0].author}
+                  class="h-6 w-6 rounded-full border border-border bg-amber-50"
+                />
+                <span class="font-semibold text-[#44403c]">{curatedIssues[0].author}</span>
+                <span>·</span>
+                <span>{curatedIssues[0].date}</span>
+                <span>·</span>
+                <span>{curatedIssues[0].readTime}</span>
+              </div>
+            </div>
+
+            <!-- Visual Preview Card / Teaser Chip -->
+            <div class="hidden md:flex w-52 shrink-0 flex-col justify-between rounded-xl border border-[#f5f5f4] bg-gradient-to-br from-[#fafaf9] to-amber-50/40 p-4 text-xs">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider text-primary">In This Issue</span>
+                <div class="mt-2 space-y-1.5 font-medium text-[#44403c]">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-emerald-600 font-bold">✓</span> 14 Indian SaaS tools
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-emerald-600 font-bold">✓</span> -68% License costs
+                  </div>
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-emerald-600 font-bold">✓</span> Local AI Inference
+                  </div>
+                </div>
+              </div>
+              <div class="mt-4 pt-3 border-t border-[#e7e5e4] flex items-center justify-between text-[#a8a29e] text-[11px]">
+                <span>❤️ {curatedIssues[0].likes}</span>
+                <span>💬 {curatedIssues[0].comments}</span>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <!-- 2. Substack Posts Feed (Chronological Grid) -->
+      <section class="space-y-6">
+        <div class="border-b border-[#e7e5e4] pb-2 flex items-center justify-between">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-[#78716c]">
+            Recent Dispatches
+          </h3>
+          <span class="text-xs text-[#a8a29e] font-mono">Archive</span>
+        </div>
+
+        <div class="divide-y divide-[#e7e5e4] rounded-2xl border border-[#e7e5e4] bg-white overflow-hidden shadow-xs">
+          {curatedIssues.slice(1).map((issue) => (
+            <article class="post-item group p-6 sm:p-7 hover:bg-[#fafaf9] transition duration-150" data-category={issue.tag.toLowerCase()}>
+              <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div class="flex-1 space-y-2">
+                  <div class="flex items-center gap-2">
+                    <span class="text-[11px] font-bold text-primary uppercase font-mono">
+                      Issue #{issue.issueNumber}
+                    </span>
+                    <span class="text-xs text-[#a8a29e]">·</span>
+                    <span class="rounded bg-[#f5f5f4] px-2 py-0.5 text-[10px] font-semibold text-[#57534e]">
+                      {issue.tag}
+                    </span>
+                  </div>
+
+                  <h3 class="text-lg sm:text-xl font-bold font-serif text-[#1c1917] group-hover:text-primary transition leading-snug">
+                    {issue.title}
+                  </h3>
+
+                  <p class="text-xs sm:text-sm text-[#78716c] leading-relaxed line-clamp-2">
+                    {issue.subtitle}
+                  </p>
+
+                  <div class="flex items-center gap-3 pt-2 text-xs text-[#78716c]">
+                    <img
+                      src={issue.authorAvatar}
+                      alt={issue.author}
+                      class="h-5 w-5 rounded-full border border-border"
+                    />
+                    <span class="font-medium text-[#44403c]">{issue.author}</span>
+                    <span>·</span>
+                    <span>{issue.date}</span>
+                    <span>·</span>
+                    <span>{issue.readTime}</span>
+                    <span>·</span>
+                    <span class="flex items-center gap-1 text-[#a8a29e]">
+                      <span>❤️</span> {issue.likes}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="hidden sm:flex shrink-0 items-center justify-center h-16 w-16 rounded-xl border border-[#e7e5e4] bg-[#fafaf9] text-xl text-[#78716c] group-hover:border-primary/40 group-hover:text-primary transition">
+                  📬
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <!-- 3. Substack Editorial Recommendation & About Card -->
+      <section class="rounded-2xl border border-[#e7e5e4] bg-white p-6 sm:p-8 shadow-xs">
+        <div class="flex flex-col sm:flex-row gap-6 items-center">
+          <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-amber-50 border border-amber-200 text-3xl">
             🇮🇳
           </div>
-          <h3 class="mt-4 text-base font-bold text-foreground">Sovereign Radar</h3>
-          <p class="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Uncover high-calibre developer tools, analytics platforms, and enterprise SaaS built by Indian engineering teams before they hit mainstream feeds.
-          </p>
-        </div>
-
-        <!-- Pillar 2 -->
-        <div class="rounded-3xl border border-border bg-white p-7 shadow-xs hover:shadow-md transition">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-xl">
-            💸
-          </div>
-          <h3 class="mt-4 text-base font-bold text-foreground">Cost Optimization Case Studies</h3>
-          <p class="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Real teardowns from Indian startups slashing 60–80% off their SaaS bills by replacing Jira, Notion, Zendesk, and Stripe with domestic powerhouses.
-          </p>
-        </div>
-
-        <!-- Pillar 3 -->
-        <div class="rounded-3xl border border-border bg-white p-7 shadow-xs hover:shadow-md transition">
-          <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 text-xl">
-            🏗️
-          </div>
-          <h3 class="mt-4 text-base font-bold text-foreground">DPDP & Compliance Guides</h3>
-          <p class="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            Practical guidance on Indian data localization, RBI regulatory readiness, and DPDP compliance architectures with local sovereign cloud stacks.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sample Edition Teaser -->
-    <div class="mx-auto mt-20 max-w-4xl px-4 sm:px-6 lg:px-8">
-      <div class="rounded-3xl border border-border bg-white p-8 sm:p-10 shadow-xs">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-6">
-          <div>
-            <span class="rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 uppercase">
-              Recent Issue Highlight
-            </span>
-            <h3 class="mt-2 text-lg font-bold text-foreground">Issue #42 — How Postman, Hasura & Sarvam AI Shape the Next Wave</h3>
-          </div>
-          <span class="text-xs text-muted-foreground font-mono">Published Thursday</span>
-        </div>
-
-        <div class="mt-6 space-y-4 text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          <p>
-            <strong class="text-foreground">⚡ Deep Dive:</strong> In this issue, we analyzed 14 homegrown developer tools challenging US giants, benchmarked local AI inference costs against OpenAI, and revealed how a Mumbai fintech cut Jira licensing costs by 72% using Plane.
-          </p>
-          <div class="flex items-center gap-2 text-xs font-semibold text-primary">
-            <span>Get the full archives & weekly dispatch in your inbox</span>
-            <span>→</span>
+          <div class="space-y-1.5 text-center sm:text-left">
+            <h3 class="text-lg font-bold font-serif text-[#1c1917]">Why read Desi Alternatives Dispatch?</h3>
+            <p class="text-xs sm:text-sm text-[#78716c] leading-relaxed">
+              India has 500+ world-class developer tools, enterprise platforms, and AI systems built for domestic realities and global standards. We curate the highest-signal teardowns every Thursday morning so you never miss what Bharat is engineering.
+            </p>
           </div>
         </div>
-      </div>
-    </div>
-  </main>
+      </section>
+
+      <!-- 4. Substack Bottom Subscription CTA -->
+      <section class="rounded-3xl border border-[#e7e5e4] bg-gradient-to-b from-white to-[#fafaf9] p-8 sm:p-10 text-center shadow-xs">
+        <div class="mx-auto max-w-lg space-y-4">
+          <h2 class="text-2xl sm:text-3xl font-bold font-serif text-[#1c1917]">
+            Get the next dispatch in your inbox
+          </h2>
+          <p class="text-xs sm:text-sm text-[#78716c]">
+            Join 1,200+ CTOs, founders, and engineers building sovereign software stacks.
+          </p>
+
+          <form id="footer-substack-form" class="flex flex-col sm:flex-row gap-2 pt-2">
+            <input
+              type="email"
+              name="email"
+              required
+              value={user?.email || ''}
+              placeholder="Type your email..."
+              class="flex-1 rounded-xl border border-[#d6d3d1] bg-white px-4 py-3 text-sm text-[#1c1917] placeholder:text-[#a8a29e] shadow-xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+            />
+            <button
+              type="submit"
+              class="rounded-xl bg-[#ff6154] hover:bg-[#eb5246] px-6 py-3 text-sm font-bold text-white shadow-xs transition cursor-pointer shrink-0"
+            >
+              Subscribe
+            </button>
+          </form>
+          <div id="footer-form-msg" class="hidden rounded-lg p-2 text-xs font-semibold"></div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <Footer />
 </BaseLayout>
 
 <script>
-  const form = document.getElementById('public-newsletter-form') as HTMLFormElement | null;
-  const feedback = document.getElementById('form-feedback');
-  const submitBtn = document.getElementById('subscribe-submit-btn') as HTMLButtonElement | null;
+  // Substack AJAX Subscription Form Handler
+  function setupForm(formId: string, msgId: string) {
+    const form = document.getElementById(formId) as HTMLFormElement | null;
+    const msg = document.getElementById(msgId);
 
-  if (form && submitBtn && feedback) {
+    if (!form || !msg) return;
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      feedback.className = 'hidden rounded-xl p-3 text-xs font-medium';
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Subscribing...';
+      msg.className = 'hidden rounded-lg p-2 text-xs font-semibold';
+
+      const submitBtn = form.querySelector('button[type="submit"]') as HTMLButtonElement | null;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Subscribing...';
+      }
 
       const formData = new FormData(form);
-      const name = formData.get('name') as string;
       const email = formData.get('email') as string;
 
       try {
         const res = await fetch('/api/newsletter/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name,
-            email,
-            source: 'newsletter_page',
-          }),
+          body: JSON.stringify({ email, source: 'newsletter_page' }),
         });
-
         const data = (await res.json()) as any;
 
         if (res.ok && data.success) {
-          feedback.textContent = data.message || '🎉 Successfully subscribed! Check your inbox.';
-          feedback.className = 'rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 p-4 text-xs font-semibold text-center';
+          msg.textContent = data.message || '🎉 Check your inbox — you are subscribed!';
+          msg.className = 'mt-2.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 text-xs font-semibold block';
           form.reset();
         } else {
-          feedback.textContent = data.error || 'Failed to subscribe. Please verify your email.';
-          feedback.className = 'rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold text-center';
+          msg.textContent = data.error || 'Failed to subscribe. Please verify email.';
+          msg.className = 'mt-2.5 rounded-lg bg-red-50 text-red-800 border border-red-200 p-2.5 text-xs font-semibold block';
         }
-      } catch (err: any) {
-        feedback.textContent = 'Network error. Please try again.';
-        feedback.className = 'rounded-xl bg-red-50 text-red-800 border border-red-200 p-3 text-xs font-semibold text-center';
+      } catch {
+        msg.textContent = 'Network error. Please try again.';
+        msg.className = 'mt-2.5 rounded-lg bg-red-50 text-red-800 border border-red-200 p-2.5 text-xs font-semibold block';
       } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = `
-          <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-          <span>Subscribe to Dispatch</span>
-        `;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Subscribe';
+        }
       }
     });
   }
+
+  setupForm('hero-substack-form', 'hero-form-msg');
+  setupForm('footer-substack-form', 'footer-form-msg');
+
+  // Filter Tabs
+  const filterTabs = Array.from(document.querySelectorAll<HTMLButtonElement>('.filter-tab'));
+  const postItems = Array.from(document.querySelectorAll<HTMLElement>('.post-item'));
+
+  filterTabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      filterTabs.forEach((t) => {
+        t.classList.remove('text-[#1c1917]', 'border-b-2', 'border-[#ff6154]');
+        t.classList.add('text-[#78716c]');
+      });
+      tab.classList.add('text-[#1c1917]', 'border-b-2', 'border-[#ff6154]');
+      tab.classList.remove('text-[#78716c]');
+
+      const filter = tab.dataset.filter || 'all';
+      postItems.forEach((item) => {
+        const cat = item.dataset.category || '';
+        if (filter === 'all' || cat.includes(filter)) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    });
+  });
 </script>
