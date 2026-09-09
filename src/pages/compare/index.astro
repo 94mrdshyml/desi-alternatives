@@ -1,0 +1,292 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+import { desiTools, globalTools, toolAlternatives, categories } from '@/lib/server/db/schema';
+import { eq } from 'drizzle-orm';
+
+const db = Astro.locals.db;
+
+let allDesi: any[] = [];
+let allGlobal: any[] = [];
+let popularComparisons: any[] = [];
+
+if (db) {
+  try {
+    const [desiList, globalList, altList] = await Promise.all([
+      db
+        .select({
+          id: desiTools.id,
+          slug: desiTools.slug,
+          name: desiTools.name,
+          tagline: desiTools.tagline,
+          logoUrl: desiTools.logoUrl,
+          primaryColor: desiTools.primaryColor,
+          categoryId: desiTools.categoryId,
+        })
+        .from(desiTools)
+        .where(eq(desiTools.status, 'published'))
+        .all(),
+      db
+        .select({
+          id: globalTools.id,
+          slug: globalTools.slug,
+          name: globalTools.name,
+          tagline: globalTools.tagline,
+          logoUrl: globalTools.logoUrl,
+          categoryId: globalTools.categoryId,
+        })
+        .from(globalTools)
+        .all(),
+      db
+        .select({
+          desiId: toolAlternatives.desiToolId,
+          desiSlug: desiTools.slug,
+          desiName: desiTools.name,
+          desiLogo: desiTools.logoUrl,
+          desiTagline: desiTools.tagline,
+          globalId: toolAlternatives.globalToolId,
+          globalSlug: globalTools.slug,
+          globalName: globalTools.name,
+          globalLogo: globalTools.logoUrl,
+          globalTagline: globalTools.tagline,
+          categoryName: categories.name,
+          categoryEmoji: categories.emoji,
+        })
+        .from(toolAlternatives)
+        .leftJoin(desiTools, eq(toolAlternatives.desiToolId, desiTools.id))
+        .leftJoin(globalTools, eq(toolAlternatives.globalToolId, globalTools.id))
+        .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+        .all(),
+    ]);
+
+    allDesi = desiList;
+    allGlobal = globalList;
+    popularComparisons = altList.filter((a) => a.desiSlug && a.globalSlug);
+  } catch (e) {
+    console.error('Failed to load comparison hub data:', e);
+  }
+}
+
+// Combine all selectable tools
+const selectableTools = [
+  ...allDesi.map((t) => ({ ...t, type: 'Indian Sovereign Tool (🇮🇳)', origin: 'desi' })),
+  ...allGlobal.map((t) => ({ ...t, type: 'Global Giant (🌐)', origin: 'global' })),
+].sort((a, b) => a.name.localeCompare(b.name));
+---
+
+<BaseLayout
+  title="Software Comparison Engine — Indian SaaS vs Global Giants"
+  description="Compare Indian sovereign SaaS tools head-to-head with US/global giants. Side-by-side database breakdowns of pros, cons, pricing, GST tax savings, and DPDP compliance."
+>
+  <Navbar />
+
+  <main class="min-h-screen bg-slate-50/50 pb-20 pt-8 sm:pt-12">
+    <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <!-- Breadcrumbs -->
+      <Breadcrumbs
+        items={[
+          { label: 'Home', href: '/' },
+          { label: 'Comparison Engine' },
+        ]}
+        class="mb-6"
+      />
+
+      <!-- Hero Header -->
+      <div class="mx-auto max-w-3xl text-center">
+        <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1 text-xs font-semibold text-amber-900 shadow-2xs">
+          <span>⚖️</span>
+          <span>Sovereign Intelligence Engine</span>
+          <span class="text-amber-300">•</span>
+          <span>DB-Driven Teardowns</span>
+        </div>
+
+        <h1 class="text-3xl font-extrabold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+          Head-to-Head <span class="font-serif-editorial italic font-normal text-primary">Comparison</span> Engine
+        </h1>
+
+        <p class="mx-auto mt-4 max-w-2xl text-sm sm:text-base text-muted-foreground leading-relaxed">
+          Compare pricing in INR vs USD, side-by-side pros and cons, 18% GST input credit savings, and DPDP sovereign compliance between any two tools.
+        </p>
+      </div>
+
+      <!-- Interactive Tool Picker Card -->
+      <div class="mx-auto mt-10 max-w-3xl rounded-3xl border border-border/80 bg-white p-6 sm:p-8 shadow-xl shadow-amber-500/5">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-muted-foreground text-center mb-6">
+          Select Any Two Tools to Compare
+        </h2>
+
+        <form id="compare-selector-form" class="space-y-6">
+          <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 items-center relative">
+            <!-- Tool 1 Selector -->
+            <div class="space-y-2">
+              <label for="tool-a-select" class="block text-xs font-bold uppercase tracking-wider text-foreground">
+                Tool 1 (Primary)
+              </label>
+              <select
+                id="tool-a-select"
+                required
+                class="block w-full rounded-xl border border-border bg-white px-3.5 py-3 text-xs sm:text-sm font-semibold text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+              >
+                <option value="" disabled selected>Select first tool...</option>
+                {selectableTools.map((t) => (
+                  <option value={t.slug} data-logo={t.logoUrl}>
+                    {t.name} ({t.origin === 'desi' ? '🇮🇳 Indian' : '🌐 Global'})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <!-- VS Badge (Desktop Center / Mobile Separator) -->
+            <div class="sm:absolute sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 flex items-center justify-center pointer-events-none">
+              <span class="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-amber-50 text-xs font-extrabold text-amber-800 shadow-xs font-mono">
+                VS
+              </span>
+            </div>
+
+            <!-- Tool 2 Selector -->
+            <div class="space-y-2">
+              <label for="tool-b-select" class="block text-xs font-bold uppercase tracking-wider text-foreground">
+                Tool 2 (Comparison)
+              </label>
+              <select
+                id="tool-b-select"
+                required
+                class="block w-full rounded-xl border border-border bg-white px-3.5 py-3 text-xs sm:text-sm font-semibold text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+              >
+                <option value="" disabled selected>Select second tool...</option>
+                {selectableTools.map((t) => (
+                  <option value={t.slug} data-logo={t.logoUrl}>
+                    {t.name} ({t.origin === 'desi' ? '🇮🇳 Indian' : '🌐 Global'})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div class="text-center pt-2">
+            <button
+              type="submit"
+              id="start-compare-btn"
+              class="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-8 py-3 text-sm font-bold text-primary-foreground shadow-md hover:bg-primary-hover transition cursor-pointer"
+            >
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <span>Launch Head-to-Head Comparison</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Popular Head-to-Head Comparisons Grid -->
+      <div class="mt-16">
+        <div class="flex items-center justify-between border-b border-border pb-4 mb-8">
+          <div>
+            <h2 class="text-xl font-bold tracking-tight text-foreground">
+              Popular Head-to-Head Teardowns
+            </h2>
+            <p class="mt-1 text-xs text-muted-foreground">
+              Direct comparisons mapped by engineering teams and community founders
+            </p>
+          </div>
+          <span class="rounded-full bg-secondary px-3 py-1 text-xs font-bold text-muted-foreground">
+            {popularComparisons.length} Comparisons
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {popularComparisons.map((c) => (
+            <a
+              href={`/compare/${c.desiSlug}-vs-${c.globalSlug}`}
+              class="group relative flex flex-col justify-between rounded-2xl border border-border bg-white p-5 shadow-xs hover:border-primary/50 hover:shadow-md transition duration-200"
+            >
+              <div>
+                <!-- Category Badge -->
+                <div class="flex items-center justify-between gap-2 mb-4">
+                  <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-700">
+                    <span>{c.categoryEmoji || '⚡'}</span>
+                    <span>{c.categoryName || 'Software'}</span>
+                  </span>
+                  <span class="text-[10px] font-mono text-muted-foreground">Detailed Teardown →</span>
+                </div>
+
+                <!-- Matchup Card -->
+                <div class="flex items-center justify-between gap-3 py-2">
+                  <!-- Desi Tool -->
+                  <div class="flex-1 text-center">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-slate-50 p-1.5 shadow-2xs overflow-hidden">
+                      <img src={c.desiLogo} alt={c.desiName} class="h-full w-full object-contain" />
+                    </div>
+                    <div class="mt-2 font-bold text-xs text-foreground truncate">{c.desiName}</div>
+                    <span class="inline-block rounded bg-amber-50 px-1 py-0.2 text-[9px] font-bold text-amber-800">
+                      🇮🇳 India
+                    </span>
+                  </div>
+
+                  <!-- VS Circle -->
+                  <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[10px] font-black text-slate-500 font-mono">
+                    VS
+                  </div>
+
+                  <!-- Global Tool -->
+                  <div class="flex-1 text-center">
+                    <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-border bg-slate-50 p-1.5 shadow-2xs overflow-hidden">
+                      {c.globalLogo ? (
+                        <img src={c.globalLogo} alt={c.globalName} class="h-full w-full object-contain" />
+                      ) : (
+                        <span class="text-xs font-bold text-slate-500 uppercase">{c.globalName.slice(0, 2)}</span>
+                      )}
+                    </div>
+                    <div class="mt-2 font-bold text-xs text-foreground truncate">{c.globalName}</div>
+                    <span class="inline-block rounded bg-slate-100 px-1 py-0.2 text-[9px] font-bold text-slate-600">
+                      🌐 Global
+                    </span>
+                  </div>
+                </div>
+
+                <p class="mt-4 text-[11px] text-muted-foreground line-clamp-2">
+                  Compare {c.desiName} vs {c.globalName} on pricing, pros & cons, DPDP compliance, and migration friction.
+                </p>
+              </div>
+
+              <div class="mt-4 border-t border-border pt-3 flex items-center justify-between text-xs font-semibold text-primary group-hover:text-primary-hover">
+                <span>View Full Comparison</span>
+                <span>→</span>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseLayout>
+
+<script>
+  const form = document.getElementById('compare-selector-form') as HTMLFormElement | null;
+  const selectA = document.getElementById('tool-a-select') as HTMLSelectElement | null;
+  const selectB = document.getElementById('tool-b-select') as HTMLSelectElement | null;
+
+  if (form && selectA && selectB) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const slugA = selectA.value;
+      const slugB = selectB.value;
+
+      if (!slugA || !slugB) {
+        alert('Please select both tools to compare.');
+        return;
+      }
+
+      if (slugA === slugB) {
+        alert('Please select two different tools to compare.');
+        return;
+      }
+
+      window.location.href = `/compare/${slugA}-vs-${slugB}`;
+    });
+  }
+</script>

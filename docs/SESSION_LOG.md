@@ -731,3 +731,41 @@
    - Vitest unit tests: 36/36 passing across all 11 test suites.
    - `astro check`: 0 errors across all 83 files.
 
+---
+
+## Session 30 — Head-to-Head Comparison Engine & Database-Driven Architecture
+
+**Date & Time (IST):** 2026-09-09 22:20 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Comparison Hub (`src/pages/compare/index.astro`)**:
+   - Interactive sovereign software vs global software selector with live URL navigation.
+   - Popular head-to-head comparison pairings grid (e.g., SigNoz vs Datadog, Hasura vs Firebase, Appsmith vs Retool, Zoho Desk vs Zendesk, Postman vs Insomnia, Razorpay vs Stripe, Exotel vs Twilio).
+   - Category filtering pills with counts.
+   - Sovereign advantage overview highlighting 18% GST input credit, domestic data residency, and zero forex volatility.
+
+2. **Head-to-Head Dynamic Engine (`src/pages/compare/[comparison].astro`)**:
+   - Handles flexible `[toolA]-vs-[toolB]` slugs, automatically resolving Indian tools vs Global tools across database tables (`desiTools`, `globalTools`, `toolPricingPlans`).
+   - **Executive Verdict Box**: Dynamic summary with winner badge, cost differential, and top value proposition.
+   - **Total Cost of Ownership (TCO) Calculator**: Interactive team size switcher (5, 20, 50, 100 seats) with live annual cost recalculation in ₹ INR and $ USD (benchmarked at ₹86/$1).
+   - **18% GST Input Credit Advantage Box**: Detailed breakdown of tax recoverable for Indian registered business entities.
+   - **Side-by-Side Pros & Cons Matrix**: Database-backed pros and trade-offs directly sourced from `desiTools.pros` / `globalTools.pros` with resilient fallbacks.
+   - **Tiered Pricing Breakdown**: Plan-by-plan tier comparison rendering `toolPricingPlans` and global starting prices.
+   - **Sovereign & DPDP Compliance Checklist**: Matrix for 18% GST Invoicing, Indian Data Residency, INR/UPI Support, Self-hostability, Open Source options, and IST Business Hours Support.
+   - **Breadcrumbs & SEO Open Graph metadata**.
+
+3. **Navigation & Inter-Linking**:
+   - Added `⚖️ Compare` navigation link to `Navbar.astro` with active route detection.
+   - Added `Comparison Engine` link to `Footer.astro`.
+   - Integrated direct `⚖️ Compare` trigger button on `src/pages/alternatives/[slug].astro` alternative cards.
+   - Integrated direct `⚖️ Compare` head-to-head trigger button on `src/pages/tools/[slug].astro` alternative cards.
+
+4. **Testing & Quality Assurance**:
+   - Created Vitest unit test suite `tests/unit/compare.test.ts` (5 tests covering slug parsing, USD/INR currency conversion, 18% GST tax math, TCO delta calculations, and JSON parsing fallbacks).
+   - Vitest unit tests: 41/41 passing across all 12 test files.
+   - `astro check`: 0 errors, 0 warnings across all 85 files.
+
+

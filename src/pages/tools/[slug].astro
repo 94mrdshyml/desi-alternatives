@@ -541,15 +541,23 @@ const avgResidency = (allReviews.reduce((acc, r) => acc + (r.dataResidencyRating
                     <span class="text-[11px] font-medium text-emerald-700">
                       🇮🇳 Save 18% GST + Zero Forex
                     </span>
-                    <a
-                      href={`/alternatives/${alt.slug}`}
-                      class="inline-flex items-center gap-1 font-bold text-primary hover:text-primary-hover transition"
-                    >
-                      <span>Compare</span>
-                      <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </a>
+                    <div class="flex items-center gap-2">
+                      <a
+                        href={`/compare/${toolResult.slug}-vs-${alt.slug}`}
+                        class="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-1 text-xs font-bold text-amber-700 hover:bg-amber-500/20 transition"
+                      >
+                        <span>⚖️ Compare</span>
+                      </a>
+                      <a
+                        href={`/alternatives/${alt.slug}`}
+                        class="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition"
+                      >
+                        <span>All {alt.name}</span>
+                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                      </a>
+                    </div>
                   </div>
                 </div>
               ))}
