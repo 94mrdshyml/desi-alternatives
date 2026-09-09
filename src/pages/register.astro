@@ -8,34 +8,60 @@ if (user) {
 }
 ---
 
-<BaseLayout title="Get Started — Desi Alternatives" description="Create your account to submit tools, claim profiles, and explore Indian alternatives to global giants.">
-  <main class="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 bg-slate-50/50">
+<BaseLayout
+  title="Create Account — Desi Alternatives"
+  description="Create your free Desi Alternatives account to submit tools, claim profiles, write reviews, and explore sovereign Indian software."
+>
+  <main class="flex min-h-screen flex-col justify-center px-4 py-12 sm:px-6 lg:px-8 bg-gradient-to-b from-amber-500/[0.03] via-slate-50 to-white">
+    <!-- Back to Directory Navigation -->
+    <div class="sm:mx-auto sm:w-full sm:max-w-md mb-4 text-left">
+      <a
+        href="/"
+        class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition group"
+      >
+        <svg class="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        <span>Back to Directory</span>
+      </a>
+    </div>
+
+    <!-- Header & Brand -->
     <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
       <a href="/" class="inline-flex items-center gap-2 text-2xl font-bold tracking-tight text-foreground">
         <span>Desi</span>
         <span class="font-serif-editorial italic text-primary">Alternatives</span>
+        <span class="rounded bg-amber-100 px-1.5 py-0.2 text-[10px] font-bold text-amber-800 border border-amber-200">
+          🇮🇳 Bharat
+        </span>
       </a>
       <h1 class="mt-4 text-2xl font-bold tracking-tight sm:text-3xl text-foreground">
-        Get <span class="font-serif-editorial italic font-normal text-primary">started</span>
+        Join the <span class="font-serif-editorial italic font-normal text-primary">Movement</span>
       </h1>
       <p class="mt-2 text-xs sm:text-sm text-muted-foreground">
         Create your free account with a 6-digit email verification code
       </p>
     </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="rounded-2xl border border-border bg-white p-6 shadow-xs sm:p-8">
+    <div class="mt-7 sm:mx-auto sm:w-full sm:max-w-md">
+      <div class="rounded-3xl border border-border/80 bg-white/95 p-6 sm:p-8 shadow-xl shadow-amber-500/5 backdrop-blur-sm">
         <!-- Status Messages -->
-        <div id="error-message" class="hidden mb-4 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700 font-medium"></div>
-        <div id="info-message" class="hidden mb-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800 font-medium"></div>
+        <div id="error-message" class="hidden mb-5 rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 font-medium"></div>
+        <div id="info-message" class="hidden mb-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-800 font-medium"></div>
 
-        <!-- Step 1: Name + Email Entry -->
+        <!-- Step 1: Name, Email & Agreements Form -->
         <form id="register-step-form" class="space-y-4">
+          <!-- Full Name -->
           <div>
             <label for="name-input" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Full Name
+              Full Name *
             </label>
-            <div class="mt-1.5">
+            <div class="relative mt-1.5">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground/60">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
               <input
                 id="name-input"
                 name="name"
@@ -43,16 +69,22 @@ if (user) {
                 autocomplete="name"
                 required
                 placeholder="Rohan Sharma"
-                class="block w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                class="block w-full rounded-xl border border-border bg-white pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
               />
             </div>
           </div>
 
+          <!-- Work Email -->
           <div>
             <label for="email-input" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Work Email
+              Work or Personal Email *
             </label>
-            <div class="mt-1.5">
+            <div class="relative mt-1.5">
+              <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-muted-foreground/60">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+              </div>
               <input
                 id="email-input"
                 name="email"
@@ -60,7 +92,7 @@ if (user) {
                 autocomplete="email"
                 required
                 placeholder="name@company.in"
-                class="block w-full rounded-xl border border-border bg-white px-3.5 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                class="block w-full rounded-xl border border-border bg-white pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
               />
             </div>
             <p class="mt-1.5 text-[11px] text-muted-foreground">
@@ -68,17 +100,34 @@ if (user) {
             </p>
           </div>
 
-          <!-- Newsletter Opt-in Checkbox -->
-          <div class="flex items-start gap-2.5 pt-1">
-            <input
-              id="newsletter-opt-in"
-              name="newsletterOptIn"
-              type="checkbox"
-              checked
-              class="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer"
-            />
-            <label for="newsletter-opt-in" class="text-xs text-muted-foreground leading-normal cursor-pointer select-none">
-              Subscribe to <strong class="text-foreground">Desi Alternatives Dispatch</strong> — weekly curated sovereign SaaS teardowns & tech blueprints.
+          <!-- Checkboxes Container -->
+          <div class="space-y-3 pt-2 border-t border-border/60">
+            <!-- 1. Mandatory Terms & Privacy Checkbox -->
+            <label class="flex items-start gap-2.5 cursor-pointer select-none group">
+              <input
+                type="checkbox"
+                id="terms-checkbox"
+                name="terms"
+                required
+                class="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer shrink-0"
+              />
+              <span class="text-xs text-muted-foreground leading-relaxed">
+                I accept the <a href="/terms" target="_blank" class="font-semibold text-foreground hover:text-primary underline underline-offset-2">Terms of Service</a> and <a href="/privacy" target="_blank" class="font-semibold text-foreground hover:text-primary underline underline-offset-2">Privacy Policy</a>. <span class="text-red-500 font-bold">*</span>
+              </span>
+            </label>
+
+            <!-- 2. Newsletter Opt-in Checkbox (Optional, Checked by default) -->
+            <label class="flex items-start gap-2.5 cursor-pointer select-none group">
+              <input
+                type="checkbox"
+                id="newsletter-opt-in"
+                name="newsletterOptIn"
+                checked
+                class="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary cursor-pointer shrink-0"
+              />
+              <span class="text-xs text-muted-foreground leading-relaxed">
+                Subscribe to <strong class="text-foreground">Desi Alternatives Dispatch</strong> — weekly sovereign SaaS teardowns & tech blueprints.
+              </span>
             </label>
           </div>
 
@@ -86,18 +135,21 @@ if (user) {
             <button
               type="submit"
               id="send-code-btn"
-              class="flex w-full justify-center rounded-xl bg-primary px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
+              class="flex w-full justify-center items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
             >
-              Send 6-Digit Code
+              <span>Send 6-Digit Code</span>
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
             </button>
           </div>
         </form>
 
         <!-- Step 2: 6-Digit OTP Entry (Initially Hidden) -->
         <div id="otp-step-container" class="hidden space-y-5">
-          <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-center">
-            <p class="text-xs text-amber-900">
-              Code sent to <span id="display-email" class="font-bold"></span>
+          <div class="rounded-2xl border border-amber-200 bg-amber-50/70 p-3.5 text-center">
+            <p class="text-xs text-amber-900 font-medium">
+              Code sent to <strong id="display-email" class="text-foreground font-bold"></strong>
             </p>
             <button
               type="button"
@@ -109,61 +161,18 @@ if (user) {
           </div>
 
           <div>
-            <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center mb-2">
+            <label class="block text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
               Enter 6-Digit Verification Code
             </label>
 
             <!-- 6 Individual Numeric Boxes -->
-            <div class="flex items-center justify-between gap-1.5 sm:gap-2">
-              <input
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="1"
-                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                data-index="0"
-                autocomplete="one-time-code"
-              />
-              <input
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="1"
-                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                data-index="1"
-              />
-              <input
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="1"
-                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                data-index="2"
-              />
-              <input
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="1"
-                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                data-index="3"
-              />
-              <input
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="1"
-                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                data-index="4"
-              />
-              <input
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                maxlength="1"
-                class="otp-box h-12 w-11 sm:h-13 sm:w-12 rounded-xl border border-border bg-white text-center text-lg sm:text-xl font-bold font-mono text-foreground shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-                data-index="5"
-              />
+            <div class="flex justify-between gap-1.5 sm:gap-2">
+              <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" autocomplete="one-time-code" data-index="0" class="otp-box h-12 w-11 sm:h-13 sm:w-12 text-center font-mono text-xl font-bold rounded-xl border border-border bg-white text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-2xs transition" />
+              <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" data-index="1" class="otp-box h-12 w-11 sm:h-13 sm:w-12 text-center font-mono text-xl font-bold rounded-xl border border-border bg-white text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-2xs transition" />
+              <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" data-index="2" class="otp-box h-12 w-11 sm:h-13 sm:w-12 text-center font-mono text-xl font-bold rounded-xl border border-border bg-white text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-2xs transition" />
+              <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" data-index="3" class="otp-box h-12 w-11 sm:h-13 sm:w-12 text-center font-mono text-xl font-bold rounded-xl border border-border bg-white text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-2xs transition" />
+              <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" data-index="4" class="otp-box h-12 w-11 sm:h-13 sm:w-12 text-center font-mono text-xl font-bold rounded-xl border border-border bg-white text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-2xs transition" />
+              <input type="text" inputmode="numeric" maxlength="1" pattern="[0-9]" data-index="5" class="otp-box h-12 w-11 sm:h-13 sm:w-12 text-center font-mono text-xl font-bold rounded-xl border border-border bg-white text-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 focus:outline-none shadow-2xs transition" />
             </div>
           </div>
 
@@ -204,6 +213,8 @@ if (user) {
     const registerForm = document.getElementById('register-step-form') as HTMLFormElement;
     const nameInput = document.getElementById('name-input') as HTMLInputElement;
     const emailInput = document.getElementById('email-input') as HTMLInputElement;
+    const termsCheckbox = document.getElementById('terms-checkbox') as HTMLInputElement;
+    const newsletterOptIn = document.getElementById('newsletter-opt-in') as HTMLInputElement | null;
     const sendCodeBtn = document.getElementById('send-code-btn') as HTMLButtonElement;
     const otpContainer = document.getElementById('otp-step-container') as HTMLDivElement;
     const displayEmail = document.getElementById('display-email') as HTMLElement;
@@ -213,7 +224,6 @@ if (user) {
     const errorDiv = document.getElementById('error-message') as HTMLDivElement;
     const infoDiv = document.getElementById('info-message') as HTMLDivElement;
     const otpBoxes = Array.from(document.querySelectorAll<HTMLInputElement>('.otp-box'));
-    const newsletterOptIn = document.getElementById('newsletter-opt-in') as HTMLInputElement | null;
 
     let currentEmail = '';
     let resendTimer: any = null;
@@ -271,8 +281,20 @@ if (user) {
     async function handleSendOtp() {
       const email = emailInput.value.trim();
       const name = nameInput.value.trim();
+
+      if (!name) {
+        showError('Please enter your full name.');
+        return;
+      }
+
       if (!email) {
-        showError('Please enter your work email.');
+        showError('Please enter your work or personal email.');
+        return;
+      }
+
+      if (!termsCheckbox.checked) {
+        showError('You must agree to the Terms of Service and Privacy Policy to create an account.');
+        termsCheckbox.focus();
         return;
       }
 
