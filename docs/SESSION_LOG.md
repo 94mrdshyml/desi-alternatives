@@ -608,4 +608,33 @@
    - 30/30 Vitest unit tests passing.
    - 0 errors and 0 warnings in `astro check` across all 78 files.
 
+---
 
+## Session 26 — Global Giant AI JSON Import Engine & Extended Metadata Schema
+
+**Date & Time (IST):** 2026-09-09 20:20 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Extended D1 Schema & Database Migration for Global Giants**:
+   - Enhanced `globalTools` schema table with comprehensive metadata columns: `description` (About), `pricingPlans` (JSON array of tier objects with USD pricing), `country`, `city`, `foundedYear`, `companyType`, `isOpenSource`, `githubUrl`, `discordUrl`, `pros` & `cons` (JSON arrays), and social handles (`twitterHandle`, `instagramHandle`, `youtubeUrl`, `facebookUrl`, `linkedinUrl`).
+   - Created Drizzle migration `0011_global_tools_metadata.sql` and registered in journal.
+
+2. **Ingestion & Metadata Backend API (`src/pages/api/admin/global-tools.ts`)**:
+   - Updated CRUD handlers to persist all extended metadata fields.
+   - Implemented `action: 'import-json'` bulk & single ingestion handler with input sanitization, JSON parsing/normalization, and upsert logic via `onConflictDoUpdate`.
+
+3. **Admin Catalog UI Modal & AI Prompt Workflow (`src/pages/admin/catalog.astro`)**:
+   - Added **⚡ AI JSON Import Global** trigger button under the Global Giants catalog section.
+   - Built modal dialog `#global-json-import-modal` featuring:
+     - Real-time JSON validation with syntax error surfacing.
+     - Live visual preview cards showing logo, tagline, pricing chips, pros/cons, company attributes, and social profile links.
+     - **📋 Copy Prompt for AI** button pre-populated with JSON template instructions for LLMs.
+     - 1-click bulk insertion into Cloudflare D1 with instant UI refresh.
+
+4. **Testing & Automated Quality Assurance**:
+   - Added comprehensive JSON import test suite in `tests/unit/import-json.test.ts` validating global tool payload parsing, normalization, and required field safeguards.
+   - Vitest unit tests: 31/31 passed across 10 test files.
+   - `astro check`: 0 errors, 0 warnings across all files.

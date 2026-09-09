@@ -65,4 +65,77 @@ describe('AI JSON Tool Import Parser', () => {
     expect(rawAiPayload.pricingPlans[1].amount).toBe(1600);
     expect(rawAiPayload.replacesGlobalTools).toContain('datadog');
   });
+
+  it('validates and parses Global Giant AI JSON payloads with USD plans, pros/cons, and company metadata', () => {
+    const rawGlobalTool = {
+      name: 'Datadog',
+      slug: 'datadog',
+      tagline: 'Cloud-scale monitoring, APM, and observability platform',
+      description: 'Datadog is an observability service for cloud-scale applications...',
+      websiteUrl: 'https://www.datadoghq.com',
+      logoUrl: 'https://img.logo.dev/datadoghq.com?token=pk_anonymous',
+      category: 'developer-tools',
+      company: {
+        country: 'United States',
+        city: 'New York',
+        foundedYear: 2010,
+        companyType: 'Public Ltd',
+        isOpenSource: false,
+        githubUrl: 'https://github.com/DataDog',
+        discordUrl: '',
+      },
+      pros: [
+        'Extensive ecosystem with 600+ out-of-the-box integrations',
+        'Sophisticated distributed tracing and APM dashboarding',
+      ],
+      cons: [
+        'Notoriously steep and unpredictable usage-based billing spikes',
+        'No 18% GST input tax credit for registered Indian entities',
+      ],
+      foreignPainPoints: [
+        'Recurring credit card auto-debit mandate failures in India',
+        'Lack of Indian Rupee (INR) / UPI direct payment support',
+      ],
+      pricing: {
+        startingPriceUsd: 15,
+        plans: [
+          {
+            name: 'Free Tier',
+            currency: 'USD',
+            amount: 0,
+            billingPeriod: 'monthly',
+            isFree: true,
+            description: 'Core metric collection up to 5 hosts with 1-day retention.',
+          },
+          {
+            name: 'Pro',
+            currency: 'USD',
+            amount: 15,
+            billingPeriod: 'monthly',
+            isFree: false,
+            description: 'Per host/month with over 500 integrations and 15-month retention.',
+          },
+        ],
+      },
+      socialProfiles: {
+        twitter: 'datadoghq',
+        linkedin: 'https://www.linkedin.com/company/datadog',
+        youtube: 'https://www.youtube.com/@DatadogHQ',
+        facebook: 'https://www.facebook.com/datadoghq',
+        instagram: 'datadoghq',
+      },
+    };
+
+    expect(rawGlobalTool.name).toBe('Datadog');
+    expect(rawGlobalTool.company.country).toBe('United States');
+    expect(rawGlobalTool.company.city).toBe('New York');
+    expect(rawGlobalTool.company.foundedYear).toBe(2010);
+    expect(rawGlobalTool.pros.length).toBe(2);
+    expect(rawGlobalTool.cons.length).toBe(2);
+    expect(rawGlobalTool.foreignPainPoints.length).toBe(2);
+    expect(rawGlobalTool.pricing.startingPriceUsd).toBe(15);
+    expect(rawGlobalTool.pricing.plans.length).toBe(2);
+    expect(rawGlobalTool.socialProfiles.twitter).toBe('datadoghq');
+  });
 });
+

@@ -340,15 +340,27 @@ const initialTab = Astro.url.searchParams.get('tab') || 'indian-tools';
 
     <!-- PANEL 2: GLOBAL GIANTS & PROGRAMMATIC SEO -->
     <section id="catalog-panel-global-giants" class={`catalog-panel space-y-4 ${initialTab === 'global-giants' ? '' : 'hidden'}`}>
-      <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-900">
-        <div class="flex items-start gap-2.5">
-          <span class="text-base">🚀</span>
-          <div>
-            <h4 class="font-bold">Programmatic SEO Comparison Anchors</h4>
-            <p class="mt-0.5 text-amber-800 leading-relaxed">
-              Global giants are <strong>not listed directly in the directory</strong>. They generate dynamic SEO landing pages targeting high-intent search terms (e.g. <code>/alternatives/notion</code>, <code>/alternatives/datadog</code>).
-            </p>
+      <div class="flex items-center justify-between gap-3 flex-wrap">
+        <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900 flex-1 min-w-[280px]">
+          <div class="flex items-start gap-2.5">
+            <span class="text-base">🚀</span>
+            <div>
+              <h4 class="font-bold">Programmatic SEO Comparison Anchors</h4>
+              <p class="mt-0.5 text-amber-800 leading-relaxed">
+                Global giants generate dynamic comparison pages targeting search terms (e.g. <code>/alternatives/notion</code>).
+              </p>
+            </div>
           </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            id="open-global-json-import-btn"
+            class="inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-3.5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-amber-700 transition cursor-pointer"
+          >
+            <span>⚡ AI JSON Import Global</span>
+          </button>
         </div>
       </div>
 
@@ -930,6 +942,149 @@ const initialTab = Astro.url.searchParams.get('tab') || 'indian-tools';
           class="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
         >
           Import & Publish to D1
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GLOBAL GIANTS AI JSON IMPORT MODAL -->
+  <div
+    id="global-json-import-modal"
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs hidden animate-in fade-in duration-200"
+  >
+    <div class="relative w-full max-w-2xl rounded-3xl border border-border bg-card p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-border shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-900 font-bold">
+            🌐
+          </div>
+          <div>
+            <h2 class="text-lg font-bold text-foreground">Global Giant AI JSON Importer</h2>
+            <p class="text-xs text-muted-foreground">Paste AI-generated competitor JSON payloads for instant D1 ingestion</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="copy-global-ai-prompt-btn"
+            class="inline-flex items-center gap-1 rounded-lg border border-border bg-slate-50 px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-slate-100 transition cursor-pointer"
+            title="Copy prompt instructions to give to ChatGPT / Claude"
+          >
+            <span>📋 Copy AI Prompt</span>
+          </button>
+          <button
+            type="button"
+            id="close-global-json-import-modal"
+            class="rounded-lg p-1.5 text-muted-foreground hover:bg-secondary hover:text-foreground transition cursor-pointer"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Content Body -->
+      <div class="mt-4 space-y-4 overflow-y-auto pr-1 flex-1">
+        <!-- Live Status Bar -->
+        <div
+          id="global-json-status-banner"
+          class="rounded-xl border border-border bg-secondary/50 p-3 text-xs flex items-center justify-between"
+        >
+          <span id="global-json-status-text" class="text-muted-foreground">
+            Paste a valid Global Tool JSON object or array below.
+          </span>
+          <span id="global-json-badge" class="font-bold text-[10px] uppercase tracking-wider hidden"></span>
+        </div>
+
+        <!-- Textarea -->
+        <div>
+          <label class="block text-xs font-semibold text-foreground mb-1.5">Global Tool JSON Payload</label>
+          <textarea
+            id="global-json-import-textarea"
+            rows="10"
+            class="w-full rounded-xl border border-border bg-slate-900 text-amber-400 font-mono text-xs p-3.5 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary shadow-inner"
+            placeholder='{
+  "name": "Datadog",
+  "slug": "datadog",
+  "tagline": "Cloud-scale monitoring, APM, and observability platform",
+  "description": "Datadog is an observability service for cloud-scale applications...",
+  "websiteUrl": "https://www.datadoghq.com",
+  "category": "developer-tools",
+  "company": {
+    "country": "United States",
+    "city": "New York",
+    "foundedYear": 2010,
+    "companyType": "Public Ltd",
+    "isOpenSource": false,
+    "githubUrl": "https://github.com/DataDog"
+  },
+  "pros": [
+    "Extensive ecosystem with 600+ integrations",
+    "Sophisticated distributed tracing"
+  ],
+  "cons": [
+    "Steep and unpredictable usage-based billing spikes",
+    "No 18% GST input tax credit in India",
+    "Mandatory USD billing with forex fees"
+  ],
+  "foreignPainPoints": [
+    "Recurring credit card auto-debit mandate failures in India",
+    "Customer data stored outside India (Non-DPDP compliant)"
+  ],
+  "pricing": {
+    "startingPriceUsd": 15,
+    "plans": [
+      {
+        "name": "Pro",
+        "currency": "USD",
+        "amount": 15,
+        "billingPeriod": "monthly",
+        "isFree": false,
+        "description": "Per host/month with over 500 integrations."
+      }
+    ]
+  },
+  "socialProfiles": {
+    "twitter": "datadoghq",
+    "linkedin": "https://www.linkedin.com/company/datadog"
+  }
+}'
+          ></textarea>
+        </div>
+
+        <!-- Live Parsed Preview Box -->
+        <div id="global-json-preview-container" class="hidden rounded-xl border border-border bg-slate-50/80 p-4 space-y-3">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold text-foreground uppercase tracking-wider">Payload Preview</h4>
+            <span id="global-json-preview-count" class="text-xs font-semibold text-primary"></span>
+          </div>
+
+          <div id="global-json-preview-cards" class="space-y-2.5 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
+
+        <!-- Error Message Alert -->
+        <div id="global-json-import-error" class="hidden rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-800"></div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="mt-5 pt-4 border-t border-border flex items-center justify-end gap-2.5 shrink-0">
+        <button
+          type="button"
+          id="cancel-global-json-import-btn"
+          class="rounded-xl border border-border px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-50 transition cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          id="submit-global-json-import-btn"
+          disabled
+          class="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer"
+        >
+          Import Global Giants to D1
         </button>
       </div>
     </div>
@@ -2050,6 +2205,238 @@ Return ONLY a valid JSON array of tool objects conforming strictly to this forma
       (window as any).showToast?.('Network error while importing tools.', 'error');
       submitJsonImportBtn.disabled = false;
       submitJsonImportBtn.textContent = 'Import & Publish to D1';
+    }
+  });
+
+  // --- GLOBAL GIANTS BULK JSON IMPORTER LOGIC ---
+  const globalJsonModal = document.getElementById('global-json-import-modal');
+  const openGlobalJsonBtn = document.getElementById('open-global-json-import-btn');
+  const closeGlobalJsonBtn = document.getElementById('close-global-json-import-modal');
+  const cancelGlobalJsonBtn = document.getElementById('cancel-global-json-import-btn');
+  const globalJsonTextarea = document.getElementById('global-json-import-textarea') as HTMLTextAreaElement | null;
+  const globalStatusBanner = document.getElementById('global-json-status-banner');
+  const globalStatusText = document.getElementById('global-json-status-text');
+  const globalBadge = document.getElementById('global-json-badge');
+  const globalPreviewContainer = document.getElementById('global-json-preview-container');
+  const globalPreviewCount = document.getElementById('global-json-preview-count');
+  const globalPreviewCards = document.getElementById('global-json-preview-cards');
+  const submitGlobalJsonBtn = document.getElementById('submit-global-json-import-btn') as HTMLButtonElement | null;
+  const globalJsonError = document.getElementById('global-json-import-error');
+  const copyGlobalPromptBtn = document.getElementById('copy-global-ai-prompt-btn');
+
+  let parsedGlobalToolsPayload: any[] = [];
+
+  const GLOBAL_AI_RESEARCH_PROMPT = `You are a research analyst for "Desi Alternatives".
+Research global market-leading software tools and return ONLY a valid JSON object or array conforming strictly to this format:
+
+{
+  "name": "Datadog",
+  "slug": "datadog",
+  "tagline": "Cloud-scale monitoring, APM, and observability platform",
+  "description": "Datadog is an observability service for cloud-scale applications...",
+  "websiteUrl": "https://www.datadoghq.com",
+  "logoUrl": "https://img.logo.dev/datadoghq.com?token=pk_anonymous",
+  "category": "developer-tools",
+  "company": {
+    "country": "United States",
+    "city": "New York",
+    "foundedYear": 2010,
+    "companyType": "Public Ltd",
+    "isOpenSource": false,
+    "githubUrl": "https://github.com/DataDog"
+  },
+  "pros": [
+    "Extensive ecosystem with 600+ integrations",
+    "Sophisticated distributed tracing and APM dashboarding"
+  ],
+  "cons": [
+    "Steep and unpredictable usage-based billing spikes",
+    "No 18% GST input tax credit for registered Indian entities",
+    "Mandatory USD billing with 3.5% forex markups",
+    "Customer data stored outside India"
+  ],
+  "foreignPainPoints": [
+    "Recurring credit card auto-debit mandate failures in India",
+    "Lack of Indian Rupee (INR) / UPI direct payment support",
+    "Data residency outside India"
+  ],
+  "pricing": {
+    "startingPriceUsd": 15,
+    "plans": [
+      {
+        "name": "Pro",
+        "currency": "USD",
+        "amount": 15,
+        "billingPeriod": "monthly",
+        "isFree": false,
+        "description": "Per host/month with over 500 integrations."
+      }
+    ]
+  },
+  "socialProfiles": {
+    "twitter": "datadoghq",
+    "linkedin": "https://www.linkedin.com/company/datadog",
+    "youtube": "https://www.youtube.com/@DatadogHQ"
+  }
+}`;
+
+  openGlobalJsonBtn?.addEventListener('click', () => {
+    globalJsonModal?.classList.remove('hidden');
+    globalJsonTextarea?.focus();
+  });
+
+  closeGlobalJsonBtn?.addEventListener('click', () => globalJsonModal?.classList.add('hidden'));
+  cancelGlobalJsonBtn?.addEventListener('click', () => globalJsonModal?.classList.add('hidden'));
+
+  copyGlobalPromptBtn?.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(GLOBAL_AI_RESEARCH_PROMPT);
+      const originalText = copyGlobalPromptBtn.innerHTML;
+      copyGlobalPromptBtn.innerHTML = '<span>✓ Copied Prompt!</span>';
+      (window as any).showToast?.('Copied Global Giants AI Prompt to clipboard!', 'success');
+      setTimeout(() => {
+        copyGlobalPromptBtn.innerHTML = originalText;
+      }, 2000);
+    } catch {
+      (window as any).showToast?.('Failed to copy to clipboard.', 'error');
+    }
+  });
+
+  function validateGlobalJsonInput() {
+    const rawText = globalJsonTextarea?.value?.trim();
+    globalJsonError?.classList.add('hidden');
+
+    if (!rawText) {
+      parsedGlobalToolsPayload = [];
+      if (globalStatusBanner) globalStatusBanner.className = 'rounded-xl border border-border bg-secondary/50 p-3 text-xs flex items-center justify-between';
+      if (globalStatusText) globalStatusText.textContent = 'Paste a valid Global Tool JSON object or array below.';
+      if (globalBadge) globalBadge.classList.add('hidden');
+      globalPreviewContainer?.classList.add('hidden');
+      if (submitGlobalJsonBtn) submitGlobalJsonBtn.disabled = true;
+      return;
+    }
+
+    try {
+      let cleaned = rawText;
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/, '');
+      }
+
+      const parsed = JSON.parse(cleaned);
+      let tools: any[] = [];
+      if (Array.isArray(parsed)) {
+        tools = parsed;
+      } else if (Array.isArray(parsed?.tools)) {
+        tools = parsed.tools;
+      } else if (parsed && typeof parsed === 'object' && parsed.name) {
+        tools = [parsed];
+      }
+
+      if (!tools.length) {
+        throw new Error('JSON is valid syntax, but does not contain tools with a "name" property.');
+      }
+
+      parsedGlobalToolsPayload = tools;
+
+      if (globalStatusBanner) globalStatusBanner.className = 'rounded-xl border border-emerald-300 bg-emerald-50 p-3 text-xs flex items-center justify-between';
+      if (globalStatusText) globalStatusText.innerHTML = `<span class="text-emerald-900 font-medium">✓ Ready to Import: <strong>${tools.length}</strong> global tool${tools.length > 1 ? 's' : ''} detected.</span>`;
+      if (globalBadge) {
+        globalBadge.textContent = 'Valid JSON';
+        globalBadge.className = 'font-bold text-[10px] uppercase tracking-wider text-emerald-800 bg-emerald-200/60 px-2 py-0.5 rounded-md';
+        globalBadge.classList.remove('hidden');
+      }
+
+      if (globalPreviewContainer && globalPreviewCards && globalPreviewCount) {
+        globalPreviewCount.textContent = `${tools.length} item${tools.length > 1 ? 's' : ''}`;
+        globalPreviewCards.innerHTML = tools
+          .map((t, i) => {
+            const name = t.name || `Global Tool #${i + 1}`;
+            const country = t.company?.country || t.country || 'Global';
+            const cat = t.category || 'General';
+            const price = t.pricing?.startingPriceUsd ?? t.startingPriceUsd;
+            const prosCount = Array.isArray(t.pros) ? t.pros.length : 0;
+            const consCount = Array.isArray(t.cons) ? t.cons.length : 0;
+
+            return `
+              <div class="rounded-lg border border-border bg-white p-3 text-xs flex items-start justify-between gap-3">
+                <div class="space-y-1">
+                  <div class="flex items-center gap-2">
+                    <span class="font-bold text-foreground text-sm">${name}</span>
+                    <span class="rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-700">🌍 ${country}</span>
+                    <span class="rounded-md bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800 border border-amber-200">${cat}</span>
+                    ${price !== undefined && price !== null ? `<span class="rounded-md bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-800">$${price}/mo</span>` : ''}
+                  </div>
+                  <p class="text-muted-foreground text-[11px]">${t.tagline || 'No tagline'}</p>
+                  <div class="flex items-center gap-3 text-[10px] text-muted-foreground pt-1">
+                    <span>✓ ${prosCount} Pros</span>
+                    <span>⚠ ${consCount} Cons</span>
+                    <span>🔗 ${t.websiteUrl || 'No URL'}</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join('');
+
+        globalPreviewContainer.classList.remove('hidden');
+      }
+
+      if (submitGlobalJsonBtn) submitGlobalJsonBtn.disabled = false;
+    } catch (err: any) {
+      parsedGlobalToolsPayload = [];
+      if (globalStatusBanner) globalStatusBanner.className = 'rounded-xl border border-red-200 bg-red-50 p-3 text-xs flex items-center justify-between';
+      if (globalStatusText) globalStatusText.innerHTML = `<span class="text-red-800 font-medium">✕ JSON Error: ${err.message}</span>`;
+      if (globalBadge) {
+        globalBadge.textContent = 'Invalid';
+        globalBadge.className = 'font-bold text-[10px] uppercase tracking-wider text-red-800 bg-red-200 px-2 py-0.5 rounded-md';
+        globalBadge.classList.remove('hidden');
+      }
+      globalPreviewContainer?.classList.add('hidden');
+      if (submitGlobalJsonBtn) submitGlobalJsonBtn.disabled = true;
+    }
+  }
+
+  globalJsonTextarea?.addEventListener('input', validateGlobalJsonInput);
+
+  submitGlobalJsonBtn?.addEventListener('click', async () => {
+    if (!parsedGlobalToolsPayload.length) return;
+
+    submitGlobalJsonBtn.disabled = true;
+    submitGlobalJsonBtn.textContent = 'Importing to D1...';
+    if (globalJsonError) globalJsonError.classList.add('hidden');
+
+    try {
+      const res = await fetch('/api/admin/global-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'import-json',
+          tools: parsedGlobalToolsPayload,
+        }),
+      });
+
+      const data = (await res.json()) as any;
+
+      if (res.ok && data.success) {
+        (window as any).showToast?.(`🎉 Successfully imported ${data.count} global giant(s) to D1!`, 'success');
+        setTimeout(() => window.location.reload(), 800);
+      } else {
+        if (globalJsonError) {
+          globalJsonError.textContent = data.error || 'Failed to import global JSON tools.';
+          globalJsonError.classList.remove('hidden');
+        }
+        (window as any).showToast?.(data.error || 'Failed to import global JSON tools.', 'error');
+        submitGlobalJsonBtn.disabled = false;
+        submitGlobalJsonBtn.textContent = 'Import Global Giants to D1';
+      }
+    } catch {
+      if (globalJsonError) {
+        globalJsonError.textContent = 'Network error while importing global tools.';
+        globalJsonError.classList.remove('hidden');
+      }
+      (window as any).showToast?.('Network error while importing global tools.', 'error');
+      submitGlobalJsonBtn.disabled = false;
+      submitGlobalJsonBtn.textContent = 'Import Global Giants to D1';
     }
   });
 </script>

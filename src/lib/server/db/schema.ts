@@ -105,12 +105,35 @@ export const globalTools = sqliteTable('global_tools', {
   slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
   tagline: text('tagline'),
+  description: text('description'), // Detailed about/summary
   websiteUrl: text('website_url').notNull(),
   logoUrl: text('logo_url'),
   features: text('features'), // JSON array of string features
   startingPriceUsd: integer('starting_price_usd'), // USD per month
+  pricingPlans: text('pricing_plans'), // JSON array of tier pricing objects
   foreignPainPoints: text('foreign_pain_points'), // JSON array of strings
   categoryId: text('category_id').references(() => categories.id),
+
+  // Company Origins & DNA Metadata
+  country: text('country'), // e.g. "United States", "Germany"
+  city: text('city'), // e.g. "San Francisco", "New York"
+  foundedYear: integer('founded_year'), // e.g. 2010
+  companyType: text('company_type'), // e.g. "Public Ltd", "VC-Funded", "Bootstrapped"
+  isOpenSource: integer('is_open_source', { mode: 'boolean' }).default(false).notNull(),
+  githubUrl: text('github_url'),
+  discordUrl: text('discord_url'),
+
+  // Editorial Pros & Cons
+  pros: text('pros'), // JSON array of pros
+  cons: text('cons'), // JSON array of cons
+
+  // Social Profile Handles / Links
+  twitterHandle: text('twitter_handle'),
+  instagramHandle: text('instagram_handle'),
+  youtubeUrl: text('youtube_url'),
+  facebookUrl: text('facebook_url'),
+  linkedinUrl: text('linkedin_url'),
+
   createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   updatedAt: text('updated_at'),
 });
