@@ -3,7 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { globalTools, toolAlternatives, categories } from '@/lib/server/db/schema';
 
 const db = Astro.locals.db;
@@ -30,10 +30,18 @@ if (db) {
       .leftJoin(categories, eq(globalTools.categoryId, categories.id))
       .all();
 
-    const rawAlternatives = await db.select().from(toolAlternatives).all();
-    for (const alt of rawAlternatives) {
-      if (alt.globalToolId) {
-        globalToolCounts[alt.globalToolId] = (globalToolCounts[alt.globalToolId] || 0) + 1;
+    const altCounts = await db
+      .select({
+        globalToolId: toolAlternatives.globalToolId,
+        count: sql<number>`count(*)`,
+      })
+      .from(toolAlternatives)
+      .groupBy(toolAlternatives.globalToolId)
+      .all();
+
+    for (const row of altCounts) {
+      if (row.globalToolId) {
+        globalToolCounts[row.globalToolId] = Number(row.count) || 0;
       }
     }
   } catch (e) {
