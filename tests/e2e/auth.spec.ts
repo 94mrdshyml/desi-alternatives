@@ -20,10 +20,13 @@ test.describe('Auth Pages E2E', () => {
     await expect(page.locator('a[href="/login"]')).toContainText('Sign in');
   });
 
-  test('navbar Submit a Tool button links to /submit and Sign In button links to /login', async ({ page }) => {
+  test('hamburger menu drawer contains Submit a Tool and Sign In links', async ({ page }) => {
     await page.goto('/');
-    const submitBtn = page.locator('header a[href="/submit"]');
-    const signInBtn = page.locator('header a[href="/login"]');
+    const hamburgerBtn = page.locator('#global-hamburger-toggle');
+    await expect(hamburgerBtn).toBeVisible();
+    await hamburgerBtn.click();
+    const submitBtn = page.locator('#global-hamburger-drawer a[href="/submit"]');
+    const signInBtn = page.locator('#global-hamburger-drawer a[href="/login"]');
     await expect(submitBtn).toBeVisible();
     await expect(signInBtn).toBeVisible();
   });
