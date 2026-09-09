@@ -638,3 +638,24 @@
    - Added comprehensive JSON import test suite in `tests/unit/import-json.test.ts` validating global tool payload parsing, normalization, and required field safeguards.
    - Vitest unit tests: 31/31 passed across 10 test files.
    - `astro check`: 0 errors, 0 warnings across all files.
+
+---
+
+## Session 27 — Redesigned Global Tool Alternatives Page Hierarchy
+
+**Date & Time (IST):** 2026-09-09 20:30 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Clean Structured Page Hierarchy (`src/pages/alternatives/[slug].astro`)**:
+   - **H1 Header**: Added circular logo container next to the global tool name in the main heading with fallback styling.
+   - **About Section**: Rich About card displaying global tool description, open-source vs proprietary status, HQ location, founded year, company type, USD starting price, key pros/strengths, pricing tier breakdown, and official website link.
+   - **Ranked Indian Alternatives**: Prominent listing of mapped sovereign Indian alternatives with why-choose descriptions, GST tax invoice badges, data residency indicators, and pricing comparisons.
+   - **Cons & Limitations Section**: Clean dedicated section rendering the database-backed cons and friction points (`globalTools.cons` / `foreignPainPoints`).
+   - Removed legacy Cost Savings Calculator and static Comparison Table per requirements.
+
+2. **Testing & Verification**:
+   - Vitest unit tests: 31/31 passed across all 10 test files.
+   - `astro check`: 0 errors, 0 warnings across all 78 files.
