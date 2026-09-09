@@ -21,7 +21,6 @@ let toolsList: any[] = [];
 
 if (db) {
   try {
-    // 1. Ensure all users with admin or author role have a blogAuthors profile
     const authorUsers = await db
       .select({
         id: users.id,
@@ -53,7 +52,6 @@ if (db) {
       }
     }
 
-    // Strictly fetch only live authors mapped to real admin/author users
     authorsList = validAuthorIds.length > 0
       ? await db.select().from(blogAuthors).where(inArray(blogAuthors.id, validAuthorIds)).orderBy(blogAuthors.name).all()
       : [];
@@ -86,10 +84,179 @@ if (db) {
   }
 }
 
-const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article — WYSIWYG Notion Studio';
+const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article — Notion Studio';
 ---
 
-<BaseLayout title={pageTitle} description="WYSIWYG writing canvas for sovereign tech articles and comparisons.">
+<BaseLayout title={pageTitle} description="Notion-style WYSIWYG writing canvas for sovereign tech articles and comparisons.">
+  <!-- Scoped Styles for Notion WYSIWYG Live Canvas -->
+  <style is:global>
+    /* WYSIWYG Canvas Scoped Elements - Overcoming Tailwind V4 Resets */
+    #wysiwyg-canvas {
+      min-height: 550px;
+      outline: none;
+      font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+      color: #0f172a;
+      line-height: 1.75;
+      font-size: 1.0625rem;
+    }
+
+    #wysiwyg-canvas:empty:before {
+      content: "Start typing your sovereign tech article... Type / for blocks & commands";
+      color: #94a3b8;
+      font-style: italic;
+      pointer-events: none;
+      display: block;
+    }
+
+    #wysiwyg-canvas h1,
+    .editor-rendered-view h1 {
+      font-family: var(--font-serif-editorial, 'Source Serif 4', Georgia, serif) !important;
+      font-size: 2.25rem !important;
+      line-height: 1.2 !important;
+      font-weight: 800 !important;
+      color: #09090b !important;
+      margin-top: 2rem !important;
+      margin-bottom: 0.75rem !important;
+      letter-spacing: -0.02em !important;
+    }
+
+    #wysiwyg-canvas h2,
+    .editor-rendered-view h2 {
+      font-family: var(--font-serif-editorial, 'Source Serif 4', Georgia, serif) !important;
+      font-size: 1.65rem !important;
+      line-height: 1.3 !important;
+      font-weight: 700 !important;
+      color: #09090b !important;
+      margin-top: 2rem !important;
+      margin-bottom: 0.75rem !important;
+      padding-bottom: 0.35rem !important;
+      border-bottom: 1px solid #f1f5f9 !important;
+      letter-spacing: -0.015em !important;
+    }
+
+    #wysiwyg-canvas h3,
+    .editor-rendered-view h3 {
+      font-family: var(--font-serif-editorial, 'Source Serif 4', Georgia, serif) !important;
+      font-size: 1.3rem !important;
+      line-height: 1.4 !important;
+      font-weight: 700 !important;
+      color: #1e293b !important;
+      margin-top: 1.5rem !important;
+      margin-bottom: 0.5rem !important;
+    }
+
+    #wysiwyg-canvas p,
+    .editor-rendered-view p {
+      margin-top: 0.75rem !important;
+      margin-bottom: 0.75rem !important;
+      line-height: 1.75 !important;
+      color: #1e293b !important;
+    }
+
+    #wysiwyg-canvas ul,
+    .editor-rendered-view ul {
+      list-style-type: disc !important;
+      margin-top: 0.75rem !important;
+      margin-bottom: 0.75rem !important;
+      padding-left: 1.75rem !important;
+    }
+
+    #wysiwyg-canvas ol,
+    .editor-rendered-view ol {
+      list-style-type: decimal !important;
+      margin-top: 0.75rem !important;
+      margin-bottom: 0.75rem !important;
+      padding-left: 1.75rem !important;
+    }
+
+    #wysiwyg-canvas li,
+    .editor-rendered-view li {
+      margin-top: 0.35rem !important;
+      margin-bottom: 0.35rem !important;
+      padding-left: 0.25rem !important;
+      line-height: 1.65 !important;
+      color: #1e293b !important;
+    }
+
+    #wysiwyg-canvas blockquote,
+    .editor-rendered-view blockquote {
+      border-left: 4px solid #f59e0b !important;
+      padding: 0.75rem 1.25rem !important;
+      margin: 1.25rem 0 !important;
+      background: rgba(245, 158, 11, 0.06) !important;
+      border-radius: 0 0.75rem 0.75rem 0 !important;
+      font-style: italic !important;
+      color: #334155 !important;
+      font-size: 1.05rem !important;
+      line-height: 1.65 !important;
+    }
+
+    #wysiwyg-canvas hr,
+    .editor-rendered-view hr {
+      border: none !important;
+      border-top: 2px solid #e2e8f0 !important;
+      margin: 2rem 0 !important;
+    }
+
+    #wysiwyg-canvas a,
+    .editor-rendered-view a {
+      color: #d97706 !important;
+      text-decoration: underline !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+    }
+
+    #wysiwyg-canvas code:not(pre code) {
+      background: #f1f5f9 !important;
+      color: #b45309 !important;
+      padding: 0.15rem 0.4rem !important;
+      border-radius: 0.35rem !important;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+      font-size: 0.85em !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    #wysiwyg-canvas table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin: 1.5rem 0 !important;
+      font-size: 0.875rem !important;
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      border-radius: 0.75rem !important;
+      overflow: hidden !important;
+    }
+
+    #wysiwyg-canvas th {
+      background: #f8fafc !important;
+      padding: 0.65rem 0.85rem !important;
+      font-weight: 700 !important;
+      color: #0f172a !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      border-right: 1px solid #e2e8f0 !important;
+      text-align: left !important;
+    }
+
+    #wysiwyg-canvas td {
+      padding: 0.65rem 0.85rem !important;
+      border-bottom: 1px solid #e2e8f0 !important;
+      border-right: 1px solid #e2e8f0 !important;
+      color: #334155 !important;
+    }
+
+    #wysiwyg-canvas th:last-child,
+    #wysiwyg-canvas td:last-child {
+      border-right: none !important;
+    }
+
+    /* Active Slash Menu Item Highlight */
+    .slash-item.is-selected {
+      background-color: #fef3c7 !important;
+      color: #78350f !important;
+      border-color: #fde68a !important;
+    }
+  </style>
+
   <!-- Toast & Notification Container -->
   <div id="editor-toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
@@ -228,59 +395,61 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
             >{existingPost?.subtitle || ''}</textarea>
           </div>
 
-          <!-- WYSIWYG Interactive Formatting Toolbar -->
+          <!-- WYSIWYG Sticky Formatting Toolbar -->
           <div class="sticky top-14 z-20 flex items-center justify-between gap-1 flex-wrap text-xs text-muted-foreground bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl border border-border/80 shadow-xs">
             <div class="flex items-center gap-1 flex-wrap">
               <!-- Text Styling -->
-              <button type="button" data-format="bold" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground font-bold transition text-xs" title="Bold (Ctrl+B)">B</button>
-              <button type="button" data-format="italic" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground italic transition text-xs font-serif" title="Italic (Ctrl+I)">I</button>
-              <button type="button" data-format="strikethrough" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground line-through transition text-xs" title="Strikethrough">S</button>
-              <button type="button" data-format="code" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground font-mono text-[11px] transition" title="Inline Code">&lt;/&gt;</button>
-              <button type="button" data-format="link" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground transition text-xs" title="Insert Link (Ctrl+K)">🔗</button>
+              <button type="button" data-format="bold" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground font-bold transition text-xs cursor-pointer" title="Bold (Ctrl+B)">B</button>
+              <button type="button" data-format="italic" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground italic transition text-xs font-serif cursor-pointer" title="Italic (Ctrl+I)">I</button>
+              <button type="button" data-format="strikethrough" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground line-through transition text-xs cursor-pointer" title="Strikethrough">S</button>
+              <button type="button" data-format="code" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground font-mono text-[11px] transition cursor-pointer" title="Inline Code">&lt;/&gt;</button>
+              <button type="button" data-format="link" class="format-btn p-1.5 rounded-lg hover:bg-slate-100 hover:text-foreground transition text-xs cursor-pointer" title="Insert Link (Ctrl+K)">🔗</button>
 
               <div class="h-4 w-px bg-border mx-1"></div>
 
               <!-- Headings -->
-              <button type="button" data-block-cmd="h2" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground font-bold text-xs font-serif-editorial" title="Heading 2">H2</button>
-              <button type="button" data-block-cmd="h3" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground font-bold text-xs font-serif-editorial" title="Heading 3">H3</button>
-              <button type="button" data-block-cmd="p" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs" title="Paragraph / Normal Text">¶</button>
+              <button type="button" data-block-cmd="h2" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground font-bold text-xs font-serif-editorial cursor-pointer" title="Heading 2">H2</button>
+              <button type="button" data-block-cmd="h3" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground font-bold text-xs font-serif-editorial cursor-pointer" title="Heading 3">H3</button>
+              <button type="button" data-block-cmd="p" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs cursor-pointer" title="Paragraph / Normal Text">¶</button>
 
               <div class="h-4 w-px bg-border mx-1"></div>
 
               <!-- Lists -->
-              <button type="button" data-block-cmd="numbered-list" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 font-medium" title="Numbered List (1. 2. 3.)">
+              <button type="button" data-block-cmd="numbered-list" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 font-medium cursor-pointer" title="Numbered List (1. 2. 3.)">
                 <span class="font-bold text-[11px]">1.</span> List
               </button>
-              <button type="button" data-block-cmd="bullet-list" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 font-medium" title="Bullet List (• • •)">
+              <button type="button" data-block-cmd="bullet-list" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 font-medium cursor-pointer" title="Bullet List (• • •)">
                 <span class="font-bold text-[11px]">•</span> Bullet
               </button>
 
               <div class="h-4 w-px bg-border mx-1"></div>
 
               <!-- Quotes & Callouts -->
-              <button type="button" data-block-cmd="quote" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 font-serif italic" title="Editorial Blockquote">
+              <button type="button" data-block-cmd="quote" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 font-serif italic cursor-pointer" title="Editorial Blockquote">
                 <span>❝</span> Quote
               </button>
-              <button type="button" data-block-cmd="callout" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1" title="Callout Box">
+              <button type="button" data-block-cmd="callout" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 cursor-pointer" title="Callout Box">
                 <span>💡</span> Callout
               </button>
 
               <div class="h-4 w-px bg-border mx-1"></div>
 
               <!-- Blocks -->
-              <button type="button" data-block-cmd="codeblock" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground font-mono text-xs" title="Code Block">
+              <button type="button" data-block-cmd="codeblock" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground font-mono text-xs cursor-pointer" title="Code Block">
                 Code Box
               </button>
-              <button type="button" data-block-cmd="table" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1" title="Comparison Table">
+              <button type="button" data-block-cmd="table" class="format-btn px-2 py-1 rounded-lg hover:bg-slate-100 hover:text-foreground text-xs flex items-center gap-1 cursor-pointer" title="Comparison Table">
                 <span>📊</span> Table
               </button>
-              <button type="button" data-block-cmd="tool" class="format-btn px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-xs hover:bg-amber-100 transition flex items-center gap-1" title="Embed Indian Software Card">
+              <button type="button" data-block-cmd="tool" class="format-btn px-2.5 py-1 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/80 font-bold text-xs hover:bg-amber-100 transition flex items-center gap-1 cursor-pointer" title="Embed Indian Software Card">
                 <span>⚡</span> Embed Tool
               </button>
             </div>
 
-            <div class="text-[11px] font-mono text-muted-foreground/60 hidden md:block">
-              Type <span class="bg-slate-100 px-1 py-0.5 rounded font-bold text-foreground">/</span> for blocks
+            <div class="text-[11px] font-mono text-muted-foreground/70 hidden md:flex items-center gap-1">
+              <span>Type</span>
+              <span class="bg-slate-100 px-1.5 py-0.5 rounded-md font-bold text-foreground border border-border">/</span>
+              <span>for block commands</span>
             </div>
           </div>
 
@@ -288,99 +457,16 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
           <textarea id="article-content" class="hidden">{existingPost?.content || ''}</textarea>
 
           <!-- Main WYSIWYG Visual Canvas -->
-          <div class="relative min-h-[500px]">
+          <div class="relative min-h-[550px] pb-32">
             <div
               id="wysiwyg-canvas"
               contenteditable="true"
               spellcheck="true"
-              class="w-full min-h-[500px] text-foreground focus:outline-none font-sans leading-relaxed text-base prose prose-slate max-w-none prose-headings:font-serif-editorial prose-headings:font-bold prose-a:text-primary prose-a:font-semibold prose-a:no-underline hover:prose-a:underline prose-p:my-3 prose-ul:my-3 prose-ol:my-3 prose-li:my-1"
+              class="w-full min-h-[550px] focus:outline-none"
             ></div>
 
-            <!-- Floating Slash Command Menu (Notion-Style) -->
-            <div
-              id="floating-slash-menu"
-              class="hidden fixed z-50 w-72 rounded-2xl border border-border bg-white p-2 shadow-2xl ring-1 ring-black/5 text-xs transition-all duration-150 animate-in fade-in zoom-in-95"
-            >
-              <div class="px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60 mb-1 flex items-center justify-between">
-                <span>Blocks &amp; Embeds</span>
-                <span class="font-mono text-[9px] text-muted-foreground">↑↓ navigate · ↵ choose</span>
-              </div>
-              <div id="slash-menu-items" class="space-y-0.5 max-h-72 overflow-y-auto">
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-amber-50/80 hover:text-amber-900 transition cursor-pointer active" data-cmd="tool" data-keywords="tool embed software desi indian app card">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-900 font-bold text-xs shrink-0">⚡</span>
-                  <div>
-                    <div class="font-bold text-foreground">Embed Indian Tool</div>
-                    <div class="text-[10px] text-muted-foreground">Live software card from directory</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="numbered-list" data-keywords="numbered list 1 2 3 ol ordered numbers">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0">1.</span>
-                  <div>
-                    <div class="font-bold text-foreground">Numbered List</div>
-                    <div class="text-[10px] text-muted-foreground">Ordered steps or sequential points</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="bullet-list" data-keywords="bullet list ul unordered unnumber points dots">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0">•</span>
-                  <div>
-                    <div class="font-bold text-foreground">Bulleted List</div>
-                    <div class="text-[10px] text-muted-foreground">Unordered list items</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="quote" data-keywords="quote blockquote insight pullquote cite">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 font-bold text-xs shrink-0">❝</span>
-                  <div>
-                    <div class="font-bold text-foreground">Quote / Blockquote</div>
-                    <div class="text-[10px] text-muted-foreground">Editorial pull-quote or citation</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="callout" data-keywords="callout note tip warning alert box info takeaway">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-800 font-bold text-xs shrink-0">💡</span>
-                  <div>
-                    <div class="font-bold text-foreground">Callout Box</div>
-                    <div class="text-[10px] text-muted-foreground">Key takeaway or sovereign note</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="h2" data-keywords="h2 heading title section">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0 font-serif-editorial">H2</span>
-                  <div>
-                    <div class="font-bold text-foreground">Heading 2</div>
-                    <div class="text-[10px] text-muted-foreground">Main section title</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="h3" data-keywords="h3 sub-heading subsection">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0 font-serif-editorial">H3</span>
-                  <div>
-                    <div class="font-bold text-foreground">Heading 3</div>
-                    <div class="text-[10px] text-muted-foreground">Sub-section title</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="table" data-keywords="table comparison vs grid matrix">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs shrink-0">📊</span>
-                  <div>
-                    <div class="font-bold text-foreground">Comparison Table</div>
-                    <div class="text-[10px] text-muted-foreground">Sovereign Alternative vs Global Giant</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="code" data-keywords="code snippet terminal script bash syntax pre">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-800 font-bold text-xs shrink-0 font-mono">&lt;/&gt;</span>
-                  <div>
-                    <div class="font-bold text-foreground">Code Block</div>
-                    <div class="text-[10px] text-muted-foreground">Commands, configuration, or code</div>
-                  </div>
-                </button>
-                <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="divider" data-keywords="divider line hr separator rule">
-                  <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0">―</span>
-                  <div>
-                    <div class="font-bold text-foreground">Divider</div>
-                    <div class="text-[10px] text-muted-foreground">Horizontal rule separator</div>
-                  </div>
-                </button>
-              </div>
-            </div>
-
             <!-- Live Reader Preview Container (Hidden by default) -->
-            <div id="live-preview-box" class="hidden prose prose-slate max-w-none prose-headings:font-serif-editorial prose-headings:font-bold prose-a:text-primary"></div>
+            <div id="live-preview-box" class="hidden editor-rendered-view"></div>
           </div>
         </div>
       </main>
@@ -398,7 +484,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
             </svg>
             <span>Article Settings & SEO</span>
           </h3>
-          <button type="button" id="close-drawer-btn" class="lg:hidden text-muted-foreground p-1 hover:text-foreground">
+          <button type="button" id="close-drawer-btn" class="lg:hidden text-muted-foreground p-1 hover:text-foreground cursor-pointer">
             ✕
           </button>
         </div>
@@ -569,19 +655,92 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
               </div>
             </div>
           </div>
-
-          <!-- Social Card Preview Notice -->
-          <div class="pt-3 border-t border-border/80">
-            <div class="text-[11px] font-bold text-foreground uppercase tracking-wider mb-1.5">Open Graph Social Card</div>
-            <div class="rounded-xl border border-border bg-slate-900 text-white p-3 text-xs space-y-1">
-              <div class="text-[10px] text-amber-400 font-bold uppercase tracking-wider">⚡ Dynamic 1200×630 WASM PNG</div>
-              <p class="text-[11px] text-slate-400">
-                Generated automatically at <span class="font-mono text-slate-300">/api/og/blog/{existingPost?.slug || '[slug]'}.png</span> with verified preview formatting for LinkedIn, X (Twitter), and WhatsApp.
-              </p>
-            </div>
-          </div>
         </div>
       </aside>
+    </div>
+  </div>
+
+  <!-- Notion Floating Slash Command Menu -->
+  <div
+    id="floating-slash-menu"
+    class="hidden fixed z-50 w-72 rounded-2xl border border-border bg-white p-2 shadow-2xl ring-1 ring-black/5 text-xs transition-all duration-100 animate-in fade-in zoom-in-95"
+    style="top: 0; left: 0;"
+  >
+    <div class="px-2.5 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider border-b border-border/60 mb-1 flex items-center justify-between select-none">
+      <span>Notion Blocks</span>
+      <span class="font-mono text-[9px] text-muted-foreground">↑↓ choose · ↵ insert</span>
+    </div>
+    <div id="slash-menu-items" class="space-y-0.5 max-h-72 overflow-y-auto">
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="h2" data-keywords="h2 heading 2 title section">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0 font-serif-editorial">H2</span>
+        <div>
+          <div class="font-bold text-foreground">Heading 2</div>
+          <div class="text-[10px] text-muted-foreground">Large section heading</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="h3" data-keywords="h3 heading 3 sub-heading subsection">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0 font-serif-editorial">H3</span>
+        <div>
+          <div class="font-bold text-foreground">Heading 3</div>
+          <div class="text-[10px] text-muted-foreground">Medium sub-section</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="numbered-list" data-keywords="numbered list 1 2 3 ol ordered numbers steps">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0">1.</span>
+        <div>
+          <div class="font-bold text-foreground">Numbered List</div>
+          <div class="text-[10px] text-muted-foreground">Ordered steps or sequence</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="bullet-list" data-keywords="bullet list ul unordered unnumber points dots">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0">•</span>
+        <div>
+          <div class="font-bold text-foreground">Bulleted List</div>
+          <div class="text-[10px] text-muted-foreground">Simple bulleted points</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="quote" data-keywords="quote blockquote insight pullquote cite">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-800 font-bold text-xs shrink-0">❝</span>
+        <div>
+          <div class="font-bold text-foreground">Blockquote</div>
+          <div class="text-[10px] text-muted-foreground">Editorial pull-quote</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="callout" data-keywords="callout note tip warning alert box info takeaway">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 text-blue-800 font-bold text-xs shrink-0">💡</span>
+        <div>
+          <div class="font-bold text-foreground">Callout Box</div>
+          <div class="text-[10px] text-muted-foreground">Key takeaway or sovereign note</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-amber-50/80 hover:text-amber-900 transition cursor-pointer" data-cmd="tool" data-keywords="tool embed software desi indian app card">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 text-amber-900 font-bold text-xs shrink-0">⚡</span>
+        <div>
+          <div class="font-bold text-foreground">Embed Indian Tool</div>
+          <div class="text-[10px] text-muted-foreground">Live software card from directory</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="table" data-keywords="table comparison vs grid matrix">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 text-emerald-800 font-bold text-xs shrink-0">📊</span>
+        <div>
+          <div class="font-bold text-foreground">Comparison Table</div>
+          <div class="text-[10px] text-muted-foreground">Sovereign vs Global matrix</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="code" data-keywords="code snippet terminal script bash syntax pre">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-100 text-purple-800 font-bold text-xs shrink-0 font-mono">&lt;/&gt;</span>
+        <div>
+          <div class="font-bold text-foreground">Code Block</div>
+          <div class="text-[10px] text-muted-foreground">Commands or syntax snippet</div>
+        </div>
+      </button>
+      <button type="button" class="slash-item flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-left hover:bg-slate-100 transition cursor-pointer" data-cmd="divider" data-keywords="divider line hr separator rule">
+        <span class="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100 text-slate-800 font-bold text-xs shrink-0">―</span>
+        <div>
+          <div class="font-bold text-foreground">Divider</div>
+          <div class="text-[10px] text-muted-foreground">Horizontal rule separator</div>
+        </div>
+      </button>
     </div>
   </div>
 
@@ -722,11 +881,11 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     }, 3000);
   }
 
-  // --- BIDIRECTIONAL MARKDOWN <-> WYSIWYG DOM ENGINE ---
+  // --- BIDIRECTIONAL MARKDOWN <-> WYSIWYG ENGINE ---
 
   function parseMarkdownToWysiwygHtml(md: string): string {
     if (!md || !md.trim()) {
-      return '<p>Write your article here... Type <span class="bg-slate-100 px-1 py-0.5 rounded font-mono text-xs">/</span> for blocks.</p>';
+      return '<p><br/></p>';
     }
 
     let html = md;
@@ -751,14 +910,14 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
               <span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
                 ✓ Live Embed
               </span>
-              <button type="button" class="remove-tool-btn text-xs text-rose-500 hover:text-rose-700 font-bold p-1 hover:bg-rose-50 rounded" title="Remove Embed">✕</button>
+              <button type="button" class="remove-tool-btn text-xs text-rose-500 hover:text-rose-700 font-bold p-1 hover:bg-rose-50 rounded cursor-pointer" title="Remove Embed">✕</button>
             </div>
           </div>
         </div>
       `;
     });
 
-    // 2. Callout Boxes (> [!NOTE] or > [!TIP] etc.)
+    // 2. Callout Boxes
     html = html.replace(/> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\n([\s\S]*?)(?=\n\n|$)/g, (_m, type, body) => {
       const cleanBody = body.replace(/^>\s?/gm, '').trim();
       const colors: Record<string, { bg: string; icon: string }> = {
@@ -771,7 +930,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
       const conf = colors[type] || colors.NOTE;
       return `
         <div class="my-6 rounded-2xl border p-4 text-sm ${conf.bg} not-prose leading-relaxed relative" data-block="callout" data-callout="${type}">
-          <div class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center justify-between">
+          <div class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center justify-between select-none">
             <span>${conf.icon} ${type}</span>
           </div>
           <div class="callout-content" contenteditable="true">${cleanBody}</div>
@@ -793,7 +952,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
       `;
     });
 
-    // 4. Split blocks (paragraphs, headings, blockquotes, lists, tables)
+    // 4. Split blocks
     const blocks = html.split(/\n\n+/);
     html = blocks
       .map((blk) => {
@@ -801,58 +960,46 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
         if (!blk) return '';
         if (blk.startsWith('<div') || blk.startsWith('<pre')) return blk;
 
-        // Headings
         if (blk.startsWith('### ')) {
-          return `<h3 class="text-xl font-bold font-serif-editorial mt-6 mb-2 text-foreground">${blk.replace(/^###\s+/, '')}</h3>`;
+          return `<h3>${blk.replace(/^###\s+/, '')}</h3>`;
         }
         if (blk.startsWith('## ')) {
-          return `<h2 class="text-2xl font-bold font-serif-editorial mt-8 mb-3 text-foreground border-b border-border/40 pb-1">${blk.replace(/^##\s+/, '')}</h2>`;
+          return `<h2>${blk.replace(/^##\s+/, '')}</h2>`;
         }
         if (blk.startsWith('# ')) {
-          return `<h2 class="text-3xl font-extrabold font-serif-editorial mt-8 mb-3 text-foreground">${blk.replace(/^#\s+/, '')}</h2>`;
+          return `<h1>${blk.replace(/^#\s+/, '')}</h1>`;
         }
-
-        // Horizontal rule
         if (blk === '---' || blk === '***' || blk === '___') {
-          return '<hr class="my-8 border-border/80" />';
+          return '<hr />';
         }
-
-        // Blockquotes
         if (blk.startsWith('> ')) {
           const quoteLines = blk.split('\n').map((l) => l.replace(/^>\s?/, '')).join('<br/>');
-          return `<blockquote class="border-l-4 border-amber-500 pl-4 italic my-4 text-slate-700 bg-amber-50/30 py-2.5 rounded-r-xl">${quoteLines}</blockquote>`;
+          return `<blockquote>${quoteLines}</blockquote>`;
         }
-
-        // Numbered Lists (Ordered)
         if (/^\d+\.\s+/.test(blk)) {
           const items = blk.split('\n').map((li) => `<li>${li.replace(/^\d+\.\s+/, '')}</li>`).join('');
-          return `<ol class="list-decimal pl-6 my-4 space-y-1.5 text-foreground">${items}</ol>`;
+          return `<ol>${items}</ol>`;
         }
-
-        // Bulleted Lists (Unordered)
         if (blk.startsWith('- ') || blk.startsWith('* ')) {
           const items = blk.split('\n').map((li) => `<li>${li.replace(/^[-*]\s+/, '')}</li>`).join('');
-          return `<ul class="list-disc pl-6 my-4 space-y-1.5 text-foreground">${items}</ul>`;
+          return `<ul>${items}</ul>`;
         }
-
-        // Markdown Table
         if (blk.startsWith('|') && blk.endsWith('|')) {
           const rows = blk.split('\n');
-          let tableHtml = '<div class="my-6 overflow-x-auto not-prose" data-block="table"><table class="w-full text-left text-xs border-collapse border border-border rounded-xl bg-white shadow-2xs">';
-          rows.forEach((row, idx) => {
-            if (row.includes('---')) return;
+          let tableHtml = '<table data-block="table"><thead><tr>';
+          const headerCells = rows[0].split('|').slice(1, -1).map((c) => c.trim());
+          tableHtml += headerCells.map((c) => `<th contenteditable="true">${c}</th>`).join('') + '</tr></thead><tbody>';
+          rows.slice(2).forEach((row) => {
             const cells = row.split('|').slice(1, -1).map((c) => c.trim());
-            if (idx === 0) {
-              tableHtml += '<thead class="bg-slate-50 border-b border-border font-bold text-foreground"><tr>' + cells.map((c) => `<th class="p-3 border-r border-border/60 last:border-0" contenteditable="true">${c}</th>`).join('') + '</tr></thead><tbody>';
-            } else {
-              tableHtml += '<tr class="border-b border-border/60 hover:bg-slate-50/50">' + cells.map((c) => `<td class="p-3 border-r border-border/60 last:border-0" contenteditable="true">${c}</td>`).join('') + '</tr>';
+            if (cells.length > 0) {
+              tableHtml += '<tr>' + cells.map((c) => `<td contenteditable="true">${c}</td>`).join('') + '</tr>';
             }
           });
-          tableHtml += '</tbody></table></div>';
+          tableHtml += '</tbody></table>';
           return tableHtml;
         }
 
-        return `<p class="my-3 leading-relaxed text-foreground">${blk.replace(/\n/g, '<br/>')}</p>`;
+        return `<p>${blk.replace(/\n/g, '<br/>')}</p>`;
       })
       .join('\n');
 
@@ -860,8 +1007,8 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     html = html
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-amber-900 border border-slate-200">$1</code>')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" class="text-primary font-semibold hover:underline" target="_blank">$1</a>');
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
 
     return html;
   }
@@ -929,7 +1076,11 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
         }
 
         // 5. Headings
-        if (tagName === 'h1' || tagName === 'h2') {
+        if (tagName === 'h1') {
+          blocks.push(`# ${el.textContent?.trim() || ''}`);
+          return;
+        }
+        if (tagName === 'h2') {
           blocks.push(`## ${el.textContent?.trim() || ''}`);
           return;
         }
@@ -955,7 +1106,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
         // 8. Blockquote
         if (tagName === 'blockquote') {
           const text = (el.textContent || '').trim();
-          blocks.push(`> "${text.replace(/^["“”]|["“”]$/g, '').trim()}"`);
+          blocks.push(`> ${text}`);
           return;
         }
 
@@ -967,7 +1118,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
 
         // 10. Normal Paragraphs
         let text = el.innerHTML || '';
-        // Convert inline HTML to clean Markdown
         text = text
           .replace(/<strong>(.*?)<\/strong>/gi, '**$1**')
           .replace(/<b>(.*?)<\/b>/gi, '**$1**')
@@ -988,11 +1138,10 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     return blocks.join('\n\n');
   }
 
-  // Initialize Canvas from raw database Markdown
+  // Initialize Canvas
   const initialMarkdown = rawContentInput.value;
   wysiwygCanvas.innerHTML = parseMarkdownToWysiwygHtml(initialMarkdown);
 
-  // Attach tool remove listeners
   function attachCanvasInteractions() {
     wysiwygCanvas.querySelectorAll('.remove-tool-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
@@ -1008,7 +1157,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
   }
   attachCanvasInteractions();
 
-  // Toolbar Formatting Actions
+  // Formatting Toolbar Buttons
   document.querySelectorAll('.format-btn').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -1023,10 +1172,10 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
       else if (format === 'code') {
         const selection = window.getSelection();
         if (selection && selection.toString()) {
-          document.execCommand('insertHTML', false, `<code class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-xs text-amber-900 border border-slate-200">${selection.toString()}</code>`);
+          document.execCommand('insertHTML', false, `<code>${selection.toString()}</code>`);
         }
       } else if (format === 'link') {
-        const url = prompt('Enter link URL (e.g. https://...):');
+        const url = prompt('Enter URL (e.g. https://...):');
         if (url) document.execCommand('createLink', false, url);
       } else if (blockCmd) {
         executeWysiwygCommand(blockCmd);
@@ -1036,31 +1185,55 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     });
   });
 
-  // --- NOTION-STYLE SLASH COMMAND POPUP MENU ---
+  // --- PRECISE NOTION SLASH COMMAND MENU ENGINE ---
   const slashMenu = document.getElementById('floating-slash-menu') as HTMLElement;
-  const slashItems = document.querySelectorAll<HTMLButtonElement>('.slash-item');
+  const slashItems = Array.from(document.querySelectorAll<HTMLButtonElement>('.slash-item'));
   let isSlashMenuOpen = false;
   let activeSlashIndex = 0;
 
   function updateActiveSlashItem() {
-    const visibleItems = Array.from(slashItems).filter((it) => !it.classList.contains('hidden'));
+    const visibleItems = slashItems.filter((it) => !it.classList.contains('hidden'));
     visibleItems.forEach((it, idx) => {
       if (idx === activeSlashIndex) {
-        it.classList.add('bg-amber-100/90', 'text-amber-950', 'ring-1', 'ring-amber-400/50');
+        it.classList.add('is-selected');
+        it.scrollIntoView({ block: 'nearest' });
       } else {
-        it.classList.remove('bg-amber-100/90', 'text-amber-950', 'ring-1', 'ring-amber-400/50');
+        it.classList.remove('is-selected');
       }
     });
   }
 
-  function openSlashMenuAtSelection() {
+  function openSlashMenuAtCaret() {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
-    const range = sel.getRangeAt(0);
-    const rect = range.getBoundingClientRect();
 
-    slashMenu.style.left = `${Math.min(window.innerWidth - 300, Math.max(16, rect.left))}px`;
-    slashMenu.style.top = `${rect.bottom + window.scrollY + 8}px`;
+    const range = sel.getRangeAt(0);
+    let rect = range.getBoundingClientRect();
+
+    // Fallback if cursor rect is zero-sized
+    if (rect.width === 0 && rect.height === 0) {
+      const node = range.startContainer;
+      const parentEl = (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement) as HTMLElement;
+      if (parentEl) {
+        rect = parentEl.getBoundingClientRect();
+      }
+    }
+
+    const menuWidth = 288; // 72rem (w-72)
+    const menuHeight = 300;
+    const padding = 12;
+
+    // Viewport coordinates for position: fixed
+    let left = Math.min(window.innerWidth - menuWidth - padding, Math.max(padding, rect.left));
+    let top = rect.bottom + 6;
+
+    // Flip upward if overflowing bottom of viewport
+    if (top + menuHeight > window.innerHeight && rect.top > menuHeight + padding) {
+      top = rect.top - menuHeight - 6;
+    }
+
+    slashMenu.style.left = `${left}px`;
+    slashMenu.style.top = `${top}px`;
 
     isSlashMenuOpen = true;
     slashMenu.classList.remove('hidden');
@@ -1097,7 +1270,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     }
   }
 
-  function removeTypedSlashQuery() {
+  function removeTypedSlashText() {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return;
     const node = sel.anchorNode;
@@ -1111,7 +1284,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
   }
 
   function executeWysiwygCommand(cmd: string) {
-    removeTypedSlashQuery();
+    removeTypedSlashText();
     closeSlashMenu();
     wysiwygCanvas.focus();
 
@@ -1126,12 +1299,12 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     } else if (cmd === 'bullet-list') {
       document.execCommand('insertUnorderedList', false);
     } else if (cmd === 'quote') {
-      const quoteHtml = `<blockquote class="border-l-4 border-amber-500 pl-4 italic my-4 text-slate-700 bg-amber-50/30 py-2.5 rounded-r-xl">"Sovereign engineering builds software you truly own and control."</blockquote><p><br/></p>`;
+      const quoteHtml = `<blockquote>"Sovereign engineering builds software you truly own and control."</blockquote><p><br/></p>`;
       document.execCommand('insertHTML', false, quoteHtml);
     } else if (cmd === 'callout') {
       const calloutHtml = `
         <div class="my-6 rounded-2xl border p-4 text-sm bg-blue-50/70 border-blue-200 text-blue-900 not-prose leading-relaxed" data-block="callout" data-callout="NOTE">
-          <div class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center justify-between">
+          <div class="font-bold text-xs uppercase tracking-wider mb-1 flex items-center justify-between select-none">
             <span>💡 NOTE</span>
           </div>
           <div class="callout-content" contenteditable="true">Key takeaway or sovereign insight goes here...</div>
@@ -1151,34 +1324,32 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
       document.execCommand('insertHTML', false, codeHtml);
     } else if (cmd === 'table') {
       const tableHtml = `
-        <div class="my-6 overflow-x-auto not-prose" data-block="table">
-          <table class="w-full text-left text-xs border-collapse border border-border rounded-xl bg-white shadow-2xs">
-            <thead class="bg-slate-50 border-b border-border font-bold text-foreground">
-              <tr>
-                <th class="p-3 border-r border-border/60" contenteditable="true">Capability</th>
-                <th class="p-3 border-r border-border/60" contenteditable="true">Sovereign Alternative</th>
-                <th class="p-3" contenteditable="true">Global Giant</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-b border-border/60 hover:bg-slate-50/50">
-                <td class="p-3 border-r border-border/60 font-semibold" contenteditable="true">Data Hosting</td>
-                <td class="p-3 border-r border-border/60" contenteditable="true">🇮🇳 Mumbai / India Region</td>
-                <td class="p-3" contenteditable="true">🇺🇸 US-East</td>
-              </tr>
-              <tr class="border-b border-border/60 hover:bg-slate-50/50">
-                <td class="p-3 border-r border-border/60 font-semibold" contenteditable="true">Tax &amp; Currency</td>
-                <td class="p-3 border-r border-border/60" contenteditable="true">INR + 18% GST Input Credit</td>
-                <td class="p-3" contenteditable="true">USD + 3.5% Forex Markups</td>
-              </tr>
-              <tr class="hover:bg-slate-50/50">
-                <td class="p-3 border-r border-border/60 font-semibold" contenteditable="true">Compliance</td>
-                <td class="p-3 border-r border-border/60" contenteditable="true">DPDP Act 2023 &amp; RBI Ready</td>
-                <td class="p-3" contenteditable="true">GDPR / SOC2 Only</td>
-              </tr>
-            </tbody>
-          </table>
-        </div><p><br/></p>
+        <table data-block="table">
+          <thead>
+            <tr>
+              <th contenteditable="true">Capability</th>
+              <th contenteditable="true">Sovereign Alternative</th>
+              <th contenteditable="true">Global Giant</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td contenteditable="true">Data Hosting</td>
+              <td contenteditable="true">🇮🇳 Mumbai / India Region</td>
+              <td contenteditable="true">🇺🇸 US-East</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Tax &amp; Currency</td>
+              <td contenteditable="true">INR + 18% GST Credit</td>
+              <td contenteditable="true">USD + 3.5% Forex Fee</td>
+            </tr>
+            <tr>
+              <td contenteditable="true">Compliance</td>
+              <td contenteditable="true">DPDP Act 2023 Ready</td>
+              <td contenteditable="true">GDPR / SOC2 Only</td>
+            </tr>
+          </tbody>
+        </table><p><br/></p>
       `;
       document.execCommand('insertHTML', false, tableHtml);
     } else if (cmd === 'divider') {
@@ -1195,7 +1366,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
   // Keyboard navigation & slash detection on WYSIWYG canvas
   wysiwygCanvas.addEventListener('keydown', (e: KeyboardEvent) => {
     if (isSlashMenuOpen) {
-      const visibleItems = Array.from(slashItems).filter((it) => !it.classList.contains('hidden'));
+      const visibleItems = slashItems.filter((it) => !it.classList.contains('hidden'));
 
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -1226,7 +1397,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
   });
 
   wysiwygCanvas.addEventListener('keyup', (e: KeyboardEvent) => {
-    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape'].includes(e.key) && isSlashMenuOpen) {
+    if (['ArrowDown', 'ArrowUp', 'Enter', 'Escape', 'Shift', 'Control', 'Alt'].includes(e.key)) {
       return;
     }
 
@@ -1238,8 +1409,8 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
 
     if (slashIdx >= 0) {
       const query = text.substring(slashIdx + 1);
-      if (!query.includes(' ')) {
-        if (!isSlashMenuOpen) openSlashMenuAtSelection();
+      if (!query.includes(' ') && query.length < 15) {
+        if (!isSlashMenuOpen) openSlashMenuAtCaret();
         filterSlashMenu(query);
       } else {
         closeSlashMenu();
@@ -1251,7 +1422,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     updateReadingStats();
   });
 
-  // Slash items click handler
   slashItems.forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1260,7 +1430,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     });
   });
 
-  // Close slash menu on outside click
   document.addEventListener('click', (e) => {
     if (isSlashMenuOpen && !slashMenu.contains(e.target as Node)) {
       closeSlashMenu();
@@ -1298,7 +1467,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
   autoResize(titleInput);
   autoResize(subtitleInput);
 
-  // Word Count & Read Time Calculation
   function updateReadingStats() {
     const text = wysiwygCanvas.textContent || '';
     const words = text ? text.trim().split(/\s+/).filter(Boolean).length : 0;
@@ -1308,7 +1476,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
   wysiwygCanvas.addEventListener('input', updateReadingStats);
   updateReadingStats();
 
-  // SERP Previews & Character Counters
   function updateSerpPreviews() {
     const title = metaTitleInput.value.trim() || titleInput.value.trim() || 'Article Title | Desi Alternatives';
     const desc = metaDescInput.value.trim() || subtitleInput.value.trim() || 'Search summary will appear here on Google SERP.';
@@ -1336,7 +1503,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
   slugInput.addEventListener('input', updateSerpPreviews);
   updateSerpPreviews();
 
-  // Auto-generate slug on title blur if slug is empty
   titleInput.addEventListener('blur', () => {
     if (!slugInput.value && titleInput.value) {
       slugInput.value = titleInput.value
@@ -1349,7 +1515,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     }
   });
 
-  // Slug check
   let slugDebounce: any;
   async function checkSlugAvailability() {
     const slug = slugInput.value.trim();
@@ -1464,7 +1629,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
               <div class="text-[10px] text-muted-foreground line-clamp-1">${t.tagline}</div>
             </div>
           </div>
-          <button type="button" class="rounded-lg bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-bold hover:bg-primary hover:text-white transition">
+          <button type="button" class="rounded-lg bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-bold hover:bg-primary hover:text-white transition cursor-pointer">
             + Embed
           </button>
         </div>
@@ -1492,7 +1657,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
                   <span class="rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold">
                     ✓ Live Embed
                   </span>
-                  <button type="button" class="remove-tool-btn text-xs text-rose-500 hover:text-rose-700 font-bold p-1 hover:bg-rose-50 rounded" title="Remove Embed">✕</button>
+                  <button type="button" class="remove-tool-btn text-xs text-rose-500 hover:text-rose-700 font-bold p-1 hover:bg-rose-50 rounded cursor-pointer" title="Remove Embed">✕</button>
                 </div>
               </div>
             </div><p><br/></p>
@@ -1578,7 +1743,6 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     const canonicalUrl = canonicalUrlInput.value.trim();
     const publishedAt = publishedAtInput.value ? new Date(publishedAtInput.value).toISOString() : null;
 
-    // Get checked tagged tools
     const taggedToolIds: string[] = [];
     document.querySelectorAll('input[name="tagged-tool"]:checked').forEach((chk) => {
       taggedToolIds.push((chk as HTMLInputElement).value);
