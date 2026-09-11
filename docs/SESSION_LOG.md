@@ -882,6 +882,34 @@
    - `astro check`: **0 errors** across all 89 files.
    - `bun run build`: Built cleanly with 0 TypeScript/compiler diagnostics.
 
+---
+
+## Session 35 — Admin Settings Tabbed Interface & Streamlined Navigation Drawer
+
+**Date & Time (IST):** 2026-09-11 22:25 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Tabbed Admin Settings Layout (`src/pages/admin/settings.astro`)**:
+   - Split bloated settings screen into 3 focused, interactive tabs:
+     - `✉️ Sender Identity & Resend`: Outbound credentials, from name/email, DNS guidance, live OTP diagnostic.
+     - `👋 Registration Welcome`: Enable switch, subject/body inputs with variable tag chips, live sample preview, test dispatcher.
+     - `📬 Newsletter Welcome`: Enable switch, subject/body inputs with variable tag chips, live sample preview, test dispatcher.
+   - Preserved global top and bottom "Save All Settings" handlers with smooth status notification banner.
+
+2. **Streamlined & Aesthetic Navbar Drawer (`src/components/Navbar.astro`)**:
+   - Redesigned navigation drawer with clean, single-line menu links, crisp iconography, and category badges (`Head-to-Head`, `+ Add`, `Weekly`).
+   - Removed cluttered paragraph descriptions in favor of high visual clarity and ergonomic touch targets.
+   - Clean group separation: *Directory & Tools*, *Editorial & Insights*, and dynamic Author/Admin Studio banner.
+
+3. **Testing & Quality Assurance**:
+   - Playwright E2E tests: **18/18 tests passed**.
+   - Vitest unit tests: **50/50 tests passed**.
+   - `bun run build`: Production bundle generated cleanly in 18.35s.
+
+
 
 
 
