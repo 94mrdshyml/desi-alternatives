@@ -15,39 +15,31 @@ let fromEmail = 'team@letter.mrdshyml.xyz';
 
 let welcomeEnabled = true;
 let welcomeSubject = 'Welcome to Desi Alternatives, {{first_name|builder}}! 🇮🇳';
-let welcomeBody = `Hi {{first_name|there}},
-
-Welcome to Desi Alternatives! We're thrilled to have you join our sovereign community of founders, CTOs, and developers building the future of Indian tech.
-
-Here is what you can do right now:
-• Explore the Sovereign Directory across Developer Tools, Cloud, AI, and Productivity
-• Compare Indian SaaS vs Global Giants in our Head-to-Head Comparison Engine
-• Submit or Claim your Indian software listing to verify official ownership
-• Read in-depth migration teardowns and architecture blueprints in the Tech Journal
-
-Have questions or built a tool you'd like indexed? Simply reply to this email.
-
-Best regards,
-The Desi Alternatives Team
-https://desialternatives.in`;
+let welcomeBody = `<p>Hi {{first_name|there}},</p>
+<p>Welcome to Desi Alternatives! We're thrilled to have you join our sovereign community of founders, CTOs, and developers building the future of Indian tech.</p>
+<p><strong>Here is what you can do right now:</strong></p>
+<ul>
+  <li>Explore the Sovereign Directory across Developer Tools, Cloud, AI, and Productivity</li>
+  <li>Compare Indian SaaS vs Global Giants in our Head-to-Head Comparison Engine</li>
+  <li>Submit or Claim your Indian software listing to verify official ownership</li>
+  <li>Read in-depth migration teardowns and architecture blueprints in the Tech Journal</li>
+</ul>
+<p>Have questions or built a tool you'd like indexed? Simply reply to this email.</p>
+<p>Best regards,<br><strong>The Desi Alternatives Team</strong><br><a href="https://desialternatives.in">https://desialternatives.in</a></p>`;
 
 let newsletterWelcomeEnabled = true;
 let newsletterWelcomeSubject = 'Welcome to Desi Alternatives Dispatch, {{first_name|there}}! 📬';
-let newsletterWelcomeBody = `Hi {{first_name|there}},
-
-Thanks for subscribing to the Desi Alternatives Dispatch!
-
-Every Thursday morning, we deliver curated intelligence directly to your inbox:
-• Sovereign SaaS Radar: Hidden gems and high-performing Indian software
-• Cost Teardowns: Real case studies on cutting foreign cloud bills
-• Migration Blueprints: Step-by-step guides for moving off global monopolies
-• Compliance Guides: Navigating Indian data residency, 18% GST invoices, and DPDP rules
-
-Look out for our next dispatch in your inbox this Thursday!
-
-Warmly,
-The Dispatch Editorial Team
-https://desialternatives.in/newsletter`;
+let newsletterWelcomeBody = `<p>Hi {{first_name|there}},</p>
+<p>Thanks for subscribing to the <strong>Desi Alternatives Dispatch</strong>!</p>
+<p>Every Thursday morning, we deliver curated intelligence directly to your inbox:</p>
+<ul>
+  <li><strong>Sovereign SaaS Radar:</strong> Hidden gems and high-performing Indian software</li>
+  <li><strong>Cost Teardowns:</strong> Real case studies on cutting foreign cloud bills</li>
+  <li><strong>Migration Blueprints:</strong> Step-by-step guides for moving off global monopolies</li>
+  <li><strong>Compliance Guides:</strong> Navigating Indian data residency, 18% GST invoices, and DPDP rules</li>
+</ul>
+<p>Look out for our next dispatch in your inbox this Thursday!</p>
+<p>Warmly,<br><strong>The Dispatch Editorial Team</strong><br><a href="https://desialternatives.in/newsletter">https://desialternatives.in/newsletter</a></p>`;
 
 let totalToolsCount = 0;
 let totalGlobalCount = 0;
@@ -83,6 +75,14 @@ if (db) {
     console.error('Failed to load site settings:', e);
   }
 }
+
+function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', email = 'aarav@example.com'): string {
+  if (!str) return '';
+  return str
+    .replace(/\{\{\s*first_name(?:\|([^}]+))?\s*\}\}/gi, (_, fallback) => firstName || fallback || 'there')
+    .replace(/\{\{\s*name(?:\|([^}]+))?\s*\}\}/gi, (_, fallback) => name || fallback || 'there')
+    .replace(/\{\{\s*email\s*\}\}/gi, email);
+}
 ---
 
 <AdminLayout
@@ -96,13 +96,71 @@ if (db) {
     users: totalUsersCount,
   }}
 >
+  <style is:global>
+    /* Scoped WYSIWYG Editor Canvas Styles */
+    .wysiwyg-editor-canvas {
+      min-height: 240px;
+      outline: none;
+      font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
+      color: #1e293b;
+      line-height: 1.7;
+      font-size: 0.875rem;
+    }
+    .wysiwyg-editor-canvas p {
+      margin-bottom: 0.75rem;
+    }
+    .wysiwyg-editor-canvas h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    .wysiwyg-editor-canvas h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-top: 0.75rem;
+      margin-bottom: 0.35rem;
+    }
+    .wysiwyg-editor-canvas ul {
+      list-style-type: disc;
+      padding-left: 1.4rem;
+      margin-bottom: 0.75rem;
+    }
+    .wysiwyg-editor-canvas ol {
+      list-style-type: decimal;
+      padding-left: 1.4rem;
+      margin-bottom: 0.75rem;
+    }
+    .wysiwyg-editor-canvas li {
+      margin-bottom: 0.25rem;
+    }
+    .wysiwyg-editor-canvas a {
+      color: #d97706;
+      text-decoration: underline;
+    }
+    .wysiwyg-editor-canvas blockquote {
+      border-left: 3px solid #d97706;
+      padding-left: 0.75rem;
+      color: #64748b;
+      font-style: italic;
+      margin: 0.75rem 0;
+    }
+    .wysiwyg-editor-canvas hr {
+      border: 0;
+      border-top: 1px solid #e2e8f0;
+      margin: 1rem 0;
+    }
+  </style>
+
   <div class="space-y-6 max-w-4xl pb-16">
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
       <div>
         <h1 class="text-2xl font-bold tracking-tight text-foreground">Platform & Email Settings</h1>
         <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
-          Manage outbound sender identity, registration welcome emails, and weekly newsletter onboarding.
+          Manage outbound sender identity, registration welcome emails, and weekly newsletter onboarding with rich WYSIWYG editors.
         </p>
       </div>
 
@@ -135,7 +193,7 @@ if (db) {
           data-tab="registration"
         >
           <span>👋</span>
-          <span>Registration Welcome</span>
+          <span>Registration Welcome (WYSIWYG)</span>
         </button>
         <button
           type="button"
@@ -143,12 +201,16 @@ if (db) {
           data-tab="newsletter"
         >
           <span>📬</span>
-          <span>Newsletter Welcome</span>
+          <span>Newsletter Welcome (WYSIWYG)</span>
         </button>
       </nav>
     </div>
 
     <form id="admin-settings-form" class="space-y-6">
+      <!-- Hidden input carriers for rich HTML payloads -->
+      <input type="hidden" name="welcomeBody" id="welcome-body-hidden" value={welcomeBody} />
+      <input type="hidden" name="newsletterWelcomeBody" id="newsletter-welcome-body-hidden" value={newsletterWelcomeBody} />
+
       <!-- ========================================== -->
       <!-- TAB 1: SENDER IDENTITY & RESEND DIAGNOSTIC -->
       <!-- ========================================== -->
@@ -265,7 +327,7 @@ if (db) {
                 👋
               </div>
               <div>
-                <h3 class="text-sm font-bold text-foreground">User Registration Welcome Email</h3>
+                <h3 class="text-sm font-bold text-foreground">User Registration Welcome Email (WYSIWYG)</h3>
                 <p class="text-xs text-muted-foreground">Dispatched when a new user verifies OTP and signs up on Desi Alternatives</p>
               </div>
             </div>
@@ -282,7 +344,8 @@ if (db) {
             </label>
           </div>
 
-          <div class="space-y-4">
+          <div class="space-y-5">
+            <!-- Subject Input -->
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <label for="welcome-subject" class="block text-xs font-semibold text-foreground">
@@ -290,8 +353,8 @@ if (db) {
                 </label>
                 <div class="flex items-center gap-1.5">
                   <span class="text-[11px] text-muted-foreground">Insert:</span>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-subject" data-tag="{'{{first_name|builder}}'}">{'{{first_name|builder}}'}</button>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-subject" data-tag="{'{{name|there}}'}">{'{{name|there}}'}</button>
+                  <button type="button" class="insert-subject-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-subject" data-tag="{'{{first_name|builder}}'}">{'{{first_name|builder}}'}</button>
+                  <button type="button" class="insert-subject-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-subject" data-tag="{'{{name|there}}'}">{'{{name|there}}'}</button>
                 </div>
               </div>
               <input
@@ -304,56 +367,97 @@ if (db) {
               />
             </div>
 
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="welcome-body" class="block text-xs font-semibold text-foreground">
-                  Email Message Body *
+            <!-- WYSIWYG Editor Container -->
+            <div class="space-y-2">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label class="block text-xs font-semibold text-foreground">
+                  Email Body (WYSIWYG Visual Canvas) *
                 </label>
-                <div class="flex items-center gap-1.5">
-                  <span class="text-[11px] text-muted-foreground">Insert:</span>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-body" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-body" data-tag="{'{{email}}'}">{'{{email}}'}</button>
+
+                <!-- Variable Insertion Pills -->
+                <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span class="text-[11px] text-muted-foreground">Personalize:</span>
+                  <button type="button" class="insert-wysiwyg-tag-btn rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-mono font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer" data-editor="welcome" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
+                  <button type="button" class="insert-wysiwyg-tag-btn rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-mono font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer" data-editor="welcome" data-tag="{'{{first_name|builder}}'}">{'{{first_name|builder}}'}</button>
+                  <button type="button" class="insert-wysiwyg-tag-btn rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-mono font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer" data-editor="welcome" data-tag="{'{{email}}'}">{'{{email}}'}</button>
                 </div>
               </div>
-              <textarea
-                id="welcome-body"
-                name="welcomeBody"
-                rows="9"
-                required
-                class="w-full rounded-xl border border-border p-3.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition leading-relaxed font-sans"
-              >{welcomeBody}</textarea>
-              <p class="mt-1 text-[11px] text-muted-foreground">
-                Supports multi-paragraph formatting and bullet points (•). Automatically wrapped in sovereign email layout with primary action button.
-              </p>
+
+              <!-- WYSIWYG Component Card -->
+              <div class="rounded-2xl border border-border bg-white overflow-hidden shadow-2xs focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition">
+                <!-- Toolbar -->
+                <div class="flex flex-wrap items-center gap-1 border-b border-border bg-slate-50/80 p-2 text-xs">
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 font-bold hover:bg-white transition" data-editor="welcome" data-cmd="bold" title="Bold (Ctrl+B)">B</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 italic hover:bg-white transition" data-editor="welcome" data-cmd="italic" title="Italic (Ctrl+I)">I</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 underline hover:bg-white transition" data-editor="welcome" data-cmd="underline" title="Underline (Ctrl+U)">U</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 line-through hover:bg-white transition" data-editor="welcome" data-cmd="strikeThrough" title="Strikethrough">S</button>
+                  
+                  <span class="h-4 w-px bg-border mx-1"></span>
+
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 font-semibold hover:bg-white transition" data-editor="welcome" data-cmd="formatBlock" data-val="h2" title="Heading 2">H2</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 font-semibold hover:bg-white transition" data-editor="welcome" data-cmd="formatBlock" data-val="h3" title="Heading 3">H3</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="welcome" data-cmd="formatBlock" data-val="p" title="Paragraph">¶</button>
+
+                  <span class="h-4 w-px bg-border mx-1"></span>
+
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="welcome" data-cmd="insertUnorderedList" title="Bullet List">• List</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="welcome" data-cmd="insertOrderedList" title="Numbered List">1. List</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="welcome" data-cmd="formatBlock" data-val="blockquote" title="Blockquote">“ Quote</button>
+
+                  <span class="h-4 w-px bg-border mx-1"></span>
+
+                  <button type="button" class="wysiwyg-link-btn rounded px-2 py-1 hover:bg-white transition" data-editor="welcome" title="Insert Link">🔗 Link</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="welcome" data-cmd="insertHorizontalRule" title="Divider">— Line</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 text-muted-foreground hover:bg-white transition" data-editor="welcome" data-cmd="removeFormat" title="Clear Formatting">🧹 Clear</button>
+
+                  <div class="ml-auto flex items-center gap-1">
+                    <button type="button" class="toggle-source-btn rounded bg-white border border-border px-2 py-1 text-[11px] font-mono hover:bg-slate-100 transition cursor-pointer" data-editor="welcome">
+                      &lt;/&gt; View Code
+                    </button>
+                  </div>
+                </div>
+
+                <!-- ContentEditable Canvas -->
+                <div
+                  id="welcome-wysiwyg-canvas"
+                  contenteditable="true"
+                  class="wysiwyg-editor-canvas p-4"
+                  set:html={welcomeBody}
+                />
+
+                <!-- Raw HTML Source Editor (hidden by default) -->
+                <textarea
+                  id="welcome-source-textarea"
+                  class="hidden w-full min-h-[240px] p-4 text-xs font-mono bg-slate-900 text-emerald-400 focus:outline-none"
+                >{welcomeBody}</textarea>
+              </div>
             </div>
 
-            <!-- Dynamic Live Sample Preview -->
+            <!-- Live Sample Preview -->
             <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-2">
               <div class="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 <span>Live Sample Preview (Recipient: "Aarav Sharma")</span>
-                <span class="text-primary font-medium lowercase font-sans">Interpolated preview</span>
+                <span class="text-primary font-medium lowercase font-sans">Live Email Preview</span>
               </div>
-              <div class="rounded-lg border border-border bg-white p-3.5 space-y-2 text-xs">
-                <div class="font-bold text-foreground border-b border-border/60 pb-1.5" id="welcome-preview-subject">
-                  {welcomeSubject.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Aarav').replace(/\{\{\s*name[^}]*\}\}/gi, 'Aarav Sharma').replace(/\{\{\s*email\s*\}\}/gi, 'aarav@example.com')}
+              <div class="rounded-lg border border-border bg-white p-4 space-y-2 text-xs">
+                <div class="font-bold text-foreground text-sm border-b border-border/60 pb-2" id="welcome-preview-subject">
+                  {sampleRender(welcomeSubject, 'Aarav Sharma', 'Aarav', 'aarav@example.com')}
                 </div>
-                <div class="text-slate-700 whitespace-pre-line leading-relaxed text-[11.5px]" id="welcome-preview-body">
-                  {welcomeBody.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Aarav').replace(/\{\{\s*name[^}]*\}\}/gi, 'Aarav Sharma').replace(/\{\{\s*email\s*\}\}/gi, 'aarav@example.com')}
-                </div>
+                <div class="text-slate-700 leading-relaxed text-xs" id="welcome-preview-body" set:html={sampleRender(welcomeBody, 'Aarav Sharma', 'Aarav', 'aarav@example.com')}></div>
               </div>
             </div>
 
-            <!-- Test Dispatch Trigger for Registration Welcome Email -->
+            <!-- Test Dispatch Trigger -->
             <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border/60">
               <div class="text-[11px] text-muted-foreground">
-                Send a test copy to verify rendering in your real inbox.
+                Send a real test email to check layout in your email client.
               </div>
               <button
                 type="button"
                 class="test-dispatcher-btn rounded-xl border border-border bg-slate-50 px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-100 hover:border-border/80 transition cursor-pointer"
                 data-type="welcome"
                 data-subject-id="welcome-subject"
-                data-body-id="welcome-body"
+                data-editor="welcome"
               >
                 🚀 Send Test Registration Email
               </button>
@@ -373,7 +477,7 @@ if (db) {
                 📬
               </div>
               <div>
-                <h3 class="text-sm font-bold text-foreground">Newsletter Dispatch Welcome Email</h3>
+                <h3 class="text-sm font-bold text-foreground">Newsletter Dispatch Welcome Email (WYSIWYG)</h3>
                 <p class="text-xs text-muted-foreground">Dispatched when a subscriber signs up for the Desi Alternatives Dispatch</p>
               </div>
             </div>
@@ -390,7 +494,8 @@ if (db) {
             </label>
           </div>
 
-          <div class="space-y-4">
+          <div class="space-y-5">
+            <!-- Subject Input -->
             <div>
               <div class="flex items-center justify-between mb-1.5">
                 <label for="newsletter-welcome-subject" class="block text-xs font-semibold text-foreground">
@@ -398,8 +503,8 @@ if (db) {
                 </label>
                 <div class="flex items-center gap-1.5">
                   <span class="text-[11px] text-muted-foreground">Insert:</span>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-subject" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-subject" data-tag="{'{{name|subscriber}}'}">{'{{name|subscriber}}'}</button>
+                  <button type="button" class="insert-subject-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-subject" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
+                  <button type="button" class="insert-subject-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-subject" data-tag="{'{{name|subscriber}}'}">{'{{name|subscriber}}'}</button>
                 </div>
               </div>
               <input
@@ -412,56 +517,100 @@ if (db) {
               />
             </div>
 
-            <div>
-              <div class="flex items-center justify-between mb-1.5">
-                <label for="newsletter-welcome-body" class="block text-xs font-semibold text-foreground">
-                  Email Message Body *
+            <!-- WYSIWYG Editor Container -->
+            <div class="space-y-2">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <label class="block text-xs font-semibold text-foreground">
+                  Email Body (WYSIWYG Visual Canvas) *
                 </label>
-                <div class="flex items-center gap-1.5">
-                  <span class="text-[11px] text-muted-foreground">Insert:</span>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-body" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
-                  <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-body" data-tag="{'{{email}}'}">{'{{email}}'}</button>
+
+                <!-- Variable Insertion Pills -->
+                <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                  <span class="text-[11px] text-muted-foreground">Personalize:</span>
+                  <button type="button" class="insert-wysiwyg-tag-btn rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-mono font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer" data-editor="newsletter" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
+                  <button type="button" class="insert-wysiwyg-tag-btn rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-mono font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer" data-editor="newsletter" data-tag="{'{{name|subscriber}}'}">{'{{name|subscriber}}'}</button>
+                  <button type="button" class="insert-wysiwyg-tag-btn rounded-md bg-amber-50 border border-amber-200/80 px-2 py-0.5 text-[10px] font-mono font-semibold text-amber-900 hover:bg-amber-100 transition cursor-pointer" data-editor="newsletter" data-tag="{'{{email}}'}">{'{{email}}'}</button>
                 </div>
               </div>
-              <textarea
-                id="newsletter-welcome-body"
-                name="newsletterWelcomeBody"
-                rows="9"
-                required
-                class="w-full rounded-xl border border-border p-3.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition leading-relaxed font-sans"
-              >{newsletterWelcomeBody}</textarea>
-              <p class="mt-1 text-[11px] text-muted-foreground">
-                Includes 1-click unsubscribe token link in footer automatically.
+
+              <!-- WYSIWYG Component Card -->
+              <div class="rounded-2xl border border-border bg-white overflow-hidden shadow-2xs focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition">
+                <!-- Toolbar -->
+                <div class="flex flex-wrap items-center gap-1 border-b border-border bg-slate-50/80 p-2 text-xs">
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 font-bold hover:bg-white transition" data-editor="newsletter" data-cmd="bold" title="Bold (Ctrl+B)">B</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 italic hover:bg-white transition" data-editor="newsletter" data-cmd="italic" title="Italic (Ctrl+I)">I</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 underline hover:bg-white transition" data-editor="newsletter" data-cmd="underline" title="Underline (Ctrl+U)">U</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 line-through hover:bg-white transition" data-editor="newsletter" data-cmd="strikeThrough" title="Strikethrough">S</button>
+                  
+                  <span class="h-4 w-px bg-border mx-1"></span>
+
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 font-semibold hover:bg-white transition" data-editor="newsletter" data-cmd="formatBlock" data-val="h2" title="Heading 2">H2</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 font-semibold hover:bg-white transition" data-editor="newsletter" data-cmd="formatBlock" data-val="h3" title="Heading 3">H3</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="newsletter" data-cmd="formatBlock" data-val="p" title="Paragraph">¶</button>
+
+                  <span class="h-4 w-px bg-border mx-1"></span>
+
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="newsletter" data-cmd="insertUnorderedList" title="Bullet List">• List</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="newsletter" data-cmd="insertOrderedList" title="Numbered List">1. List</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="newsletter" data-cmd="formatBlock" data-val="blockquote" title="Blockquote">“ Quote</button>
+
+                  <span class="h-4 w-px bg-border mx-1"></span>
+
+                  <button type="button" class="wysiwyg-link-btn rounded px-2 py-1 hover:bg-white transition" data-editor="newsletter" title="Insert Link">🔗 Link</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 hover:bg-white transition" data-editor="newsletter" data-cmd="insertHorizontalRule" title="Divider">— Line</button>
+                  <button type="button" class="wysiwyg-btn rounded px-2 py-1 text-muted-foreground hover:bg-white transition" data-editor="newsletter" data-cmd="removeFormat" title="Clear Formatting">🧹 Clear</button>
+
+                  <div class="ml-auto flex items-center gap-1">
+                    <button type="button" class="toggle-source-btn rounded bg-white border border-border px-2 py-1 text-[11px] font-mono hover:bg-slate-100 transition cursor-pointer" data-editor="newsletter">
+                      &lt;/&gt; View Code
+                    </button>
+                  </div>
+                </div>
+
+                <!-- ContentEditable Canvas -->
+                <div
+                  id="newsletter-wysiwyg-canvas"
+                  contenteditable="true"
+                  class="wysiwyg-editor-canvas p-4"
+                  set:html={newsletterWelcomeBody}
+                />
+
+                <!-- Raw HTML Source Editor (hidden by default) -->
+                <textarea
+                  id="newsletter-source-textarea"
+                  class="hidden w-full min-h-[240px] p-4 text-xs font-mono bg-slate-900 text-emerald-400 focus:outline-none"
+                >{newsletterWelcomeBody}</textarea>
+              </div>
+              <p class="text-[11px] text-muted-foreground">
+                1-click unsubscribe token link is automatically injected into the email footer.
               </p>
             </div>
 
-            <!-- Dynamic Live Sample Preview -->
+            <!-- Live Sample Preview -->
             <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-2">
               <div class="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 <span>Live Sample Preview (Recipient: "Priya Nair")</span>
-                <span class="text-primary font-medium lowercase font-sans">Interpolated preview</span>
+                <span class="text-primary font-medium lowercase font-sans">Live Email Preview</span>
               </div>
-              <div class="rounded-lg border border-border bg-white p-3.5 space-y-2 text-xs">
-                <div class="font-bold text-foreground border-b border-border/60 pb-1.5" id="newsletter-preview-subject">
-                  {newsletterWelcomeSubject.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Priya').replace(/\{\{\s*name[^}]*\}\}/gi, 'Priya Nair').replace(/\{\{\s*email\s*\}\}/gi, 'priya@example.com')}
+              <div class="rounded-lg border border-border bg-white p-4 space-y-2 text-xs">
+                <div class="font-bold text-foreground text-sm border-b border-border/60 pb-2" id="newsletter-preview-subject">
+                  {sampleRender(newsletterWelcomeSubject, 'Priya Nair', 'Priya', 'priya@example.com')}
                 </div>
-                <div class="text-slate-700 whitespace-pre-line leading-relaxed text-[11.5px]" id="newsletter-preview-body">
-                  {newsletterWelcomeBody.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Priya').replace(/\{\{\s*name[^}]*\}\}/gi, 'Priya Nair').replace(/\{\{\s*email\s*\}\}/gi, 'priya@example.com')}
-                </div>
+                <div class="text-slate-700 leading-relaxed text-xs" id="newsletter-preview-body" set:html={sampleRender(newsletterWelcomeBody, 'Priya Nair', 'Priya', 'priya@example.com')}></div>
               </div>
             </div>
 
-            <!-- Test Dispatch Trigger for Newsletter Welcome Email -->
+            <!-- Test Dispatch Trigger -->
             <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border/60">
               <div class="text-[11px] text-muted-foreground">
-                Send a test copy to verify rendering in your real inbox.
+                Send a real test email to check layout in your email client.
               </div>
               <button
                 type="button"
                 class="test-dispatcher-btn rounded-xl border border-border bg-slate-50 px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-100 hover:border-border/80 transition cursor-pointer"
                 data-type="newsletter_welcome"
                 data-subject-id="newsletter-welcome-subject"
-                data-body-id="newsletter-welcome-body"
+                data-editor="newsletter"
               >
                 🚀 Send Test Newsletter Email
               </button>
@@ -515,43 +664,129 @@ if (db) {
     });
   });
 
-  // Dynamic Live Preview Interpolator
-  function updatePreviews() {
-    const welcomeSub = (document.getElementById('welcome-subject') as HTMLInputElement)?.value || '';
-    const welcomeBdy = (document.getElementById('welcome-body') as HTMLTextAreaElement)?.value || '';
-    const newsSub = (document.getElementById('newsletter-welcome-subject') as HTMLInputElement)?.value || '';
-    const newsBdy = (document.getElementById('newsletter-welcome-body') as HTMLTextAreaElement)?.value || '';
-
-    const replaceTags = (text: string, first: string, full: string, email: string) => {
-      return text
-        .replace(/\{\{\s*first_name(?:\s*\|\s*([^}]+?))?\s*\}\}/gi, (_, fb) => first || (fb ? fb.trim() : 'there'))
-        .replace(/\{\{\s*name(?:\s*\|\s*([^}]+?))?\s*\}\}/gi, (_, fb) => full || (fb ? fb.trim() : 'there'))
-        .replace(/\{\{\s*email\s*\}\}/gi, email);
-    };
-
-    const wSubEl = document.getElementById('welcome-preview-subject');
-    const wBdyEl = document.getElementById('welcome-preview-body');
-    if (wSubEl) wSubEl.textContent = replaceTags(welcomeSub, 'Aarav', 'Aarav Sharma', 'aarav@example.com');
-    if (wBdyEl) wBdyEl.textContent = replaceTags(welcomeBdy, 'Aarav', 'Aarav Sharma', 'aarav@example.com');
-
-    const nSubEl = document.getElementById('newsletter-preview-subject');
-    const nBdyEl = document.getElementById('newsletter-preview-body');
-    if (nSubEl) nSubEl.textContent = replaceTags(newsSub, 'Priya', 'Priya Nair', 'priya@example.com');
-    if (nBdyEl) nBdyEl.textContent = replaceTags(newsBdy, 'Priya', 'Priya Nair', 'priya@example.com');
+  // WYSIWYG Helpers
+  function getEditorElements(editorType: string) {
+    const canvas = document.getElementById(`${editorType}-wysiwyg-canvas`) as HTMLDivElement | null;
+    const sourceTextarea = document.getElementById(`${editorType}-source-textarea`) as HTMLTextAreaElement | null;
+    const hiddenInput = document.getElementById(`${editorType}-body-hidden`) as HTMLInputElement | null;
+    return { canvas, sourceTextarea, hiddenInput };
   }
 
-  ['welcome-subject', 'welcome-body', 'newsletter-welcome-subject', 'newsletter-welcome-body'].forEach((id) => {
-    document.getElementById(id)?.addEventListener('input', updatePreviews);
+  function getActiveEditorHtml(editorType: string): string {
+    const { canvas, sourceTextarea } = getEditorElements(editorType);
+    if (sourceTextarea && !sourceTextarea.classList.contains('hidden')) {
+      return sourceTextarea.value;
+    }
+    return canvas?.innerHTML || '';
+  }
+
+  function syncEditor(editorType: string) {
+    const { canvas, sourceTextarea, hiddenInput } = getEditorElements(editorType);
+    if (!canvas || !sourceTextarea || !hiddenInput) return;
+
+    if (!sourceTextarea.classList.contains('hidden')) {
+      // Source mode active
+      canvas.innerHTML = sourceTextarea.value;
+      hiddenInput.value = sourceTextarea.value;
+    } else {
+      // Visual canvas active
+      sourceTextarea.value = canvas.innerHTML;
+      hiddenInput.value = canvas.innerHTML;
+    }
+    updatePreviews();
+  }
+
+  // WYSIWYG Command Execution
+  document.querySelectorAll<HTMLButtonElement>('.wysiwyg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const editorType = btn.dataset.editor || 'welcome';
+      const { canvas, sourceTextarea } = getEditorElements(editorType);
+      if (sourceTextarea && !sourceTextarea.classList.contains('hidden')) return; // No commands in source mode
+
+      canvas?.focus();
+      const cmd = btn.dataset.cmd;
+      const val = btn.dataset.val || '';
+
+      if (cmd === 'formatBlock' && val) {
+        document.execCommand('formatBlock', false, `<${val}>`);
+      } else if (cmd) {
+        document.execCommand(cmd, false, val);
+      }
+      syncEditor(editorType);
+    });
   });
 
-  // Helper Tag Insertion Buttons
-  document.querySelectorAll<HTMLButtonElement>('.insert-tag-btn').forEach((btn) => {
+  // Link Insertion Command
+  document.querySelectorAll<HTMLButtonElement>('.wysiwyg-link-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const editorType = btn.dataset.editor || 'welcome';
+      const { canvas, sourceTextarea } = getEditorElements(editorType);
+      if (sourceTextarea && !sourceTextarea.classList.contains('hidden')) return;
+
+      canvas?.focus();
+      const url = prompt('Enter URL (e.g. https://desialternatives.in):', 'https://');
+      if (url && url.trim()) {
+        document.execCommand('createLink', false, url.trim());
+        syncEditor(editorType);
+      }
+    });
+  });
+
+  // Toggle Source / Code View
+  document.querySelectorAll<HTMLButtonElement>('.toggle-source-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const editorType = btn.dataset.editor || 'welcome';
+      const { canvas, sourceTextarea } = getEditorElements(editorType);
+      if (!canvas || !sourceTextarea) return;
+
+      if (sourceTextarea.classList.contains('hidden')) {
+        // Switch to Code View
+        sourceTextarea.value = canvas.innerHTML;
+        sourceTextarea.classList.remove('hidden');
+        canvas.classList.add('hidden');
+        btn.textContent = '👁️ Visual Mode';
+      } else {
+        // Switch to Visual Mode
+        canvas.innerHTML = sourceTextarea.value;
+        sourceTextarea.classList.add('hidden');
+        canvas.classList.remove('hidden');
+        btn.textContent = '</> View Code';
+      }
+      syncEditor(editorType);
+    });
+  });
+
+  // Variable Tag Insertion into WYSIWYG
+  document.querySelectorAll<HTMLButtonElement>('.insert-wysiwyg-tag-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const editorType = btn.dataset.editor || 'welcome';
+      const tag = btn.dataset.tag || '';
+      const { canvas, sourceTextarea } = getEditorElements(editorType);
+      if (!canvas || !sourceTextarea) return;
+
+      if (!sourceTextarea.classList.contains('hidden')) {
+        const start = sourceTextarea.selectionStart || sourceTextarea.value.length;
+        const end = sourceTextarea.selectionEnd || sourceTextarea.value.length;
+        const val = sourceTextarea.value;
+        sourceTextarea.value = val.substring(0, start) + tag + val.substring(end);
+        sourceTextarea.focus();
+        sourceTextarea.selectionStart = sourceTextarea.selectionEnd = start + tag.length;
+      } else {
+        canvas.focus();
+        document.execCommand('insertHTML', false, tag);
+      }
+      syncEditor(editorType);
+    });
+  });
+
+  // Subject Tag Insertion Buttons
+  document.querySelectorAll<HTMLButtonElement>('.insert-subject-tag-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const targetId = btn.dataset.target;
       const tag = btn.dataset.tag;
       if (!targetId || !tag) return;
 
-      const input = document.getElementById(targetId) as HTMLInputElement | HTMLTextAreaElement | null;
+      const input = document.getElementById(targetId) as HTMLInputElement | null;
       if (!input) return;
 
       const start = input.selectionStart || input.value.length;
@@ -564,7 +799,46 @@ if (db) {
     });
   });
 
-  // Settings Form Submit
+  // Canvas Input Event Listeners
+  ['welcome', 'newsletter'].forEach((type) => {
+    const canvas = document.getElementById(`${type}-wysiwyg-canvas`);
+    const textarea = document.getElementById(`${type}-source-textarea`);
+
+    canvas?.addEventListener('input', () => syncEditor(type));
+    canvas?.addEventListener('keyup', () => syncEditor(type));
+    textarea?.addEventListener('input', () => syncEditor(type));
+  });
+
+  // Dynamic Live Preview Interpolator
+  function updatePreviews() {
+    const welcomeSub = (document.getElementById('welcome-subject') as HTMLInputElement)?.value || '';
+    const welcomeHtml = getActiveEditorHtml('welcome');
+    const newsSub = (document.getElementById('newsletter-welcome-subject') as HTMLInputElement)?.value || '';
+    const newsHtml = getActiveEditorHtml('newsletter');
+
+    const replaceTags = (text: string, first: string, full: string, email: string) => {
+      return text
+        .replace(/\{\{\s*first_name(?:\s*\|\s*([^}]+?))?\s*\}\}/gi, (_, fb) => first || (fb ? fb.trim() : 'there'))
+        .replace(/\{\{\s*name(?:\s*\|\s*([^}]+?))?\s*\}\}/gi, (_, fb) => full || (fb ? fb.trim() : 'there'))
+        .replace(/\{\{\s*email\s*\}\}/gi, email);
+    };
+
+    const wSubEl = document.getElementById('welcome-preview-subject');
+    const wBdyEl = document.getElementById('welcome-preview-body');
+    if (wSubEl) wSubEl.textContent = replaceTags(welcomeSub, 'Aarav', 'Aarav Sharma', 'aarav@example.com');
+    if (wBdyEl) wBdyEl.innerHTML = replaceTags(welcomeHtml, 'Aarav', 'Aarav Sharma', 'aarav@example.com');
+
+    const nSubEl = document.getElementById('newsletter-preview-subject');
+    const nBdyEl = document.getElementById('newsletter-preview-body');
+    if (nSubEl) nSubEl.textContent = replaceTags(newsSub, 'Priya', 'Priya Nair', 'priya@example.com');
+    if (nBdyEl) nBdyEl.innerHTML = replaceTags(newsHtml, 'Priya', 'Priya Nair', 'priya@example.com');
+  }
+
+  ['welcome-subject', 'newsletter-welcome-subject'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', updatePreviews);
+  });
+
+  // Form Submission
   const settingsForm = document.getElementById('admin-settings-form') as HTMLFormElement;
   const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement;
   const saveTopBtn = document.getElementById('save-all-top-btn') as HTMLButtonElement;
@@ -572,6 +846,9 @@ if (db) {
 
   async function handleSaveSettings() {
     if (!settingsForm) return;
+
+    syncEditor('welcome');
+    syncEditor('newsletter');
 
     if (saveBtn) {
       saveBtn.disabled = true;
@@ -616,7 +893,7 @@ if (db) {
       if (res.ok) {
         if (statusDiv) {
           statusDiv.className = 'rounded-xl p-4 text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-800 block';
-          statusDiv.textContent = '✓ All email settings & welcome templates saved successfully!';
+          statusDiv.textContent = '✓ All email settings & WYSIWYG welcome templates saved successfully!';
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
@@ -697,10 +974,10 @@ if (db) {
     btn.addEventListener('click', async () => {
       const type = btn.dataset.type || 'welcome';
       const subjectInputId = btn.dataset.subjectId;
-      const bodyInputId = btn.dataset.bodyId;
+      const editorType = btn.dataset.editor || 'welcome';
 
       const overrideSubject = subjectInputId ? (document.getElementById(subjectInputId) as HTMLInputElement)?.value : undefined;
-      const overrideBody = bodyInputId ? (document.getElementById(bodyInputId) as HTMLTextAreaElement)?.value : undefined;
+      const overrideBody = getActiveEditorHtml(editorType);
 
       const recipient = prompt('Enter recipient email address for this test:', '');
       if (!recipient || !recipient.trim()) return;

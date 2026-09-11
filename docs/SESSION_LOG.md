@@ -909,6 +909,34 @@
    - Vitest unit tests: **50/50 tests passed**.
    - `bun run build`: Production bundle generated cleanly in 18.35s.
 
+---
+
+## Session 36 — Full WYSIWYG Email Editors, Drawer Footprint Trim & Navbar Spacing Polish
+
+**Date & Time (IST):** 2026-09-11 22:34 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Rich Visual WYSIWYG Email Editors (`src/pages/admin/settings.astro` & `src/emails/WelcomeEmail.tsx`)**:
+   - Built full visual WYSIWYG canvas editors for both User Registration and Newsletter Welcome emails.
+   - Rich toolbar controls: Bold, Italic, Underline, Strikethrough, Heading 2, Heading 3, Paragraph, Bulleted list, Numbered list, Blockquote, Insert Link, and Horizontal Rule.
+   - Added Visual vs Code mode (`</> View Code`) toggle for direct HTML inspection and editing.
+   - Interactive variable injection chips (`{{first_name|there}}`, `{{first_name|builder}}`, `{{email}}`, etc.) that insert directly at caret position or in code view.
+   - React Email template (`WelcomeEmail.tsx`) updated with rich HTML styling container to render WYSIWYG generated HTML markup cleanly across all desktop/mobile email clients.
+   - Real-time live sample preview updated dynamically with recipient interpolation.
+
+2. **Navbar & Drawer Menu Polish (`src/components/Navbar.astro`)**:
+   - Removed drawer footer containing "Sovereign SaaS for Bharat" and GitHub link for a decluttered menu drawer.
+   - Enhanced navbar logged-in pill button layout with increased spacing (`gap-3 px-3.5 py-1.5 sm:py-2`) between user first name, avatar, and hamburger menu icon.
+
+3. **Testing & Quality Assurance**:
+   - Vitest unit tests: **50/50 tests passed**.
+   - `astro check`: **0 errors, 0 warnings** across all 89 files.
+   - `bun run build`: Production Cloudflare Worker bundle compiled cleanly.
+
+
 
 
 

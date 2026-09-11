@@ -30,8 +30,8 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
   ctaUrl = type === 'newsletter_welcome' ? 'https://desialternatives.in/newsletter' : 'https://desialternatives.in',
   unsubscribeUrl,
 }) => {
-  // Split paragraphs by double newline for structured rendering
-  const paragraphs = body.split(/\n\n+/).map((p) => p.trim()).filter(Boolean);
+  const isHtml = /<[a-z][\s\S]*>/i.test(body);
+  const paragraphs = !isHtml ? body.split(/\n\n+/).map((p) => p.trim()).filter(Boolean) : [];
 
   return (
     <Html>
@@ -53,30 +53,36 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
           <Section style={card}>
             <Heading style={heading}>{subject}</Heading>
 
-            {/* Render formatted paragraphs */}
-            {paragraphs.map((p, idx) => {
-              // Check if bullet point list
-              if (p.includes('\n•') || p.startsWith('•')) {
-                const lines = p.split('\n');
+            {/* Render HTML content if WYSIWYG format, otherwise formatted paragraphs */}
+            {isHtml ? (
+              <div
+                style={htmlContainer}
+                dangerouslySetInnerHTML={{ __html: body }}
+              />
+            ) : (
+              paragraphs.map((p, idx) => {
+                if (p.includes('\n•') || p.startsWith('•')) {
+                  const lines = p.split('\n');
+                  return (
+                    <div key={idx} style={{ marginBottom: '18px' }}>
+                      {lines.map((line, lIdx) => (
+                        <Text
+                          key={lIdx}
+                          style={line.startsWith('•') ? bulletItem : paragraph}
+                        >
+                          {line}
+                        </Text>
+                      ))}
+                    </div>
+                  );
+                }
                 return (
-                  <div key={idx} style={{ marginBottom: '18px' }}>
-                    {lines.map((line, lIdx) => (
-                      <Text
-                        key={lIdx}
-                        style={line.startsWith('•') ? bulletItem : paragraph}
-                      >
-                        {line}
-                      </Text>
-                    ))}
-                  </div>
+                  <Text key={idx} style={paragraph}>
+                    {p}
+                  </Text>
                 );
-              }
-              return (
-                <Text key={idx} style={paragraph}>
-                  {p}
-                </Text>
-              );
-            })}
+              })
+            )}
 
             {/* Action CTA Button */}
             {ctaUrl && ctaText && (
@@ -170,6 +176,13 @@ const heading: React.CSSProperties = {
   color: '#0f172a',
   margin: '0 0 20px',
   lineHeight: '28px',
+};
+
+const htmlContainer: React.CSSProperties = {
+  fontSize: '14px',
+  lineHeight: '24px',
+  color: '#334155',
+  margin: '0 0 16px',
 };
 
 const paragraph: React.CSSProperties = {

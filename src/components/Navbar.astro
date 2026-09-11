@@ -42,19 +42,19 @@ const firstName = user
         type="button"
         id="global-hamburger-toggle"
         class={`flex items-center rounded-xl border border-border bg-white shadow-2xs hover:border-primary/40 hover:bg-slate-50 transition cursor-pointer ${
-          user ? 'gap-2 px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground' : 'p-2 sm:px-2.5 text-foreground'
+          user ? 'gap-3 px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-medium text-foreground' : 'p-2 sm:px-2.5 text-foreground'
         }`}
         aria-label="Open Navigation Menu"
       >
         {user ? (
           <>
-            <span class="max-w-[100px] sm:max-w-[140px] truncate">{firstName}</span>
+            <span class="max-w-[110px] sm:max-w-[150px] truncate">{firstName}</span>
             <img
               src={avatarUrl}
               alt={user.name || 'User avatar'}
-              class="h-5 w-5 rounded-full bg-amber-50 object-cover border border-border/80"
+              class="h-5.5 w-5.5 rounded-full bg-amber-50 object-cover border border-border"
             />
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted-foreground shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-muted-foreground shrink-0 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </>
@@ -263,12 +263,6 @@ const firstName = user
         )}
       </nav>
     </div>
-  </div>
-
-  <!-- Drawer Footer -->
-  <div class="p-3.5 border-t border-border bg-slate-50/60 text-[11px] text-muted-foreground flex items-center justify-between">
-    <span>🇮🇳 Sovereign SaaS for Bharat</span>
-    <a href="https://github.com/94mrdshyml/desi-alternatives" target="_blank" class="hover:text-primary transition font-bold">GitHub</a>
   </div>
 </aside>
 
