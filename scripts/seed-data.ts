@@ -56,7 +56,7 @@ export const seedData: SeedData = {
       slug: 'developer-tools',
       name: 'Developer Tools',
       emoji: '⚡',
-      description: 'Internal tool builders, APIs, testing, and backend infrastructure.',
+      description: 'World-class developer tools, testing frameworks, and APIs engineered by Indian builders for global scale.',
       isFeatured: true,
     },
     {
@@ -64,7 +64,7 @@ export const seedData: SeedData = {
       slug: 'observability',
       name: 'Observability & APM',
       emoji: '📊',
-      description: 'Metrics, logs, traces, and application monitoring platforms.',
+      description: 'Unified APM and observability platforms to monitor uptime and troubleshoot infrastructure without the massive USD markup.',
       isFeatured: true,
     },
     {
@@ -72,7 +72,7 @@ export const seedData: SeedData = {
       slug: 'billing-finance',
       name: 'Billing & Finance',
       emoji: '💳',
-      description: 'Payment gateways, subscription billing, and GST accounting.',
+      description: 'GST-ready billing and finance software to automate invoicing, manage subscriptions, and claim input tax credits effortlessly.',
       isFeatured: true,
     },
     {
@@ -80,7 +80,7 @@ export const seedData: SeedData = {
       slug: 'crm-sales',
       name: 'CRM & Marketing',
       emoji: '🎯',
-      description: 'Customer relations, marketing automation, and lead capture.',
+      description: 'High-conversion CRM and sales software built to close deals, manage pipelines, and scale Indian revenue teams.',
       isFeatured: true,
     },
     {
@@ -88,7 +88,7 @@ export const seedData: SeedData = {
       slug: 'customer-support',
       name: 'Customer Support',
       emoji: '💬',
-      description: 'Helpdesk, ticketing, live chat, and AI customer agents.',
+      description: 'Omnichannel helpdesk and support tools designed for high-velocity teams, backed by IST-aligned engineering.',
       isFeatured: true,
     },
     {
@@ -96,7 +96,7 @@ export const seedData: SeedData = {
       slug: 'ai-machine-learning',
       name: 'AI & Machine Learning',
       emoji: '🧠',
-      description: 'Indic voice synthesis, sovereign LLMs, and video generation.',
+      description: 'Powerful AI and machine learning models built for the Indian context, from vernacular LLMs to enterprise automation.',
       isFeatured: true,
     },
     {
@@ -104,7 +104,7 @@ export const seedData: SeedData = {
       slug: 'hr-payroll',
       name: 'HR & Payroll',
       emoji: '👥',
-      description: 'Domestic compliance, payroll calculation, and attendance.',
+      description: 'Automated HRMS and payroll software that actually understands Indian tax slabs, PF, and local compliance laws.',
       isFeatured: false,
     },
     {
@@ -112,7 +112,7 @@ export const seedData: SeedData = {
       slug: 'productivity',
       name: 'Productivity & Docs',
       emoji: '✍️',
-      description: 'Knowledge bases, collaboration, and documentation suites.',
+      description: 'Intuitive productivity and project management hubs to keep your startup organized and relentlessly focused on execution.',
       isFeatured: false,
     },
   ],

@@ -960,6 +960,28 @@
    - Vitest unit tests: **50/50 tests passed**.
    - `astro check`: **0 errors, 0 warnings**.
 
+---
+
+## Session 38 — Category Descriptions Content Update (Remote D1 & Seed Sync)
+
+**Date & Time (IST):** 2026-09-11 23:01 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Updated & Delivered
+
+1. **Remote Cloudflare D1 Database (`desi-db`)**:
+   - Executed SQL update queries across all 19 active categories (`ai-machine-learning`, `billing-finance`, `brokerage`, `browser`, `crm-sales`, `crypto`, `customer-support`, `database`, `developer-tools`, `email`, `hr-payroll`, `messenger`, `newsletter`, `observability`, `office-suite`, `payments`, `productivity`, `team-communication`, `vpn`).
+   - Verified 19 rows written and active on production D1 database.
+
+2. **Seed Pipeline Synchronization (`scripts/seed-data.ts` & `scripts/seed.sql`)**:
+   - Updated category definitions in `scripts/seed-data.ts` to reflect the updated descriptions.
+   - Recompiled `scripts/seed.sql` for reproducible local and preview seeding.
+
+3. **Testing & Verification**:
+   - Vitest unit tests: **50/50 tests passed**.
+
+
 
 
 
