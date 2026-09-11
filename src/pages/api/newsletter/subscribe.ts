@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
-import { newsletterSubscribers, users, type NewsletterSource } from '@/lib/server/db/schema';
+import { newsletterSubscribers, users, siteSettings, type NewsletterSource } from '@/lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { customAlphabet } from 'nanoid';
+import { sendNewsletterWelcomeEmail } from '@/lib/server/email';
 
 const alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const nanoid32 = customAlphabet(alphabet, 32);
@@ -100,6 +101,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
         .where(eq(newsletterSubscribers.id, existing.id))
         .run();
 
+      // Dispatch Newsletter Welcome Email (non-blocking)
+      try {
+        let settings: any = null;
+        try {
+          settings = await db.select().from(siteSettings).where(eq(siteSettings.id, 'general')).get();
+        } catch {}
+
+        const resendApiKey = (locals as any).runtime?.env?.RESEND_API_KEY;
+        await sendNewsletterWelcomeEmail({
+          apiKey: resendApiKey,
+          to: email,
+          name: name || existing.name,
+          unsubscribeToken: existing.token,
+          settings,
+        });
+      } catch (e) {
+        console.error('Failed to send newsletter welcome email upon reactivation:', e);
+      }
+
       return new Response(
         JSON.stringify({
           success: true,
@@ -124,6 +144,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
         subscribedAt: new Date().toISOString(),
       })
       .run();
+
+    // Dispatch Newsletter Welcome Email (non-blocking)
+    try {
+      let settings: any = null;
+      try {
+        settings = await db.select().from(siteSettings).where(eq(siteSettings.id, 'general')).get();
+      } catch {}
+
+      const resendApiKey = (locals as any).runtime?.env?.RESEND_API_KEY;
+      await sendNewsletterWelcomeEmail({
+        apiKey: resendApiKey,
+        to: email,
+        name,
+        unsubscribeToken: token,
+        settings,
+      });
+    } catch (e) {
+      console.error('Failed to send newsletter welcome email:', e);
+    }
 
     return new Response(
       JSON.stringify({

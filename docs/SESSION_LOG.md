@@ -847,6 +847,42 @@
    - Playwright E2E tests: **18/18 tests passed** across all suites.
    - Vitest unit tests: **43/43 tests passed** across all 12 test files.
 
+---
+
+## Session 34 — Customizable Welcome Emails & Personalization Engine
+
+**Date & Time (IST):** 2026-09-11 22:15 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Database Schema & D1 Migration (`schema.ts` & `0014_welcome_emails.sql`)**:
+   - Extended `siteSettings` table with columns: `welcomeEnabled`, `welcomeSubject`, `welcomeBody`, `newsletterWelcomeEnabled`, `newsletterWelcomeSubject`, and `newsletterWelcomeBody`.
+   - Seeded sovereign default copy introducing the directory, comparison engine, claims, and Thursday dispatches.
+
+2. **Personalization & Template Engine (`src/lib/server/email.ts` & `src/emails/WelcomeEmail.tsx`)**:
+   - Built `interpolateTemplate` utility supporting variable syntax with custom fallbacks: `{{first_name|fallback}}`, `{{name|fallback}}`, `{{first_name}}`, `{{name}}`, `{{email}}`.
+   - Built `WelcomeEmail` React Email component with sovereign amber accents, paragraph formatting, bullet list support, and CTA / unsubscribe links.
+   - Built `sendWelcomeEmail` & `sendNewsletterWelcomeEmail` dispatchers with local dev fallback logs and Resend API integration.
+
+3. **Event Trigger Integration**:
+   - **User Registration (`/api/auth/welcome` & `register.astro`)**: Dispatches the registration welcome email immediately upon successful OTP verification.
+   - **Newsletter Subscription (`subscribe.ts`)**: Dispatches the newsletter welcome email with a 1-click unsubscribe token on new signups and reactivations.
+
+4. **Admin Control Center (`/admin/settings.astro` & APIs)**:
+   - Full WYSIWYG-style template editors with toggle switches for both Registration and Newsletter emails.
+   - Variable insertion helper chips (`{{first_name|there}}`, `{{first_name|builder}}`, `{{email}}`).
+   - Real-time live sample preview displaying interpolated recipient names.
+   - Live test dispatch modals to send real sample emails directly to any inbox.
+
+5. **Testing & Quality Assurance**:
+   - Vitest unit tests: **50/50 tests passed** (+7 new tests covering interpolation syntax, fallbacks, and dispatch options).
+   - Playwright E2E tests: **18/18 tests passed**.
+   - `astro check`: **0 errors** across all 89 files.
+   - `bun run build`: Built cleanly with 0 TypeScript/compiler diagnostics.
+
+
 
 
 

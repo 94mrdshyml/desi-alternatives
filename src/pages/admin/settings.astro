@@ -12,6 +12,43 @@ if (!user || user.role !== 'admin') {
 
 let fromName = 'Desi Alternatives';
 let fromEmail = 'team@letter.mrdshyml.xyz';
+
+let welcomeEnabled = true;
+let welcomeSubject = 'Welcome to Desi Alternatives, {{first_name|builder}}! 🇮🇳';
+let welcomeBody = `Hi {{first_name|there}},
+
+Welcome to Desi Alternatives! We're thrilled to have you join our sovereign community of founders, CTOs, and developers building the future of Indian tech.
+
+Here is what you can do right now:
+• Explore the Sovereign Directory across Developer Tools, Cloud, AI, and Productivity
+• Compare Indian SaaS vs Global Giants in our Head-to-Head Comparison Engine
+• Submit or Claim your Indian software listing to verify official ownership
+• Read in-depth migration teardowns and architecture blueprints in the Tech Journal
+
+Have questions or built a tool you'd like indexed? Simply reply to this email.
+
+Best regards,
+The Desi Alternatives Team
+https://desialternatives.in`;
+
+let newsletterWelcomeEnabled = true;
+let newsletterWelcomeSubject = 'Welcome to Desi Alternatives Dispatch, {{first_name|there}}! 📬';
+let newsletterWelcomeBody = `Hi {{first_name|there}},
+
+Thanks for subscribing to the Desi Alternatives Dispatch!
+
+Every Thursday morning, we deliver curated intelligence directly to your inbox:
+• Sovereign SaaS Radar: Hidden gems and high-performing Indian software
+• Cost Teardowns: Real case studies on cutting foreign cloud bills
+• Migration Blueprints: Step-by-step guides for moving off global monopolies
+• Compliance Guides: Navigating Indian data residency, 18% GST invoices, and DPDP rules
+
+Look out for our next dispatch in your inbox this Thursday!
+
+Warmly,
+The Dispatch Editorial Team
+https://desialternatives.in/newsletter`;
+
 let totalToolsCount = 0;
 let totalGlobalCount = 0;
 let totalCategoriesCount = 0;
@@ -24,6 +61,12 @@ if (db) {
     if (settings) {
       fromName = settings.fromName || fromName;
       fromEmail = settings.fromEmail || fromEmail;
+      welcomeEnabled = settings.welcomeEnabled !== false;
+      welcomeSubject = settings.welcomeSubject || welcomeSubject;
+      welcomeBody = settings.welcomeBody || welcomeBody;
+      newsletterWelcomeEnabled = settings.newsletterWelcomeEnabled !== false;
+      newsletterWelcomeSubject = settings.newsletterWelcomeSubject || newsletterWelcomeSubject;
+      newsletterWelcomeBody = settings.newsletterWelcomeBody || newsletterWelcomeBody;
     }
 
     const tools = await db.select().from(desiTools).all();
@@ -53,225 +96,512 @@ if (db) {
     users: totalUsersCount,
   }}
 >
-  <div class="space-y-6 max-w-4xl">
+  <div class="space-y-8 max-w-4xl pb-16">
     <!-- Header -->
-    <div>
-      <h1 class="text-2xl font-bold tracking-tight text-foreground">Platform & Email Settings</h1>
-      <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
-        Configure outbound email dispatchers, sender identities, and test live Resend integration.
-      </p>
-    </div>
-
-    <!-- 1. RESEND SENDER IDENTITY CONFIGURATION -->
-    <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
-      <div class="flex items-center gap-2.5 pb-4 border-b border-border">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-base">
-          ✉️
-        </div>
-        <div>
-          <h3 class="text-sm font-bold text-foreground">Email Dispatch Identity (Resend)</h3>
-          <p class="text-xs text-muted-foreground">Used in outbound 6-digit OTP verification codes and founder notifications</p>
-        </div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">Platform & Email Settings</h1>
+        <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
+          Configure outbound email dispatchers, welcome email templates, and variable personalization.
+        </p>
       </div>
 
-      <form id="admin-settings-form" class="mt-5 space-y-4">
-        <div id="settings-status" class="hidden rounded-xl p-3 text-xs font-medium"></div>
+      <button
+        type="button"
+        id="save-all-top-btn"
+        class="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer shrink-0"
+      >
+        Save All Settings
+      </button>
+    </div>
 
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label for="settings-from-name" class="block text-xs font-semibold text-foreground">
-              From Name *
-            </label>
-            <input
-              type="text"
-              id="settings-from-name"
-              name="fromName"
-              required
-              value={fromName}
-              placeholder="Desi Alternatives"
-              class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-            />
-            <p class="mt-1 text-[11px] text-muted-foreground">
-              Display name shown in the recipient's inbox.
-            </p>
+    <!-- Global Settings Status Message Banner -->
+    <div id="settings-status" class="hidden rounded-xl p-4 text-xs font-medium transition"></div>
+
+    <form id="admin-settings-form" class="space-y-8">
+      <!-- 1. RESEND SENDER IDENTITY CONFIGURATION -->
+      <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
+        <div class="flex items-center gap-2.5 pb-4 border-b border-border">
+          <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-base">
+            ✉️
           </div>
-
           <div>
-            <label for="settings-from-email" class="block text-xs font-semibold text-foreground">
-              From Email *
-            </label>
-            <input
-              type="email"
-              id="settings-from-email"
-              name="fromEmail"
-              required
-              value={fromEmail}
-              placeholder="team@letter.mrdshyml.xyz"
-              class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-            />
-            <p class="mt-1 text-[11px] text-muted-foreground">
-              Must be a verified sending domain in Resend.
-            </p>
+            <h3 class="text-sm font-bold text-foreground">Email Dispatch Identity (Resend)</h3>
+            <p class="text-xs text-muted-foreground">Global sender name and verified from-address used across all outbound emails</p>
           </div>
         </div>
 
-        <!-- Resend Documentation Info Box -->
-        <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-3.5 text-xs text-amber-900">
-          <div class="flex items-start gap-2">
-            <span class="text-base">💡</span>
-            <div class="space-y-1">
-              <p class="font-bold">Resend Domain Verification Notice:</p>
-              <p class="text-amber-800 leading-relaxed">
-                If you use a custom sender domain (e.g. <code>team@letter.mrdshyml.xyz</code>), ensure DNS records (DKIM & SPF) are verified in your Resend Dashboard.
-                If in Resend sandbox mode (using <code>onboarding@resend.dev</code>), Resend only allows sending to the email address of the account owner.
+        <div class="mt-5 space-y-4">
+          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label for="settings-from-name" class="block text-xs font-semibold text-foreground">
+                From Name *
+              </label>
+              <input
+                type="text"
+                id="settings-from-name"
+                name="fromName"
+                required
+                value={fromName}
+                placeholder="Desi Alternatives"
+                class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                Display name shown in recipient inboxes.
+              </p>
+            </div>
+
+            <div>
+              <label for="settings-from-email" class="block text-xs font-semibold text-foreground">
+                From Email *
+              </label>
+              <input
+                type="email"
+                id="settings-from-email"
+                name="fromEmail"
+                required
+                value={fromEmail}
+                placeholder="team@letter.mrdshyml.xyz"
+                class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                Must be a verified sending domain in your Resend Dashboard.
               </p>
             </div>
           </div>
-        </div>
 
-        <div class="flex items-center justify-end pt-2">
-          <button
-            type="submit"
-            id="save-settings-btn"
-            class="rounded-xl bg-primary px-5 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
-          >
-            Save Email Settings
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- 2. LIVE TEST EMAIL DIAGNOSTIC -->
-    <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
-      <div class="flex items-center gap-2.5 pb-4 border-b border-border">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-base">
-          🚀
-        </div>
-        <div>
-          <h3 class="text-sm font-bold text-foreground">Test Email Dispatch (Live Resend Check)</h3>
-          <p class="text-xs text-muted-foreground">Send a real verification OTP email right now to test API connectivity and view Resend logs.</p>
+          <!-- Variable Syntax Reference Box -->
+          <div class="rounded-xl border border-amber-200 bg-amber-50/70 p-4 text-xs text-amber-950">
+            <div class="flex items-start gap-2.5">
+              <span class="text-base">💡</span>
+              <div class="space-y-1.5 flex-1">
+                <p class="font-bold text-amber-900">Personalization Variables & Fallback Rules:</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-amber-850 pt-1">
+                  <div class="bg-white/80 p-2 rounded-lg border border-amber-200/60 font-mono">
+                    <strong class="text-primary font-bold">{'{{first_name|there}}'}</strong>
+                    <div class="text-muted-foreground font-sans text-[10px] mt-0.5">Receiver first name or fallback</div>
+                  </div>
+                  <div class="bg-white/80 p-2 rounded-lg border border-amber-200/60 font-mono">
+                    <strong class="text-primary font-bold">{'{{first_name|builder}}'}</strong>
+                    <div class="text-muted-foreground font-sans text-[10px] mt-0.5">e.g. "Hi Rohan," or "Hi builder,"</div>
+                  </div>
+                  <div class="bg-white/80 p-2 rounded-lg border border-amber-200/60 font-mono">
+                    <strong class="text-primary font-bold">{'{{name|friend}}'}</strong>
+                    <div class="text-muted-foreground font-sans text-[10px] mt-0.5">Full name with fallback</div>
+                  </div>
+                  <div class="bg-white/80 p-2 rounded-lg border border-amber-200/60 font-mono">
+                    <strong class="text-primary font-bold">{'{{email}}'}</strong>
+                    <div class="text-muted-foreground font-sans text-[10px] mt-0.5">Receiver email address</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="mt-5 space-y-4">
-        <div id="test-email-status" class="hidden rounded-xl p-3 text-xs font-medium"></div>
+      <!-- 2. USER REGISTRATION WELCOME EMAIL TEMPLATE -->
+      <div class="rounded-2xl border border-border bg-white p-6 shadow-xs space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 text-base">
+              👋
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-foreground">1. User Registration Welcome Email</h3>
+              <p class="text-xs text-muted-foreground">Dispatched immediately when a user creates an account on Desi Alternatives</p>
+            </div>
+          </div>
 
-        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-          <input
-            type="email"
-            id="test-email-target"
-            placeholder="Enter destination email (e.g. your email)"
-            value={user.email}
-            class="flex-1 rounded-xl border border-border px-3.5 py-2 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
-          />
-          <button
-            type="button"
-            id="send-test-email-btn"
-            class="rounded-xl bg-foreground px-4 py-2 text-xs font-semibold text-background hover:bg-foreground/90 transition cursor-pointer shrink-0 disabled:opacity-50"
-          >
-            Send Test Email
-          </button>
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground">
+            <input
+              type="checkbox"
+              name="welcomeEnabled"
+              id="welcome-enabled-toggle"
+              checked={welcomeEnabled}
+              class="h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+            />
+            <span>Enable Welcome Email</span>
+          </label>
         </div>
 
-        <div id="test-email-details" class="hidden rounded-xl bg-slate-900 p-3 text-[11px] font-mono text-emerald-400 overflow-x-auto"></div>
+        <div class="space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="welcome-subject" class="block text-xs font-semibold text-foreground">
+                Email Subject / Title *
+              </label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-muted-foreground">Insert:</span>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-subject" data-tag="{'{{first_name|builder}}'}">{'{{first_name|builder}}'}</button>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-subject" data-tag="{'{{name|there}}'}">{'{{name|there}}'}</button>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="welcome-subject"
+              name="welcomeSubject"
+              required
+              value={welcomeSubject}
+              class="w-full rounded-xl border border-border px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition font-medium"
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="welcome-body" class="block text-xs font-semibold text-foreground">
+                Email Message Body *
+              </label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-muted-foreground">Insert:</span>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-body" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="welcome-body" data-tag="{'{{email}}'}">{'{{email}}'}</button>
+              </div>
+            </div>
+            <textarea
+              id="welcome-body"
+              name="welcomeBody"
+              rows="9"
+              required
+              class="w-full rounded-xl border border-border p-3.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition leading-relaxed font-sans"
+            >{welcomeBody}</textarea>
+            <p class="mt-1 text-[11px] text-muted-foreground">
+              Supports multi-paragraph formatting and bullet points (•). Automatically wrapped in sovereign email layout with primary action button.
+            </p>
+          </div>
+
+          <!-- Dynamic Live Sample Preview -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-2">
+            <div class="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              <span>Live Sample Preview (Receiver: "Aarav Sharma")</span>
+              <span class="text-primary font-medium lowercase font-sans">Interpolated preview</span>
+            </div>
+            <div class="rounded-lg border border-border bg-white p-3.5 space-y-2 text-xs">
+              <div class="font-bold text-foreground border-b border-border/60 pb-1.5" id="welcome-preview-subject">
+                {welcomeSubject.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Aarav').replace(/\{\{\s*name[^}]*\}\}/gi, 'Aarav Sharma').replace(/\{\{\s*email\s*\}\}/gi, 'aarav@example.com')}
+              </div>
+              <div class="text-slate-700 whitespace-pre-line leading-relaxed text-[11.5px]" id="welcome-preview-body">
+                {welcomeBody.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Aarav').replace(/\{\{\s*name[^}]*\}\}/gi, 'Aarav Sharma').replace(/\{\{\s*email\s*\}\}/gi, 'aarav@example.com')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Test Dispatch Trigger for Registration Welcome Email -->
+          <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border/60">
+            <div class="text-[11px] text-muted-foreground">
+              Send a test copy to verify rendering in your real inbox.
+            </div>
+            <button
+              type="button"
+              class="test-dispatcher-btn rounded-xl border border-border bg-slate-50 px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-100 hover:border-border/80 transition cursor-pointer"
+              data-type="welcome"
+              data-subject-id="welcome-subject"
+              data-body-id="welcome-body"
+            >
+              🚀 Send Test Registration Email
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <!-- 3. NEWSLETTER DISPATCH WELCOME EMAIL TEMPLATE -->
+      <div class="rounded-2xl border border-border bg-white p-6 shadow-xs space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+          <div class="flex items-center gap-2.5">
+            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-700 text-base">
+              📬
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-foreground">2. Newsletter Dispatch Welcome Email</h3>
+              <p class="text-xs text-muted-foreground">Dispatched when a subscriber signs up for the Desi Alternatives Dispatch</p>
+            </div>
+          </div>
+
+          <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground">
+            <input
+              type="checkbox"
+              name="newsletterWelcomeEnabled"
+              id="newsletter-welcome-enabled-toggle"
+              checked={newsletterWelcomeEnabled}
+              class="h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+            />
+            <span>Enable Newsletter Welcome Email</span>
+          </label>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="newsletter-welcome-subject" class="block text-xs font-semibold text-foreground">
+                Email Subject / Title *
+              </label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-muted-foreground">Insert:</span>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-subject" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-subject" data-tag="{'{{name|subscriber}}'}">{'{{name|subscriber}}'}</button>
+              </div>
+            </div>
+            <input
+              type="text"
+              id="newsletter-welcome-subject"
+              name="newsletterWelcomeSubject"
+              required
+              value={newsletterWelcomeSubject}
+              class="w-full rounded-xl border border-border px-3.5 py-2.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition font-medium"
+            />
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="newsletter-welcome-body" class="block text-xs font-semibold text-foreground">
+                Email Message Body *
+              </label>
+              <div class="flex items-center gap-1.5">
+                <span class="text-[11px] text-muted-foreground">Insert:</span>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-body" data-tag="{'{{first_name|there}}'}">{'{{first_name|there}}'}</button>
+                <button type="button" class="insert-tag-btn rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono hover:bg-amber-100 hover:text-amber-900 transition" data-target="newsletter-welcome-body" data-tag="{'{{email}}'}">{'{{email}}'}</button>
+              </div>
+            </div>
+            <textarea
+              id="newsletter-welcome-body"
+              name="newsletterWelcomeBody"
+              rows="9"
+              required
+              class="w-full rounded-xl border border-border p-3.5 text-xs text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition leading-relaxed font-sans"
+            >{newsletterWelcomeBody}</textarea>
+            <p class="mt-1 text-[11px] text-muted-foreground">
+              Includes 1-click unsubscribe token link in footer automatically.
+            </p>
+          </div>
+
+          <!-- Dynamic Live Sample Preview -->
+          <div class="rounded-xl border border-slate-200 bg-slate-50/80 p-4 space-y-2">
+            <div class="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+              <span>Live Sample Preview (Receiver: "Priya Nair")</span>
+              <span class="text-primary font-medium lowercase font-sans">Interpolated preview</span>
+            </div>
+            <div class="rounded-lg border border-border bg-white p-3.5 space-y-2 text-xs">
+              <div class="font-bold text-foreground border-b border-border/60 pb-1.5" id="newsletter-preview-subject">
+                {newsletterWelcomeSubject.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Priya').replace(/\{\{\s*name[^}]*\}\}/gi, 'Priya Nair').replace(/\{\{\s*email\s*\}\}/gi, 'priya@example.com')}
+              </div>
+              <div class="text-slate-700 whitespace-pre-line leading-relaxed text-[11.5px]" id="newsletter-preview-body">
+                {newsletterWelcomeBody.replace(/\{\{\s*first_name[^}]*\}\}/gi, 'Priya').replace(/\{\{\s*name[^}]*\}\}/gi, 'Priya Nair').replace(/\{\{\s*email\s*\}\}/gi, 'priya@example.com')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Test Dispatch Trigger for Newsletter Welcome Email -->
+          <div class="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-t border-border/60">
+            <div class="text-[11px] text-muted-foreground">
+              Send a test copy to verify rendering in your real inbox.
+            </div>
+            <button
+              type="button"
+              class="test-dispatcher-btn rounded-xl border border-border bg-slate-50 px-4 py-2 text-xs font-semibold text-foreground hover:bg-slate-100 hover:border-border/80 transition cursor-pointer"
+              data-type="newsletter_welcome"
+              data-subject-id="newsletter-welcome-subject"
+              data-body-id="newsletter-welcome-body"
+            >
+              🚀 Send Test Newsletter Email
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. SAVE ALL SETTINGS SUBMIT BUTTON -->
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button
+          type="submit"
+          id="save-settings-btn"
+          class="rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
+        >
+          Save All Email Settings
+        </button>
+      </div>
+    </form>
   </div>
 </AdminLayout>
 
 <script>
+  // Dynamic Live Preview Interpolator
+  function updatePreviews() {
+    const welcomeSub = (document.getElementById('welcome-subject') as HTMLInputElement)?.value || '';
+    const welcomeBdy = (document.getElementById('welcome-body') as HTMLTextAreaElement)?.value || '';
+    const newsSub = (document.getElementById('newsletter-welcome-subject') as HTMLInputElement)?.value || '';
+    const newsBdy = (document.getElementById('newsletter-welcome-body') as HTMLTextAreaElement)?.value || '';
+
+    const replaceTags = (text: string, first: string, full: string, email: string) => {
+      return text
+        .replace(/\{\{\s*first_name(?:\s*\|\s*([^}]+?))?\s*\}\}/gi, (_, fb) => first || (fb ? fb.trim() : 'there'))
+        .replace(/\{\{\s*name(?:\s*\|\s*([^}]+?))?\s*\}\}/gi, (_, fb) => full || (fb ? fb.trim() : 'there'))
+        .replace(/\{\{\s*email\s*\}\}/gi, email);
+    };
+
+    const wSubEl = document.getElementById('welcome-preview-subject');
+    const wBdyEl = document.getElementById('welcome-preview-body');
+    if (wSubEl) wSubEl.textContent = replaceTags(welcomeSub, 'Aarav', 'Aarav Sharma', 'aarav@example.com');
+    if (wBdyEl) wBdyEl.textContent = replaceTags(welcomeBdy, 'Aarav', 'Aarav Sharma', 'aarav@example.com');
+
+    const nSubEl = document.getElementById('newsletter-preview-subject');
+    const nBdyEl = document.getElementById('newsletter-preview-body');
+    if (nSubEl) nSubEl.textContent = replaceTags(newsSub, 'Priya', 'Priya Nair', 'priya@example.com');
+    if (nBdyEl) nBdyEl.textContent = replaceTags(newsBdy, 'Priya', 'Priya Nair', 'priya@example.com');
+  }
+
+  ['welcome-subject', 'welcome-body', 'newsletter-welcome-subject', 'newsletter-welcome-body'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('input', updatePreviews);
+  });
+
+  // Helper Tag Insertion Buttons
+  document.querySelectorAll<HTMLButtonElement>('.insert-tag-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.dataset.target;
+      const tag = btn.dataset.tag;
+      if (!targetId || !tag) return;
+
+      const input = document.getElementById(targetId) as HTMLInputElement | HTMLTextAreaElement | null;
+      if (!input) return;
+
+      const start = input.selectionStart || input.value.length;
+      const end = input.selectionEnd || input.value.length;
+      const val = input.value;
+      input.value = val.substring(0, start) + tag + val.substring(end);
+      input.focus();
+      input.selectionStart = input.selectionEnd = start + tag.length;
+      updatePreviews();
+    });
+  });
+
   // Settings Form Submit
   const settingsForm = document.getElementById('admin-settings-form') as HTMLFormElement;
   const saveBtn = document.getElementById('save-settings-btn') as HTMLButtonElement;
+  const saveTopBtn = document.getElementById('save-all-top-btn') as HTMLButtonElement;
   const statusDiv = document.getElementById('settings-status') as HTMLDivElement;
 
-  settingsForm?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
-    statusDiv.classList.add('hidden');
+  async function handleSaveSettings() {
+    if (!settingsForm) return;
+
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+    }
+    if (saveTopBtn) {
+      saveTopBtn.disabled = true;
+      saveTopBtn.textContent = 'Saving...';
+    }
+    statusDiv?.classList.add('hidden');
 
     const formData = new FormData(settingsForm);
     const fromName = formData.get('fromName');
     const fromEmail = formData.get('fromEmail');
 
+    const welcomeEnabled = (document.getElementById('welcome-enabled-toggle') as HTMLInputElement)?.checked;
+    const welcomeSubject = formData.get('welcomeSubject');
+    const welcomeBody = formData.get('welcomeBody');
+
+    const newsletterWelcomeEnabled = (document.getElementById('newsletter-welcome-enabled-toggle') as HTMLInputElement)?.checked;
+    const newsletterWelcomeSubject = formData.get('newsletterWelcomeSubject');
+    const newsletterWelcomeBody = formData.get('newsletterWelcomeBody');
+
     try {
       const res = await fetch('/api/admin/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fromName, fromEmail }),
+        body: JSON.stringify({
+          fromName,
+          fromEmail,
+          welcomeEnabled,
+          welcomeSubject,
+          welcomeBody,
+          newsletterWelcomeEnabled,
+          newsletterWelcomeSubject,
+          newsletterWelcomeBody,
+        }),
       });
 
-      const data = await res.json() as any;
+      const data = (await res.json()) as any;
 
       if (res.ok) {
-        statusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-800';
-        statusDiv.textContent = '✓ Settings saved successfully!';
-        statusDiv.classList.remove('hidden');
+        if (statusDiv) {
+          statusDiv.className = 'rounded-xl p-4 text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-800 block';
+          statusDiv.textContent = '✓ All email settings & welcome templates saved successfully!';
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       } else {
-        statusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
-        statusDiv.textContent = `Error: ${data.error || 'Failed to save settings'}`;
-        statusDiv.classList.remove('hidden');
+        if (statusDiv) {
+          statusDiv.className = 'rounded-xl p-4 text-xs font-medium border border-red-200 bg-red-50 text-red-700 block';
+          statusDiv.textContent = `Error: ${data.error || 'Failed to save settings'}`;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       }
     } catch (err: any) {
-      statusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
-      statusDiv.textContent = `Network error: ${err.message}`;
-      statusDiv.classList.remove('hidden');
+      if (statusDiv) {
+        statusDiv.className = 'rounded-xl p-4 text-xs font-medium border border-red-200 bg-red-50 text-red-700 block';
+        statusDiv.textContent = `Network error: ${err.message}`;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
     } finally {
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save Email Settings';
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save All Email Settings';
+      }
+      if (saveTopBtn) {
+        saveTopBtn.disabled = false;
+        saveTopBtn.textContent = 'Save All Settings';
+      }
     }
+  }
+
+  settingsForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    handleSaveSettings();
   });
 
-  // Test Email Handler
-  const sendTestBtn = document.getElementById('send-test-email-btn') as HTMLButtonElement;
-  const testTargetInput = document.getElementById('test-email-target') as HTMLInputElement;
-  const testStatusDiv = document.getElementById('test-email-status') as HTMLDivElement;
-  const testDetailsDiv = document.getElementById('test-email-details') as HTMLDivElement;
+  saveTopBtn?.addEventListener('click', handleSaveSettings);
 
-  sendTestBtn?.addEventListener('click', async () => {
-    const toEmail = testTargetInput?.value?.trim();
-    if (!toEmail) {
-      (window as any).showToast?.('Please enter a recipient email.', 'error');
-      return;
-    }
+  // Test Dispatch Handlers
+  document.querySelectorAll<HTMLButtonElement>('.test-dispatcher-btn').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const type = btn.dataset.type || 'welcome';
+      const subjectInputId = btn.dataset.subjectId;
+      const bodyInputId = btn.dataset.bodyId;
 
-    sendTestBtn.disabled = true;
-    sendTestBtn.textContent = 'Dispatching...';
-    testStatusDiv.classList.add('hidden');
-    testDetailsDiv.classList.add('hidden');
+      const overrideSubject = subjectInputId ? (document.getElementById(subjectInputId) as HTMLInputElement)?.value : undefined;
+      const overrideBody = bodyInputId ? (document.getElementById(bodyInputId) as HTMLTextAreaElement)?.value : undefined;
 
-    try {
-      const res = await fetch('/api/admin/test-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ toEmail }),
-      });
+      const recipient = prompt('Enter recipient email address for this test:', '');
+      if (!recipient || !recipient.trim()) return;
 
-      const data = await res.json() as any;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Dispatching test...';
 
-      if (res.ok && data.success) {
-        testStatusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-800';
-        testStatusDiv.textContent = `✓ ${data.message}`;
-        testStatusDiv.classList.remove('hidden');
+      try {
+        const res = await fetch('/api/admin/test-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            recipient: recipient.trim(),
+            type,
+            testName: 'Aarav Sharma',
+            overrideSubject,
+            overrideBody,
+          }),
+        });
 
-        testDetailsDiv.textContent = JSON.stringify(data, null, 2);
-        testDetailsDiv.classList.remove('hidden');
-      } else {
-        testStatusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
-        testStatusDiv.textContent = `✗ Failed: ${data.error || 'Check Resend logs'}`;
-        testStatusDiv.classList.remove('hidden');
+        const data = (await res.json()) as any;
 
-        testDetailsDiv.textContent = JSON.stringify(data, null, 2);
-        testDetailsDiv.classList.remove('hidden');
+        if (res.ok && data.success) {
+          alert(`✓ ${data.message}`);
+        } else {
+          alert(`✗ Test failed: ${data.error || 'Check Resend configuration'}`);
+        }
+      } catch (err: any) {
+        alert(`Network error: ${err.message}`);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
       }
-    } catch (err: any) {
-      testStatusDiv.className = 'rounded-xl p-3 text-xs font-medium border border-red-200 bg-red-50 text-red-700';
-      testStatusDiv.textContent = `Network error: ${err.message}`;
-      testStatusDiv.classList.remove('hidden');
-    } finally {
-      sendTestBtn.disabled = false;
-      sendTestBtn.textContent = 'Send Test Email';
-    }
+    });
   });
 </script>

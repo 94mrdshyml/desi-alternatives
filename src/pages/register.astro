@@ -407,10 +407,25 @@ if (user) {
           return;
         }
 
+        const pendingName = localStorage.getItem('desi_pending_name') || '';
+
+        // Dispatch User Registration Welcome Email (non-blocking)
+        try {
+          await fetch('/api/auth/welcome', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: currentEmail,
+              name: pendingName,
+            }),
+          });
+        } catch (e) {
+          // Non-blocking
+        }
+
         // Handle newsletter subscription if opted in
         if (newsletterOptIn?.checked) {
           try {
-            const pendingName = localStorage.getItem('desi_pending_name') || '';
             await fetch('/api/newsletter/subscribe', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
