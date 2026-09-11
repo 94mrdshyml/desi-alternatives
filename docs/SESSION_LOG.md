@@ -806,5 +806,28 @@
    - Vitest unit tests: **43/43 tests passing** across 12 test suites.
    - `astro check`: **0 errors, 0 warnings** across all 87 files.
 
+---
+
+## Session 32 — Design System Alignment for Newsletter & Footer Links
+
+**Date & Time (IST):** 2026-09-11 21:35 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Newsletter Dispatch Landing Page (`src/pages/newsletter.astro`)**:
+   - Replaced hardcoded coral hex color `#ff6154` on hero and footer subscribe submit buttons with primary theme tokens (`bg-primary`, `hover:bg-primary-hover`, `text-primary-foreground`).
+   - Updated category filter tab active indicators to use `border-primary` in markup and dynamic JavaScript event handlers.
+
+2. **Footer Link Styling Cleanup (`src/components/Footer.astro`)**:
+   - Removed unnecessary forced `text-primary` and `text-amber-700` colors from *About & Manifesto* and *📬 Weekly Dispatch* links.
+   - Restored uniform muted text styles with standard hover transitions matching directory link guidelines.
+
+3. **Testing & Quality Assurance**:
+   - Vitest unit tests: **43/43 passed** across all 12 test files.
+   - `astro check`: **0 errors** across all 87 files.
+
+
 
 

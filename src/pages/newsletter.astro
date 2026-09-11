@@ -182,7 +182,7 @@ const curatedIssues = [
                 />
                 <button
                   type="submit"
-                  class="rounded-xl bg-[#ff6154] hover:bg-[#eb5246] px-6 py-3 text-sm font-bold text-white shadow-xs transition cursor-pointer shrink-0"
+                  class="rounded-xl bg-primary hover:bg-primary-hover px-6 py-3 text-sm font-bold text-primary-foreground shadow-xs transition cursor-pointer shrink-0"
                 >
                   Subscribe
                 </button>
@@ -201,7 +201,7 @@ const curatedIssues = [
     <div class="sticky top-0 z-30 border-b border-[#e7e5e4] bg-[#fafaf9]/95 backdrop-blur-md">
       <div class="mx-auto max-w-4xl px-4 sm:px-6">
         <nav class="flex items-center gap-6 overflow-x-auto py-3 text-xs font-bold uppercase tracking-wider text-[#78716c] no-scrollbar">
-          <button class="filter-tab active text-[#1c1917] border-b-2 border-[#ff6154] pb-1 cursor-pointer" data-filter="all">
+          <button class="filter-tab active text-[#1c1917] border-b-2 border-primary pb-1 cursor-pointer" data-filter="all">
             All Posts
           </button>
           <button class="filter-tab hover:text-[#1c1917] pb-1 transition cursor-pointer" data-filter="radar">
@@ -379,7 +379,7 @@ const curatedIssues = [
             />
             <button
               type="submit"
-              class="rounded-xl bg-[#ff6154] hover:bg-[#eb5246] px-6 py-3 text-sm font-bold text-white shadow-xs transition cursor-pointer shrink-0"
+              class="rounded-xl bg-primary hover:bg-primary-hover px-6 py-3 text-sm font-bold text-primary-foreground shadow-xs transition cursor-pointer shrink-0"
             >
               Subscribe
             </button>
@@ -452,10 +452,10 @@ const curatedIssues = [
   filterTabs.forEach((tab) => {
     tab.addEventListener('click', () => {
       filterTabs.forEach((t) => {
-        t.classList.remove('text-[#1c1917]', 'border-b-2', 'border-[#ff6154]');
+        t.classList.remove('text-[#1c1917]', 'border-b-2', 'border-primary');
         t.classList.add('text-[#78716c]');
       });
-      tab.classList.add('text-[#1c1917]', 'border-b-2', 'border-[#ff6154]');
+      tab.classList.add('text-[#1c1917]', 'border-b-2', 'border-primary');
       tab.classList.remove('text-[#78716c]');
 
       const filter = tab.dataset.filter || 'all';
