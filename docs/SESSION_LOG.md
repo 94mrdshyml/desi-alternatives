@@ -936,6 +936,31 @@
    - `astro check`: **0 errors, 0 warnings** across all 89 files.
    - `bun run build`: Production Cloudflare Worker bundle compiled cleanly.
 
+---
+
+## Session 37 — Menu & Footer Label Simplification (Newsletter, Blog, About)
+
+**Date & Time (IST):** 2026-09-11 22:50 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Navigation Menu Labels (`src/components/Navbar.astro`)**:
+   - Updated "Weekly Dispatch" to "Newsletter".
+   - Updated "Tech Journal" to "Blog".
+   - Updated "The Manifesto" to "About".
+
+2. **Footer Links (`src/components/Footer.astro`)**:
+   - Updated "About & Manifesto" to "About".
+   - Updated "📬 Weekly Dispatch" to "Newsletter".
+   - Updated "Tech Journal" to "Blog".
+
+3. **Testing & Verification**:
+   - Vitest unit tests: **50/50 tests passed**.
+   - `astro check`: **0 errors, 0 warnings**.
+
+
 
 
 
