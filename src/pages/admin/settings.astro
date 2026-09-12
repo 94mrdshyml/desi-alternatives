@@ -49,12 +49,16 @@ let umamiScriptUrl = 'https://cloud.umami.is/script.js';
 let umamiPixelEnabled = false;
 let umamiPixelUrl = '';
 let emailPixelTrackingEnabled = false;
+let consentBannerEnabled = true;
 
 let totalToolsCount = 0;
 let totalGlobalCount = 0;
 let totalCategoriesCount = 0;
 let pendingClaimsCount = 0;
 let totalUsersCount = 0;
+let usersAllowedConsentCount = 0;
+let usersDeniedConsentCount = 0;
+let usersUnsetConsentCount = 0;
 
 if (db) {
   try {
@@ -76,6 +80,7 @@ if (db) {
       umamiPixelEnabled = settings.umamiPixelEnabled === true;
       umamiPixelUrl = settings.umamiPixelUrl || '';
       emailPixelTrackingEnabled = settings.emailPixelTrackingEnabled === true;
+      consentBannerEnabled = settings.consentBannerEnabled !== false;
     }
 
     const tools = await db.select().from(desiTools).all();
@@ -88,6 +93,9 @@ if (db) {
     pendingClaimsCount = claims.length;
     const usersList = await db.select().from(users).all();
     totalUsersCount = usersList.length;
+    usersAllowedConsentCount = usersList.filter((u: any) => u.consentStatus === 'allowed').length;
+    usersDeniedConsentCount = usersList.filter((u: any) => u.consentStatus === 'denied').length;
+    usersUnsetConsentCount = usersList.filter((u: any) => !u.consentStatus).length;
   } catch (e) {
     console.error('Failed to load site settings:', e);
   }
@@ -848,6 +856,94 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
             </div>
           </div>
         </div>
+
+        <!-- Google Advanced Consent Mode v2 & Privacy Banner Card -->
+        <div class="rounded-2xl border border-border bg-white p-6 shadow-xs space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 text-base">
+                🛡️
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-foreground">Google Advanced Consent Mode v2 &amp; Cookie Banner</h3>
+                <p class="text-xs text-muted-foreground">Controls the privacy banner and transmits Google Consent Mode v2 signals to GTM and GA4</p>
+              </div>
+            </div>
+
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground bg-slate-50 px-3 py-1.5 rounded-xl border border-border">
+              <input
+                type="checkbox"
+                name="consentBannerEnabled"
+                id="consent-banner-enabled-toggle"
+                checked={consentBannerEnabled}
+                class="h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+              />
+              <span>Enable Consent Banner</span>
+            </label>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Consent Mode Architecture Info -->
+            <div class="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 text-xs text-emerald-950">
+              <p class="font-bold text-emerald-900 mb-1">Advanced Consent Mode Engine:</p>
+              <p class="text-emerald-800 leading-relaxed text-[11.5px]">
+                Google tags load immediately in a cookieless state (<code>default: denied</code>). When users click "Allow All", tags instantly upgrade without a page reload. Decisions are stored in <code>localStorage</code> and synced to D1 database for logged-in users.
+              </p>
+            </div>
+
+            <!-- Aggregate User Consent Breakdown Stats -->
+            <div class="rounded-xl border border-border bg-slate-50/70 p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-foreground">Registered User Privacy Choices</span>
+                <span class="text-[11px] text-muted-foreground">{totalUsersCount} Total Users</span>
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <!-- Allowed -->
+                <div class="rounded-lg border border-emerald-200/80 bg-white p-3 text-center">
+                  <div class="text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                    Allowed (Granted)
+                  </div>
+                  <div class="mt-1 text-lg font-bold text-foreground">
+                    {usersAllowedConsentCount}
+                    <span class="text-[11px] font-normal text-muted-foreground">
+                      ({totalUsersCount > 0 ? Math.round((usersAllowedConsentCount / totalUsersCount) * 100) : 0}%)
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Denied -->
+                <div class="rounded-lg border border-red-200/80 bg-white p-3 text-center">
+                  <div class="text-[11px] font-bold text-red-700 flex items-center justify-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-red-500"></span>
+                    Denied (Declined)
+                  </div>
+                  <div class="mt-1 text-lg font-bold text-foreground">
+                    {usersDeniedConsentCount}
+                    <span class="text-[11px] font-normal text-muted-foreground">
+                      ({totalUsersCount > 0 ? Math.round((usersDeniedConsentCount / totalUsersCount) * 100) : 0}%)
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Unset / Pending -->
+                <div class="rounded-lg border border-slate-200 bg-white p-3 text-center">
+                  <div class="text-[11px] font-bold text-slate-600 flex items-center justify-center gap-1">
+                    <span class="h-2 w-2 rounded-full bg-slate-400"></span>
+                    Pending / Unset
+                  </div>
+                  <div class="mt-1 text-lg font-bold text-foreground">
+                    {usersUnsetConsentCount}
+                    <span class="text-[11px] font-normal text-muted-foreground">
+                      ({totalUsersCount > 0 ? Math.round((usersUnsetConsentCount / totalUsersCount) * 100) : 0}%)
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- BOTTOM SAVE BUTTON -->
@@ -1139,6 +1235,7 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
     const umamiPixelEnabled = (document.getElementById('umami-pixel-enabled-toggle') as HTMLInputElement)?.checked;
     const umamiPixelUrl = formData.get('umamiPixelUrl');
     const emailPixelTrackingEnabled = (document.getElementById('email-pixel-tracking-toggle') as HTMLInputElement)?.checked;
+    const consentBannerEnabled = (document.getElementById('consent-banner-enabled-toggle') as HTMLInputElement)?.checked;
 
     try {
       const res = await fetch('/api/admin/settings', {
@@ -1161,6 +1258,7 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
           umamiPixelEnabled,
           umamiPixelUrl,
           emailPixelTrackingEnabled,
+          consentBannerEnabled,
         }),
       });
 

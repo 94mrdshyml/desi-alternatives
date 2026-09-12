@@ -74,6 +74,7 @@ export const GET: APIRoute = async ({ locals }) => {
         umamiPixelEnabled: settings?.umamiPixelEnabled === true,
         umamiPixelUrl: settings?.umamiPixelUrl || '',
         emailPixelTrackingEnabled: settings?.emailPixelTrackingEnabled === true,
+        consentBannerEnabled: settings?.consentBannerEnabled !== false,
       }),
       {
         status: 200,
@@ -130,6 +131,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const umamiPixelEnabled = Boolean(body?.umamiPixelEnabled);
     const umamiPixelUrl = String(body?.umamiPixelUrl || '').trim();
     const emailPixelTrackingEnabled = Boolean(body?.emailPixelTrackingEnabled);
+    const consentBannerEnabled = body?.consentBannerEnabled !== false;
 
     const existing = await db
       .select()
@@ -154,6 +156,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       umamiPixelEnabled,
       umamiPixelUrl: umamiPixelUrl || null,
       emailPixelTrackingEnabled,
+      consentBannerEnabled,
       updatedAt: sql`CURRENT_TIMESTAMP`,
     };
 

@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import AnalyticsTracker from '@/components/AnalyticsTracker.astro';
 import SearchDialog from '@/components/SearchDialog';
+import CookieConsent from '@/components/CookieConsent.astro';
 import { siteSettings } from '@/lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
@@ -46,8 +47,11 @@ let umamiScriptUrl = (import.meta as any).env?.PUBLIC_UMAMI_SCRIPT_URL || 'https
 let umamiEnabled = Boolean(umamiWebsiteId);
 let umamiPixelUrl = (import.meta as any).env?.PUBLIC_UMAMI_PIXEL_URL || '';
 let umamiPixelEnabled = Boolean(umamiPixelUrl);
+let consentBannerEnabled = true;
 
 const db = Astro.locals.db;
+const isLoggedIn = Boolean(Astro.locals.user);
+
 if (db) {
   try {
     const settings = await db.select().from(siteSettings).where(eq(siteSettings.id, 'general')).get();
@@ -59,6 +63,7 @@ if (db) {
       if (settings.umamiScriptUrl) umamiScriptUrl = settings.umamiScriptUrl;
       if (settings.umamiPixelEnabled !== undefined) umamiPixelEnabled = settings.umamiPixelEnabled === true;
       if (settings.umamiPixelUrl) umamiPixelUrl = settings.umamiPixelUrl;
+      if (settings.consentBannerEnabled !== undefined) consentBannerEnabled = settings.consentBannerEnabled !== false;
     }
   } catch {
     // Graceful fallback if settings table not yet populated in preview/test
@@ -106,6 +111,34 @@ if (db) {
       href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400;1,8..60,600;1,8..60,700&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Google Consent Mode v2 (Advanced Mode Default State) -->
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+
+      // 1. Establish default consent state before GTM / Google tags load
+      gtag('consent', 'default', {
+        'ad_storage': 'denied',
+        'ad_user_data': 'denied',
+        'ad_personalization': 'denied',
+        'analytics_storage': 'denied',
+        'wait_for_update': 500
+      });
+
+      // 2. Immediately restore if previously saved
+      try {
+        var savedConsent = localStorage.getItem('da_consent');
+        if (savedConsent === 'allowed') {
+          gtag('consent', 'update', {
+            'ad_storage': 'granted',
+            'ad_user_data': 'granted',
+            'ad_personalization': 'granted',
+            'analytics_storage': 'granted'
+          });
+        }
+      } catch (e) {}
+    </script>
 
     <!-- Umami Analytics (Cookieless & DPDP Compliant) -->
     {umamiEnabled && umamiWebsiteId && (
@@ -157,5 +190,6 @@ if (db) {
     <slot />
     <SearchDialog client:load />
     <AnalyticsTracker />
+    {consentBannerEnabled && <CookieConsent isLoggedIn={isLoggedIn} />}
   </body>
 </html>

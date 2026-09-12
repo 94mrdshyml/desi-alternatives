@@ -360,13 +360,14 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
                 <th class="py-3 px-4 font-semibold text-foreground">User</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Email</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Newsletter</th>
+                <th class="py-3 px-4 font-semibold text-foreground">Consent</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Role</th>
                 <th class="py-3 px-4 font-semibold text-foreground">Joined</th>
                 <th class="py-3 px-4 font-semibold text-foreground text-right">Update Role</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-border">
-              {allUsersList.map((u) => {
+              {allUsersList.map((u: any) => {
                 const sub = subscriberMap[u.id] || subscriberMap[u.email?.toLowerCase()];
                 return (
                   <tr class="hover:bg-slate-50/50 transition">
@@ -401,6 +402,24 @@ const initialTab = Astro.url.searchParams.get('tab') || 'claims';
                       ) : (
                         <span class="text-[11px] text-muted-foreground/60 font-mono">
                           Not Subscribed
+                        </span>
+                      )}
+                    </td>
+                    <td class="py-3 px-4">
+                      {u.consentStatus === 'allowed' ? (
+                        <span class="inline-flex items-center gap-1 rounded-md bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-bold text-emerald-700" title={u.consentUpdatedAt ? `Granted on ${new Date(u.consentUpdatedAt).toLocaleString('en-IN')}` : 'Tracking Allowed'}>
+                          <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>
+                          Allowed
+                        </span>
+                      ) : u.consentStatus === 'denied' ? (
+                        <span class="inline-flex items-center gap-1 rounded-md bg-red-50 border border-red-200 px-2 py-0.5 text-[10px] font-bold text-red-700" title={u.consentUpdatedAt ? `Declined on ${new Date(u.consentUpdatedAt).toLocaleString('en-IN')}` : 'Tracking Denied'}>
+                          <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>
+                          Denied
+                        </span>
+                      ) : (
+                        <span class="inline-flex items-center gap-1 rounded-md bg-slate-100 text-slate-500 px-2 py-0.5 text-[10px] font-medium" title="No preference set yet">
+                          <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span>
+                          Pending / Unset
                         </span>
                       )}
                     </td>

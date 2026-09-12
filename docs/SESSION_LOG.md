@@ -1070,6 +1070,43 @@
    - Vitest unit tests: **54/54 tests passed** (+2 new unit tests for pixel tracking email integration).
    - `astro check`: **0 errors, 0 warnings** across 90 files.
 
+---
+
+## Session 42 — Google Advanced Consent Mode v2, Cookie Consent Banner & D1 User Privacy Tracking
+
+**Date & Time (IST):** 2026-09-12 12:20 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **D1 Schema & Database Migration Layer (`schema.ts` & `0017_user_consent.sql`)**:
+   - Added `consentStatus` (`enum: ['allowed', 'denied']`) and `consentUpdatedAt` (`timestamp`) to `users` table.
+   - Added `consentBannerEnabled` (`boolean`, default `true`) to `siteSettings` table.
+   - Created migration `0017_user_consent.sql` and registered entry in `drizzle/migrations/meta/_journal.json`.
+
+2. **Google Advanced Consent Mode v2 Script (`src/layouts/BaseLayout.astro`)**:
+   - Injected `<head>` initialization setting Google Consent Mode default to `denied` (`ad_storage`, `ad_user_data`, `ad_personalization`, `analytics_storage`) with `wait_for_update: 500` before GTM / Google tags load.
+   - Added instant local storage restoration for returning visitors.
+
+3. **Frontend Consent Banner Component (`src/components/CookieConsent.astro`)**:
+   - Built a sleek, glassmorphic, accessible floating banner with "Allow All" and "Decline" buttons.
+   - Dispatches `gtag('consent', 'update', { ... })` and `dataLayer.push({ event: 'consent_update' })`.
+   - Persists decision to `localStorage` and automatically syncs to backend for logged-in users.
+
+4. **User Consent API (`src/pages/api/user/consent.ts`)**:
+   - Added `GET` and `POST` endpoints to inspect and persist user consent in D1 database.
+
+5. **Admin Settings & User Moderation (`/admin/settings.astro` & `/admin/moderation.astro`)**:
+   - Tab 4 in Settings: Added Consent Banner master toggle and real-time registered user privacy breakdown cards (Allowed vs Denied vs Pending).
+   - Moderation / Users table: Added `Consent` column displaying live status badges (🟢 Allowed, 🔴 Denied, ⚪ Pending) with timestamp tooltips.
+
+6. **Testing & Quality Assurance**:
+   - Vitest unit tests: **54/54 passed**.
+   - `astro check`: **0 errors, 0 warnings** across 92 files.
+   - `bun run build`: Built cleanly with 0 errors.
+
+
 
 
 

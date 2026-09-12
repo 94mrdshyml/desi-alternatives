@@ -41,6 +41,8 @@ export const users = sqliteTable('users', {
   banned: integer('banned', { mode: 'boolean' }).default(false),
   banReason: text('ban_reason'),
   banExpires: integer('ban_expires', { mode: 'timestamp' }),
+  consentStatus: text('consent_status', { enum: ['allowed', 'denied'] }),
+  consentUpdatedAt: integer('consent_updated_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().$defaultFn(() => new Date()),
 });
@@ -309,6 +311,7 @@ https://desialternatives.in/newsletter`).notNull(),
   umamiPixelEnabled: integer('umami_pixel_enabled', { mode: 'boolean' }).default(false).notNull(),
   umamiPixelUrl: text('umami_pixel_url'),
   emailPixelTrackingEnabled: integer('email_pixel_tracking_enabled', { mode: 'boolean' }).default(false).notNull(),
+  consentBannerEnabled: integer('consent_banner_enabled', { mode: 'boolean' }).default(true).notNull(),
 
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

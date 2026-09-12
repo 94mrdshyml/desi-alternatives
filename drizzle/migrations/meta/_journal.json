@@ -120,6 +120,13 @@
       "when": 1789250000000,
       "tag": "0016_umami_pixel_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1789300000000,
+      "tag": "0017_user_consent",
+      "breakpoints": true
     }
   ]
 }

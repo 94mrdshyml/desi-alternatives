@@ -1,0 +1,168 @@
+---
+interface Props {
+  isLoggedIn?: boolean;
+}
+
+const { isLoggedIn = false } = Astro.props;
+---
+
+<div
+  id="da-consent-banner"
+  class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-md z-50 transform translate-y-8 opacity-0 pointer-events-none transition-all duration-300 ease-out"
+  data-logged-in={isLoggedIn ? 'true' : 'false'}
+  role="region"
+  aria-label="Privacy & Cookie Preferences"
+>
+  <div class="relative overflow-hidden rounded-2xl border border-border/80 bg-background/95 p-5 shadow-2xl backdrop-blur-xl dark:bg-card/95 dark:border-white/10 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+    <!-- Subtle top accent line -->
+    <div class="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-primary/30 via-primary to-primary/30"></div>
+
+    <div class="flex items-start gap-3.5">
+      <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+
+      <div class="flex-1">
+        <h3 class="text-sm font-semibold text-foreground tracking-tight">
+          Privacy & Analytics Preferences
+        </h3>
+        <p class="mt-1 text-xs leading-relaxed text-muted-foreground">
+          We use sovereign, cookieless metrics and privacy-preserving tags to understand traffic and improve Desi Alternatives. You have full control over non-essential measurement.
+        </p>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2.5">
+          <button
+            type="button"
+            id="da-consent-allow-btn"
+            class="inline-flex items-center justify-center rounded-lg bg-primary px-3.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm hover:bg-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary active:scale-[0.98] transition-all"
+          >
+            Allow All
+          </button>
+          <button
+            type="button"
+            id="da-consent-deny-btn"
+            class="inline-flex items-center justify-center rounded-lg border border-border bg-secondary/60 px-3.5 py-1.5 text-xs font-medium text-foreground hover:bg-secondary hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring active:scale-[0.98] transition-all"
+          >
+            Decline
+          </button>
+          <a
+            href="/privacy"
+            class="ml-auto text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
+          >
+            Privacy Policy
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    const banner = document.getElementById('da-consent-banner');
+    if (!banner) return;
+
+    const isLoggedIn = banner.getAttribute('data-logged-in') === 'true';
+    const allowBtn = document.getElementById('da-consent-allow-btn');
+    const denyBtn = document.getElementById('da-consent-deny-btn');
+
+    function applyGoogleConsent(status) {
+      if (typeof window.gtag === 'function') {
+        const grantedOrDenied = status === 'allowed' ? 'granted' : 'denied';
+        window.gtag('consent', 'update', {
+          ad_storage: grantedOrDenied,
+          ad_user_data: grantedOrDenied,
+          ad_personalization: grantedOrDenied,
+          analytics_storage: grantedOrDenied,
+        });
+      }
+
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'consent_update',
+        consent_status: status,
+      });
+    }
+
+    function syncConsentToBackend(status) {
+      if (!isLoggedIn) return;
+      try {
+        fetch('/api/user/consent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ consentStatus: status }),
+        }).catch(function (err) {
+          console.warn('[Consent] Backend sync failed:', err);
+        });
+      } catch (e) {}
+    }
+
+    function setConsentDecision(status) {
+      try {
+        localStorage.setItem('da_consent', status);
+        localStorage.setItem('da_consent_ts', Date.now().toString());
+      } catch (e) {}
+
+      applyGoogleConsent(status);
+      syncConsentToBackend(status);
+      hideBanner();
+    }
+
+    function showBanner() {
+      banner.classList.remove('translate-y-8', 'opacity-0', 'pointer-events-none');
+      banner.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+    }
+
+    function hideBanner() {
+      banner.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+      banner.classList.add('translate-y-8', 'opacity-0', 'pointer-events-none');
+      setTimeout(function () {
+        banner.remove();
+      }, 350);
+    }
+
+    // Check existing consent
+    try {
+      const stored = localStorage.getItem('da_consent');
+      if (!stored) {
+        // If logged in, check if user already has a decision in profile before showing banner
+        if (isLoggedIn) {
+          fetch('/api/user/consent')
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+              if (data && data.consentStatus) {
+                localStorage.setItem('da_consent', data.consentStatus);
+                applyGoogleConsent(data.consentStatus);
+              } else {
+                setTimeout(showBanner, 800);
+              }
+            })
+            .catch(function () {
+              setTimeout(showBanner, 800);
+            });
+        } else {
+          setTimeout(showBanner, 800);
+        }
+      } else {
+        // Stored consent exists - apply it immediately
+        applyGoogleConsent(stored);
+      }
+    } catch (e) {
+      setTimeout(showBanner, 800);
+    }
+
+    if (allowBtn) {
+      allowBtn.addEventListener('click', function () {
+        setConsentDecision('allowed');
+      });
+    }
+
+    if (denyBtn) {
+      denyBtn.addEventListener('click', function () {
+        setConsentDecision('denied');
+      });
+    }
+  })();
+</script>
