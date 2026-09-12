@@ -1,6 +1,16 @@
 ---
 import AdminLayout from '@/layouts/AdminLayout.astro';
-import { desiTools, globalTools, categories, claimsQueue, users, searchLogs } from '@/lib/server/db/schema';
+import {
+  desiTools,
+  globalTools,
+  categories,
+  claimsQueue,
+  users,
+  searchLogs,
+  toolReviews,
+  reviewHelpfulVotes,
+  newsletterSubscribers,
+} from '@/lib/server/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 const user = Astro.locals.user;
@@ -10,15 +20,27 @@ if (!user || user.role !== 'admin') {
   return Astro.redirect('/login');
 }
 
-let topViewedTools: any[] = [];
-let topUpvotedTools: any[] = [];
-let totalViews = 12480;
-let totalUpvotes = 342;
 let totalToolsCount = 0;
 let totalGlobalCount = 0;
 let totalCategoriesCount = 0;
 let pendingClaimsCount = 0;
 let totalUsersCount = 0;
+
+// Reviews & Engagement Metrics
+let totalReviewsCount = 0;
+let verifiedReviewsCount = 0;
+let totalHelpfulVotes = 0;
+let avgPlatformRating: string | null = null;
+let topReviewedTools: any[] = [];
+let recentlyAddedTools: any[] = [];
+
+// Newsletter Metrics
+let totalSubscribersCount = 0;
+let subscriberSources: Record<string, number> = { registration: 0, newsletter_page: 0, profile: 0 };
+
+// Tech Hub Distribution
+let topHubs: { city: string; count: number; percentage: string }[] = [];
+let toolsWithLocationCount = 0;
 
 // Search Intelligence & Content Gap Metrics
 let totalSearchesCount = 0;
@@ -30,8 +52,7 @@ if (db) {
   try {
     const allTools = await db.select().from(desiTools).orderBy(desc(desiTools.createdAt)).all();
     totalToolsCount = allTools.length;
-    topViewedTools = allTools.slice(0, 5);
-    topUpvotedTools = allTools.slice(0, 5);
+    recentlyAddedTools = allTools.slice(0, 5);
 
     const globals = await db.select().from(globalTools).all();
     totalGlobalCount = globals.length;
@@ -42,7 +63,84 @@ if (db) {
     const usersList = await db.select().from(users).all();
     totalUsersCount = usersList.length;
 
-    // Search Logs Telemetry Queries
+    // 1. Real Reviews & Helpful Endorsement Telemetry
+    try {
+      const allDbReviews = await db.select().from(toolReviews).orderBy(desc(toolReviews.createdAt)).all();
+      totalReviewsCount = allDbReviews.length;
+      const publishedReviews = allDbReviews.filter((r) => r.status === 'published');
+      verifiedReviewsCount = publishedReviews.filter((r) => r.isVerified).length;
+
+      if (publishedReviews.length > 0) {
+        const sum = publishedReviews.reduce((acc, r) => acc + (r.rating || 5), 0);
+        avgPlatformRating = (sum / publishedReviews.length).toFixed(1);
+      }
+
+      const allVotes = await db.select().from(reviewHelpfulVotes).all();
+      totalHelpfulVotes = allVotes.length;
+
+      // Group reviews by tool
+      const reviewStatsByTool: Record<string, { count: number; sumRating: number; helpful: number }> = {};
+      publishedReviews.forEach((r) => {
+        if (!reviewStatsByTool[r.toolId]) {
+          reviewStatsByTool[r.toolId] = { count: 0, sumRating: 0, helpful: 0 };
+        }
+        reviewStatsByTool[r.toolId].count += 1;
+        reviewStatsByTool[r.toolId].sumRating += r.rating;
+        reviewStatsByTool[r.toolId].helpful += r.helpfulCount || 0;
+      });
+
+      topReviewedTools = allTools
+        .map((t) => ({
+          ...t,
+          reviewCount: reviewStatsByTool[t.id]?.count || 0,
+          avgRating: reviewStatsByTool[t.id]?.count
+            ? (reviewStatsByTool[t.id].sumRating / reviewStatsByTool[t.id].count).toFixed(1)
+            : null,
+          helpfulVotes: reviewStatsByTool[t.id]?.helpful || 0,
+        }))
+        .filter((t) => t.reviewCount > 0)
+        .sort((a, b) => b.reviewCount - a.reviewCount || b.helpfulVotes - a.helpfulVotes)
+        .slice(0, 5);
+    } catch (revErr) {
+      console.warn('Reviews analytics query warning:', revErr);
+    }
+
+    // 2. Newsletter Subscribers Telemetry
+    try {
+      const subscribers = await db
+        .select()
+        .from(newsletterSubscribers)
+        .where(eq(newsletterSubscribers.status, 'subscribed'))
+        .all();
+      totalSubscribersCount = subscribers.length;
+      subscribers.forEach((s) => {
+        const src = s.source || 'newsletter_page';
+        subscriberSources[src] = (subscriberSources[src] || 0) + 1;
+      });
+    } catch (subErr) {
+      console.warn('Newsletter subscribers analytics query warning:', subErr);
+    }
+
+    // 3. Tech Hub Distribution (Software Origin Registry)
+    const hubCounts: Record<string, number> = {};
+    allTools.forEach((t) => {
+      if (t.city) {
+        const cityKey = t.city.trim();
+        hubCounts[cityKey] = (hubCounts[cityKey] || 0) + 1;
+        toolsWithLocationCount += 1;
+      }
+    });
+
+    topHubs = Object.entries(hubCounts)
+      .map(([city, count]) => ({
+        city,
+        count,
+        percentage: toolsWithLocationCount > 0 ? ((count / toolsWithLocationCount) * 100).toFixed(1) : '0',
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // 4. Search Logs Telemetry Queries
     try {
       const allSearchLogs = await db
         .select()
@@ -116,27 +214,41 @@ if (db) {
           <h1 class="text-2xl font-bold tracking-tight text-foreground">First-Party Analytics & Intelligence</h1>
           <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-bold text-emerald-800 border border-emerald-200 flex items-center gap-1.5">
             <span class="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Edge Telemetry Active
+            100% Real D1 Telemetry
           </span>
         </div>
         <p class="text-xs sm:text-sm text-muted-foreground mt-0.5">
-          Privacy-first visitor traffic, intent signals, and buyer conversion telemetry computed at Cloudflare edge.
+          Live queries, reviews, subscribers, and software ecosystem intelligence computed directly from Cloudflare D1.
         </p>
       </div>
     </div>
 
-    <!-- Core Metrics Overview -->
-    <div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+    <!-- Core Real Metrics Overview Grid -->
+    <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
       <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
-        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Directory Impressions</p>
-        <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalViews.toLocaleString()}</p>
-        <p class="mt-1 text-[11px] text-emerald-600 font-medium">↑ 18.4% from last week</p>
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Community Reviews</p>
+        <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalReviewsCount.toLocaleString()}</p>
+        <p class="mt-1 text-[11px] text-emerald-600 font-medium">
+          {avgPlatformRating ? `★ ${avgPlatformRating} avg rating` : 'Awaiting reviews'}
+        </p>
       </div>
 
       <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
-        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Founder Upvotes</p>
-        <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalUpvotes.toLocaleString()}</p>
-        <p class="mt-1 text-[11px] text-emerald-600 font-medium">Verified community endorsements</p>
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Helpful Votes</p>
+        <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalHelpfulVotes.toLocaleString()}</p>
+        <p class="mt-1 text-[11px] text-emerald-600 font-medium">Community validations</p>
+      </div>
+
+      <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Dispatch Subscribers</p>
+        <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalSubscribersCount.toLocaleString()}</p>
+        <p class="mt-1 text-[11px] text-primary font-medium">Active email readers</p>
+      </div>
+
+      <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
+        <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Logged Searches</p>
+        <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalSearchesCount.toLocaleString()}</p>
+        <p class="mt-1 text-[11px] text-amber-600 font-medium">{zeroResultSearches.length} content gaps</p>
       </div>
 
       <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
@@ -148,7 +260,7 @@ if (db) {
       <div class="rounded-2xl border border-border bg-white p-5 shadow-xs">
         <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Global SEO Anchors</p>
         <p class="mt-2 text-2xl font-extrabold text-foreground font-mono">{totalGlobalCount}</p>
-        <p class="mt-1 text-[11px] text-primary font-medium">Programmatic SEO pages</p>
+        <p class="mt-1 text-[11px] text-primary font-medium">Head-to-head pairs</p>
       </div>
     </div>
 
@@ -158,144 +270,156 @@ if (db) {
       <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
         <h3 class="text-sm font-bold text-foreground flex items-center justify-between">
           <span>Top Indian Tech Hubs</span>
-          <span class="text-xs text-muted-foreground font-normal">By traffic share</span>
+          <span class="text-xs text-muted-foreground font-normal">By software headquarters</span>
         </h3>
+        <p class="mt-0.5 text-xs text-muted-foreground">
+          Origin distribution of {toolsWithLocationCount} indexed Indian SaaS tools with verified locations.
+        </p>
 
         <div class="mt-5 space-y-3.5">
-          <div>
-            <div class="flex items-center justify-between text-xs font-medium text-foreground">
-              <span>Bengaluru, Karnataka</span>
-              <span class="font-mono font-bold">42.8%</span>
+          {topHubs.length === 0 ? (
+            <div class="py-6 text-center text-xs text-muted-foreground">
+              📍 Location distribution will populate as tools are assigned headquarters.
             </div>
-            <div class="mt-1.5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full bg-primary rounded-full" style="width: 42.8%;"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-xs font-medium text-foreground">
-              <span>Delhi NCR (Gurugram / Noida)</span>
-              <span class="font-mono font-bold">21.5%</span>
-            </div>
-            <div class="mt-1.5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full bg-amber-500 rounded-full" style="width: 21.5%;"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-xs font-medium text-foreground">
-              <span>Hyderabad, Telangana</span>
-              <span class="font-mono font-bold">14.2%</span>
-            </div>
-            <div class="mt-1.5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full bg-amber-400 rounded-full" style="width: 14.2%;"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-xs font-medium text-foreground">
-              <span>Pune & Mumbai, Maharashtra</span>
-              <span class="font-mono font-bold">12.6%</span>
-            </div>
-            <div class="mt-1.5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full bg-amber-300 rounded-full" style="width: 12.6%;"></div>
-            </div>
-          </div>
-
-          <div>
-            <div class="flex items-center justify-between text-xs font-medium text-foreground">
-              <span>Chennai, Tamil Nadu</span>
-              <span class="font-mono font-bold">8.9%</span>
-            </div>
-            <div class="mt-1.5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
-              <div class="h-full bg-amber-200 rounded-full" style="width: 8.9%;"></div>
-            </div>
-          </div>
+          ) : (
+            topHubs.map((hub, idx) => (
+              <div>
+                <div class="flex items-center justify-between text-xs font-medium text-foreground">
+                  <span class="flex items-center gap-1.5">
+                    <span class="font-mono text-muted-foreground">{idx + 1}.</span>
+                    <span>{hub.city}</span>
+                  </span>
+                  <span class="font-mono font-bold">{hub.count} tools ({hub.percentage}%)</span>
+                </div>
+                <div class="mt-1.5 h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    class="h-full bg-primary rounded-full transition-all duration-500"
+                    style={`width: ${hub.percentage}%;`}
+                  ></div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
-      <!-- Device & OS Telemetry -->
+      <!-- Community Health & Subscriber Channels -->
       <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
         <h3 class="text-sm font-bold text-foreground flex items-center justify-between">
-          <span>Buyer Environment & Platforms</span>
-          <span class="text-xs text-muted-foreground font-normal">Edge user agent analytics</span>
+          <span>Audience & Subscriber Channels</span>
+          <span class="text-xs text-muted-foreground font-normal">D1 acquisition channels</span>
         </h3>
+        <p class="mt-0.5 text-xs text-muted-foreground">
+          Channel conversion velocity across registration and dedicated newsletter forms.
+        </p>
 
         <div class="mt-5 grid grid-cols-2 gap-4">
           <div class="rounded-xl border border-border bg-slate-50/60 p-3.5">
-            <p class="text-xs font-semibold text-muted-foreground">Operating Systems</p>
+            <p class="text-xs font-semibold text-muted-foreground">Newsletter Channels</p>
             <div class="mt-3 space-y-2 text-xs">
               <div class="flex items-center justify-between">
-                <span>macOS</span>
-                <span class="font-bold font-mono">51.2%</span>
+                <span>User Registration</span>
+                <span class="font-bold font-mono">{subscriberSources.registration || 0}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span>Windows</span>
-                <span class="font-bold font-mono">34.6%</span>
+                <span>Newsletter Page</span>
+                <span class="font-bold font-mono">{subscriberSources.newsletter_page || 0}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span>Linux</span>
-                <span class="font-bold font-mono">14.2%</span>
+                <span>Account Profile</span>
+                <span class="font-bold font-mono">{subscriberSources.profile || 0}</span>
               </div>
             </div>
           </div>
 
           <div class="rounded-xl border border-border bg-slate-50/60 p-3.5">
-            <p class="text-xs font-semibold text-muted-foreground">Browser Engine</p>
+            <p class="text-xs font-semibold text-muted-foreground">Review Quality</p>
             <div class="mt-3 space-y-2 text-xs">
               <div class="flex items-center justify-between">
-                <span>Chrome / Chromium</span>
-                <span class="font-bold font-mono">68.4%</span>
+                <span>Verified Authors</span>
+                <span class="font-bold font-mono text-emerald-700">{verifiedReviewsCount}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span>Safari</span>
-                <span class="font-bold font-mono">22.1%</span>
+                <span>Helpful Votes</span>
+                <span class="font-bold font-mono text-foreground">{totalHelpfulVotes}</span>
               </div>
               <div class="flex items-center justify-between">
-                <span>Firefox</span>
-                <span class="font-bold font-mono">9.5%</span>
+                <span>Average Rating</span>
+                <span class="font-bold font-mono text-amber-600">{avgPlatformRating ? `★ ${avgPlatformRating}` : 'N/A'}</span>
               </div>
             </div>
           </div>
         </div>
 
         <div class="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/60 p-3 text-xs text-emerald-900">
-          🔒 Zero 3rd-party tracking cookies. All telemetry is aggregated server-side via Cloudflare edge headers.
+          🔒 100% first-party telemetry aggregated server-side via Cloudflare D1. Zero 3rd-party tracking dependency.
         </div>
       </div>
     </div>
 
-    <!-- Leaderboard -->
+    <!-- Leaderboards -->
     <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <!-- Top Reviewed Indian Products -->
       <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
-        <h3 class="text-sm font-bold text-foreground">Top Viewed Indian Products</h3>
+        <h3 class="text-sm font-bold text-foreground flex items-center justify-between">
+          <span>Top Reviewed Indian Products</span>
+          <span class="text-xs text-muted-foreground font-normal">By community feedback</span>
+        </h3>
         <div class="mt-4 divide-y divide-border">
-          {topViewedTools.map((t, idx) => (
-            <div class="flex items-center justify-between py-2.5 text-xs">
-              <div class="flex items-center gap-3">
-                <span class="font-mono font-bold text-muted-foreground w-4">{idx + 1}</span>
-                <img src={t.logoUrl} alt={t.name} class="h-6 w-6 rounded-md object-contain" />
-                <span class="font-bold text-foreground">{t.name}</span>
-              </div>
-              <span class="font-mono font-semibold text-foreground">{1420 - idx * 180} views</span>
+          {topReviewedTools.length === 0 ? (
+            <div class="py-6 text-center text-xs text-muted-foreground">
+              ✍️ No published community reviews yet. As users submit reviews, top rated products will appear here.
             </div>
-          ))}
+          ) : (
+            topReviewedTools.map((t, idx) => (
+              <div class="flex items-center justify-between py-2.5 text-xs">
+                <div class="flex items-center gap-3">
+                  <span class="font-mono font-bold text-muted-foreground w-4">{idx + 1}</span>
+                  <img src={t.logoUrl} alt={t.name} class="h-6 w-6 rounded-md object-contain border border-border/40" />
+                  <div>
+                    <a href={`/tools/${t.slug}`} class="font-bold text-foreground hover:text-primary transition">
+                      {t.name}
+                    </a>
+                    <span class="text-[10px] text-muted-foreground ml-1.5">★ {t.avgRating}</span>
+                  </div>
+                </div>
+                <span class="font-mono font-semibold text-emerald-700">{t.reviewCount} {t.reviewCount === 1 ? 'review' : 'reviews'}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
+      <!-- Recently Added Software Registry -->
       <div class="rounded-2xl border border-border bg-white p-6 shadow-xs">
-        <h3 class="text-sm font-bold text-foreground">Most Upvoted Products</h3>
+        <h3 class="text-sm font-bold text-foreground flex items-center justify-between">
+          <span>Recently Added Indian Tools</span>
+          <span class="text-xs text-muted-foreground font-normal">Latest registry listings</span>
+        </h3>
         <div class="mt-4 divide-y divide-border">
-          {topUpvotedTools.map((t, idx) => (
-            <div class="flex items-center justify-between py-2.5 text-xs">
-              <div class="flex items-center gap-3">
-                <span class="font-mono font-bold text-muted-foreground w-4">{idx + 1}</span>
-                <img src={t.logoUrl} alt={t.name} class="h-6 w-6 rounded-md object-contain" />
-                <span class="font-bold text-foreground">{t.name}</span>
-              </div>
-              <span class="font-mono font-semibold text-primary">{98 - idx * 14} upvotes</span>
+          {recentlyAddedTools.length === 0 ? (
+            <div class="py-6 text-center text-xs text-muted-foreground">
+              No tools found.
             </div>
-          ))}
+          ) : (
+            recentlyAddedTools.map((t, idx) => (
+              <div class="flex items-center justify-between py-2.5 text-xs">
+                <div class="flex items-center gap-3">
+                  <span class="font-mono font-bold text-muted-foreground w-4">{idx + 1}</span>
+                  <img src={t.logoUrl} alt={t.name} class="h-6 w-6 rounded-md object-contain border border-border/40" />
+                  <div>
+                    <a href={`/tools/${t.slug}`} class="font-bold text-foreground hover:text-primary transition">
+                      {t.name}
+                    </a>
+                    {t.city && <span class="text-[10px] text-muted-foreground ml-1.5">📍 {t.city}</span>}
+                  </div>
+                </div>
+                <span class="text-muted-foreground font-mono text-[10px]">
+                  {t.createdAt ? new Date(t.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' }) : 'Recent'}
+                </span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

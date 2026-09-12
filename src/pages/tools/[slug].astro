@@ -185,73 +185,18 @@ const defaultCons = [
 const displayPros = parsedPros.length > 0 ? parsedPros : defaultPros;
 const displayCons = parsedCons.length > 0 ? parsedCons : defaultCons;
 
-// Seed starter reviews if no DB reviews exist yet
-const seedReviews = [
-  {
-    id: 'rev_seed_1',
-    authorName: 'Aakash Sharma',
-    authorRole: 'Head of Engineering',
-    authorCompany: 'Fintech Scaleup (Bengaluru)',
-    authorAvatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-    rating: 5,
-    createdAt: '2 weeks ago',
-    title: 'Flawless migration and massive tax credit savings',
-    content: `Switching to ${toolResult.name} was one of our best infrastructure decisions this year. The setup was seamless, support responds instantly in our timezone, and getting direct 18% GST invoices makes accounting painless.`,
-    isVerified: true,
-    helpfulCount: 14,
-    easeOfMigrationRating: 5,
-    valueForMoneyRating: 5,
-    supportRating: 5,
-    dataResidencyRating: 5,
-  },
-  {
-    id: 'rev_seed_2',
-    authorName: 'Priya Venkatesh',
-    authorRole: 'Lead DevOps Architect',
-    authorCompany: 'SaaS Platform (Chennai)',
-    authorAvatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80',
-    rating: 5,
-    createdAt: '1 month ago',
-    title: 'Top tier performance with reliable data residency',
-    content: `Meeting DPDP compliance requirements was a breeze since ${toolResult.name} hosts on domestic Indian cloud regions. Performance has been rock solid under high production traffic.`,
-    isVerified: true,
-    helpfulCount: 9,
-    easeOfMigrationRating: 5,
-    valueForMoneyRating: 5,
-    supportRating: 5,
-    dataResidencyRating: 5,
-  },
-  {
-    id: 'rev_seed_3',
-    authorName: 'Rohan Mehta',
-    authorRole: 'Founder & CTO',
-    authorCompany: 'E-commerce Infrastructure (Mumbai)',
-    authorAvatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-    rating: 4,
-    createdAt: '2 months ago',
-    title: 'Great value for money without USD volatility',
-    content: `No more foreign currency markup fees on credit cards or unexpected billing surges. The feature set matches global standards and the team ships improvements rapidly.`,
-    isVerified: true,
-    helpfulCount: 6,
-    easeOfMigrationRating: 4,
-    valueForMoneyRating: 5,
-    supportRating: 4,
-    dataResidencyRating: 5,
-  },
-];
-
 const publishedDbReviews = dbReviews.filter((r) => r.status === 'published');
-const allReviews = publishedDbReviews.length > 0 ? [...publishedDbReviews, ...seedReviews] : seedReviews;
+const allReviews = publishedDbReviews;
 
-// Calculate live dynamic rating metrics
+// Calculate live dynamic rating metrics from real community reviews
 const totalReviewsCount = allReviews.length;
 const sumRating = allReviews.reduce((acc, r) => acc + (r.rating || 5), 0);
-const avgRating = totalReviewsCount > 0 ? (sumRating / totalReviewsCount).toFixed(1) : '5.0';
+const avgRating = totalReviewsCount > 0 ? (sumRating / totalReviewsCount).toFixed(1) : null;
 
-const avgEase = (allReviews.reduce((acc, r) => acc + (r.easeOfMigrationRating || 5), 0) / totalReviewsCount).toFixed(1);
-const avgValue = (allReviews.reduce((acc, r) => acc + (r.valueForMoneyRating || 5), 0) / totalReviewsCount).toFixed(1);
-const avgSupport = (allReviews.reduce((acc, r) => acc + (r.supportRating || 5), 0) / totalReviewsCount).toFixed(1);
-const avgResidency = (allReviews.reduce((acc, r) => acc + (r.dataResidencyRating || 5), 0) / totalReviewsCount).toFixed(1);
+const avgEase = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc + (r.easeOfMigrationRating || 5), 0) / totalReviewsCount).toFixed(1) : null;
+const avgValue = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc + (r.valueForMoneyRating || 5), 0) / totalReviewsCount).toFixed(1) : null;
+const avgSupport = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc + (r.supportRating || 5), 0) / totalReviewsCount).toFixed(1) : null;
+const avgResidency = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc + (r.dataResidencyRating || 5), 0) / totalReviewsCount).toFixed(1) : null;
 ---
 
 <BaseLayout
@@ -715,126 +660,146 @@ const avgResidency = (allReviews.reduce((acc, r) => acc + (r.dataResidencyRating
             <button
               type="button"
               id="open-review-modal-btn"
-              class="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer self-start sm:self-auto"
+              class="open-review-modal-trigger inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer self-start sm:self-auto"
             >
               <span>✍️ Write a Review</span>
             </button>
           </div>
 
-          <!-- Rating Summary Overview -->
-          <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-50/60 border border-border/80">
-            <!-- Overall Score -->
-            <div class="flex flex-col items-center justify-center p-3 text-center border-b sm:border-b-0 sm:border-r border-border/80">
-              <span class="text-3xl font-extrabold text-foreground" id="overall-rating-display">{avgRating}</span>
-              <div class="flex items-center gap-0.5 text-amber-500 my-1 text-sm">
-                <span>★</span><span>★</span><span>★</span><span>★</span><span class={Number(avgRating) >= 4.8 ? 'text-amber-500' : 'text-amber-300'}>★</span>
+          {totalReviewsCount === 0 ? (
+            <div class="mt-6 rounded-xl border border-dashed border-border bg-slate-50/50 p-8 text-center">
+              <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 text-xl mb-3">
+                ✍️
               </div>
-              <span class="text-[11px] text-muted-foreground">Out of 5 stars</span>
+              <h3 class="text-sm font-bold text-foreground">No community reviews yet for {toolResult.name}</h3>
+              <p class="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                Have you deployed or evaluated {toolResult.name}? Share your experience with Indian data residency, 18% GST invoicing, and IST support to help fellow developers!
+              </p>
+              <button
+                type="button"
+                class="open-review-modal-trigger mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
+              >
+                <span>✍️ Be the First to Review</span>
+              </button>
             </div>
-
-            <!-- Breakdown Dimensions (2 Cols) -->
-            <div class="sm:col-span-2 grid grid-cols-2 gap-3 text-xs">
-              <div>
-                <div class="flex justify-between text-muted-foreground font-medium mb-1">
-                  <span>Ease of Migration</span>
-                  <span class="font-bold text-foreground">{avgEase}/5</span>
+          ) : (
+            <>
+              <!-- Rating Summary Overview -->
+              <div class="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4 p-4 rounded-xl bg-slate-50/60 border border-border/80">
+                <!-- Overall Score -->
+                <div class="flex flex-col items-center justify-center p-3 text-center border-b sm:border-b-0 sm:border-r border-border/80">
+                  <span class="text-3xl font-extrabold text-foreground" id="overall-rating-display">{avgRating}</span>
+                  <div class="flex items-center gap-0.5 text-amber-500 my-1 text-sm">
+                    <span>★</span><span>★</span><span>★</span><span>★</span><span class={Number(avgRating) >= 4.8 ? 'text-amber-500' : 'text-amber-300'}>★</span>
+                  </div>
+                  <span class="text-[11px] text-muted-foreground">Out of 5 stars</span>
                 </div>
-                <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgEase)/5)*100)}%;`}></div>
+
+                <!-- Breakdown Dimensions (2 Cols) -->
+                <div class="sm:col-span-2 grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <div class="flex justify-between text-muted-foreground font-medium mb-1">
+                      <span>Ease of Migration</span>
+                      <span class="font-bold text-foreground">{avgEase}/5</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgEase)/5)*100)}%;`}></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-muted-foreground font-medium mb-1">
+                      <span>Value for Money</span>
+                      <span class="font-bold text-foreground">{avgValue}/5</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgValue)/5)*100)}%;`}></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-muted-foreground font-medium mb-1">
+                      <span>IST Support Quality</span>
+                      <span class="font-bold text-foreground">{avgSupport}/5</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgSupport)/5)*100)}%;`}></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-muted-foreground font-medium mb-1">
+                      <span>Data Residency (DPDP)</span>
+                      <span class="font-bold text-foreground">{avgResidency}/5</span>
+                    </div>
+                    <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgResidency)/5)*100)}%;`}></div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <div class="flex justify-between text-muted-foreground font-medium mb-1">
-                  <span>Value for Money</span>
-                  <span class="font-bold text-foreground">{avgValue}/5</span>
-                </div>
-                <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgValue)/5)*100)}%;`}></div>
-                </div>
-              </div>
-
-              <div>
-                <div class="flex justify-between text-muted-foreground font-medium mb-1">
-                  <span>IST Support Quality</span>
-                  <span class="font-bold text-foreground">{avgSupport}/5</span>
-                </div>
-                <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgSupport)/5)*100)}%;`}></div>
-                </div>
-              </div>
-
-              <div>
-                <div class="flex justify-between text-muted-foreground font-medium mb-1">
-                  <span>Data Residency (DPDP)</span>
-                  <span class="font-bold text-foreground">{avgResidency}/5</span>
-                </div>
-                <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                  <div class="h-full bg-emerald-500 rounded-full" style={`width: ${Math.min(100, (Number(avgResidency)/5)*100)}%;`}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Review Testimonial Cards List -->
-          <div class="mt-5 space-y-4" id="reviews-list-container">
-            {allReviews.map((rev: any) => (
-              <div class="rounded-xl border border-border p-4.5 bg-white shadow-2xs transition hover:border-slate-300" id={`review-card-${rev.id}`}>
-                <div class="flex items-start justify-between gap-3">
-                  <div class="flex items-center gap-3">
-                    <img
-                      src={rev.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
-                      alt={rev.authorName}
-                      class="h-9 w-9 rounded-full object-cover border border-border shadow-2xs"
-                    />
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <span class="text-xs font-bold text-foreground">{rev.authorName}</span>
-                        {rev.isVerified && (
-                          <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-semibold text-emerald-800 border border-emerald-200">
-                            ✓ Verified User
+              <!-- Review Testimonial Cards List -->
+              <div class="mt-5 space-y-4" id="reviews-list-container">
+                {allReviews.map((rev: any) => (
+                  <div class="rounded-xl border border-border p-4.5 bg-white shadow-2xs transition hover:border-slate-300" id={`review-card-${rev.id}`}>
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex items-center gap-3">
+                        <img
+                          src={rev.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                          alt={rev.authorName}
+                          class="h-9 w-9 rounded-full object-cover border border-border shadow-2xs"
+                        />
+                        <div>
+                          <div class="flex items-center gap-2">
+                            <span class="text-xs font-bold text-foreground">{rev.authorName}</span>
+                            {rev.isVerified && (
+                              <span class="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.2 text-[10px] font-semibold text-emerald-800 border border-emerald-200">
+                                ✓ Verified User
+                              </span>
+                            )}
+                          </div>
+                          <span class="text-[11px] text-muted-foreground">
+                            {rev.authorRole || 'Developer'}{rev.authorCompany ? ` • ${rev.authorCompany}` : ''}
                           </span>
-                        )}
+                        </div>
                       </div>
-                      <span class="text-[11px] text-muted-foreground">
-                        {rev.authorRole || 'Developer'}{rev.authorCompany ? ` • ${rev.authorCompany}` : ''}
-                      </span>
+
+                      <div class="flex flex-col items-end shrink-0">
+                        <div class="flex items-center text-amber-500 text-xs">
+                          {Array.from({ length: Math.round(rev.rating || 5) }).map(() => (
+                            <span>★</span>
+                          ))}
+                        </div>
+                        <span class="text-[10px] text-muted-foreground mt-0.5">
+                          {typeof rev.createdAt === 'string' && rev.createdAt.includes('-')
+                            ? new Date(rev.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
+                            : rev.createdAt}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h4 class="text-xs font-bold text-foreground mt-3">{rev.title}</h4>
+                    <p class="text-xs text-foreground/80 mt-1 leading-relaxed">
+                      "{rev.content}"
+                    </p>
+
+                    <div class="mt-3.5 pt-2.5 border-t border-border/60 flex items-center justify-between text-xs">
+                      <span class="text-[10px] text-muted-foreground">Was this review helpful?</span>
+                      <button
+                        type="button"
+                        class="helpful-vote-btn inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 transition cursor-pointer"
+                        data-review-id={rev.id}
+                      >
+                        <span>👍 Helpful</span>
+                        <span class="helpful-count font-bold text-[11px]">{rev.helpfulCount || 0}</span>
+                      </button>
                     </div>
                   </div>
-
-                  <div class="flex flex-col items-end shrink-0">
-                    <div class="flex items-center text-amber-500 text-xs">
-                      {Array.from({ length: Math.round(rev.rating || 5) }).map(() => (
-                        <span>★</span>
-                      ))}
-                    </div>
-                    <span class="text-[10px] text-muted-foreground mt-0.5">
-                      {typeof rev.createdAt === 'string' && rev.createdAt.includes('-')
-                        ? new Date(rev.createdAt).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' })
-                        : rev.createdAt}
-                    </span>
-                  </div>
-                </div>
-
-                <h4 class="text-xs font-bold text-foreground mt-3">{rev.title}</h4>
-                <p class="text-xs text-foreground/80 mt-1 leading-relaxed">
-                  "{rev.content}"
-                </p>
-
-                <div class="mt-3.5 pt-2.5 border-t border-border/60 flex items-center justify-between text-xs">
-                  <span class="text-[10px] text-muted-foreground">Was this review helpful?</span>
-                  <button
-                    type="button"
-                    class="helpful-vote-btn inline-flex items-center gap-1.5 rounded-lg border border-border bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-700 hover:bg-emerald-50 hover:text-emerald-800 hover:border-emerald-300 transition cursor-pointer"
-                    data-review-id={rev.id}
-                  >
-                    <span>👍 Helpful</span>
-                    <span class="helpful-count font-bold text-[11px]">{rev.helpfulCount || 0}</span>
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </section>
       </div>
 
@@ -1178,7 +1143,6 @@ const avgResidency = (allReviews.reduce((acc, r) => acc + (r.dataResidencyRating
 
   // 3. Review Modal Dialog Controls
   const reviewModal = document.getElementById('review-modal') as HTMLDialogElement | null;
-  const openReviewBtn = document.getElementById('open-review-modal-btn');
   const closeReviewBtn = document.getElementById('close-review-modal-btn');
   const cancelReviewBtn = document.getElementById('cancel-review-btn');
   const reviewForm = document.getElementById('submit-review-form') as HTMLFormElement | null;
@@ -1220,11 +1184,11 @@ const avgResidency = (allReviews.reduce((acc, r) => acc + (r.dataResidencyRating
     });
   });
 
-  if (openReviewBtn && reviewModal) {
-    openReviewBtn.addEventListener('click', () => {
-      reviewModal.showModal();
+  document.querySelectorAll<HTMLButtonElement>('.open-review-modal-trigger').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (reviewModal) reviewModal.showModal();
     });
-  }
+  });
 
   if (closeReviewBtn && reviewModal) {
     closeReviewBtn.addEventListener('click', () => {
