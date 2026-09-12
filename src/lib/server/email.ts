@@ -24,6 +24,9 @@ export interface WelcomeEmailSettings {
   newsletterWelcomeEnabled?: boolean;
   newsletterWelcomeSubject?: string;
   newsletterWelcomeBody?: string;
+  umamiPixelEnabled?: boolean;
+  umamiPixelUrl?: string;
+  emailPixelTrackingEnabled?: boolean;
 }
 
 export interface SendWelcomeEmailParams {
@@ -36,6 +39,7 @@ export interface SendWelcomeEmailParams {
   settings?: WelcomeEmailSettings;
   overrideSubject?: string;
   overrideBody?: string;
+  pixelUrl?: string;
 }
 
 export interface SendNewsletterWelcomeEmailParams {
@@ -49,6 +53,7 @@ export interface SendNewsletterWelcomeEmailParams {
   settings?: WelcomeEmailSettings;
   overrideSubject?: string;
   overrideBody?: string;
+  pixelUrl?: string;
 }
 
 /**
@@ -155,6 +160,7 @@ export async function sendWelcomeEmail({
   settings,
   overrideSubject,
   overrideBody,
+  pixelUrl: overridePixelUrl,
 }: SendWelcomeEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     if (settings && settings.welcomeEnabled === false && !overrideSubject) {
@@ -192,6 +198,12 @@ https://desialternatives.in`;
     const subject = interpolateTemplate(rawSubject, vars);
     const body = interpolateTemplate(rawBody, vars);
 
+    const activePixelUrl =
+      overridePixelUrl ||
+      (settings?.emailPixelTrackingEnabled && settings?.umamiPixelEnabled && settings?.umamiPixelUrl
+        ? settings.umamiPixelUrl
+        : undefined);
+
     const emailHtml = await render(
       React.createElement(WelcomeEmail, {
         subject,
@@ -199,6 +211,7 @@ https://desialternatives.in`;
         type: 'welcome',
         ctaText: 'Explore Sovereign Directory',
         ctaUrl: 'https://desialternatives.in',
+        pixelUrl: activePixelUrl,
       })
     );
 
@@ -252,6 +265,7 @@ export async function sendNewsletterWelcomeEmail({
   settings,
   overrideSubject,
   overrideBody,
+  pixelUrl: overridePixelUrl,
 }: SendNewsletterWelcomeEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     if (settings && settings.newsletterWelcomeEnabled === false && !overrideSubject) {
@@ -293,6 +307,12 @@ https://desialternatives.in/newsletter`;
       ? `https://desialternatives.in/unsubscribe?token=${unsubscribeToken}`
       : 'https://desialternatives.in/unsubscribe';
 
+    const activePixelUrl =
+      overridePixelUrl ||
+      (settings?.emailPixelTrackingEnabled && settings?.umamiPixelEnabled && settings?.umamiPixelUrl
+        ? settings.umamiPixelUrl
+        : undefined);
+
     const emailHtml = await render(
       React.createElement(WelcomeEmail, {
         subject,
@@ -301,6 +321,7 @@ https://desialternatives.in/newsletter`;
         ctaText: 'Browse Latest Dispatches',
         ctaUrl: 'https://desialternatives.in/newsletter',
         unsubscribeUrl,
+        pixelUrl: activePixelUrl,
       })
     );
 

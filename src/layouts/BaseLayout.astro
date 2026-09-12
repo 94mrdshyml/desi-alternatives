@@ -44,6 +44,8 @@ let gtmEnabled = Boolean(gtmId);
 let umamiWebsiteId = (import.meta as any).env?.PUBLIC_UMAMI_WEBSITE_ID || '';
 let umamiScriptUrl = (import.meta as any).env?.PUBLIC_UMAMI_SCRIPT_URL || 'https://cloud.umami.is/script.js';
 let umamiEnabled = Boolean(umamiWebsiteId);
+let umamiPixelUrl = (import.meta as any).env?.PUBLIC_UMAMI_PIXEL_URL || '';
+let umamiPixelEnabled = Boolean(umamiPixelUrl);
 
 const db = Astro.locals.db;
 if (db) {
@@ -55,6 +57,8 @@ if (db) {
       if (settings.umamiEnabled !== undefined) umamiEnabled = settings.umamiEnabled === true;
       if (settings.umamiWebsiteId) umamiWebsiteId = settings.umamiWebsiteId;
       if (settings.umamiScriptUrl) umamiScriptUrl = settings.umamiScriptUrl;
+      if (settings.umamiPixelEnabled !== undefined) umamiPixelEnabled = settings.umamiPixelEnabled === true;
+      if (settings.umamiPixelUrl) umamiPixelUrl = settings.umamiPixelUrl;
     }
   } catch {
     // Graceful fallback if settings table not yet populated in preview/test
@@ -134,6 +138,19 @@ if (db) {
           width="0"
           style="display:none;visibility:hidden"
         ></iframe>
+      </noscript>
+    )}
+
+    <!-- Umami Pixel (Cookieless noscript tracking) -->
+    {umamiPixelEnabled && umamiPixelUrl && (
+      <noscript>
+        <img
+          src={umamiPixelUrl}
+          width="1"
+          height="1"
+          style="display:none;visibility:hidden;"
+          alt=""
+        />
       </noscript>
     )}
 

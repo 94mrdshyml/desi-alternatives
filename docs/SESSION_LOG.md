@@ -1041,6 +1041,36 @@
    - `astro check`: **0 errors, 0 warnings** across 90 files.
    - `bun run build`: Built cleanly with 0 TypeScript/compiler diagnostics.
 
+---
+
+## Session 41 — Umami Tracking Pixels (Cookieless Email Opens & Noscript Web Tracking)
+
+**Date & Time (IST):** 2026-09-12 10:50 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **D1 Schema & Migration Layer (`schema.ts` & `0016_umami_pixel_settings.sql`)**:
+   - Added `umamiPixelEnabled`, `umamiPixelUrl`, and `emailPixelTrackingEnabled` to `siteSettings` table.
+   - Generated migration `0016_umami_pixel_settings.sql` and registered entry in `drizzle/migrations/meta/_journal.json`.
+
+2. **Admin Settings API & Management UI (`/admin/settings.astro` & `api/admin/settings.ts`)**:
+   - Added Umami Pixels configuration card under Tab 4 with tracking pixel endpoint input, enable toggle, and auto-embed email toggle.
+   - Connected form submission handlers in `/admin/settings.astro` and `/api/admin/settings.ts`.
+
+3. **Email Templates & Dispatcher (`src/emails/WelcomeEmail.tsx` & `src/lib/server/email.ts`)**:
+   - Updated `WelcomeEmail` with `pixelUrl` prop rendering an invisible 1x1 image pixel at the bottom of the email container.
+   - Updated `sendWelcomeEmail` and `sendNewsletterWelcomeEmail` to automatically inject the configured Umami tracking pixel when `emailPixelTrackingEnabled` is active.
+
+4. **Web Noscript Fallback (`src/layouts/BaseLayout.astro`)**:
+   - Injected `<noscript><img src={umamiPixelUrl} width="1" height="1" ... /></noscript>` into `<body>` for JavaScript-disabled visitors.
+
+5. **Testing & Quality Assurance**:
+   - Vitest unit tests: **54/54 tests passed** (+2 new unit tests for pixel tracking email integration).
+   - `astro check`: **0 errors, 0 warnings** across 90 files.
+
+
 
 
 

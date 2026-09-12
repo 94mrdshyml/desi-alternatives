@@ -21,6 +21,7 @@ interface WelcomeEmailProps {
   ctaText?: string;
   ctaUrl?: string;
   unsubscribeUrl?: string;
+  pixelUrl?: string;
 }
 
 export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
@@ -30,6 +31,7 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
   ctaText = type === 'newsletter_welcome' ? 'Browse Latest Dispatches' : 'Explore Sovereign Directory',
   ctaUrl = type === 'newsletter_welcome' ? 'https://desialternatives.in/newsletter' : 'https://desialternatives.in',
   unsubscribeUrl,
+  pixelUrl,
 }) => {
   const isHtml = /<[a-z][\s\S]*>/i.test(body);
   const cleanBody = isHtml ? sanitizeEmailHtml(body) : body;
@@ -159,6 +161,17 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
                 </Link>
                 .
               </Text>
+            )}
+
+            {/* Invisible Analytics Tracking Pixel (e.g. Umami Pixels) */}
+            {pixelUrl && (
+              <img
+                src={pixelUrl}
+                width="1"
+                height="1"
+                alt=""
+                style={{ display: 'none', width: '1px', height: '1px', border: 0, opacity: 0 }}
+              />
             )}
           </Section>
         </Container>

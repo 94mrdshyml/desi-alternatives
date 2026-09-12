@@ -150,3 +150,38 @@ describe('Email HTML Normalizer & Sanitizer', () => {
     expect(clean).toBe(html);
   });
 });
+
+describe('Umami Tracking Pixel Email Integration', () => {
+  it('passes pixelUrl when emailPixelTrackingEnabled and umamiPixelEnabled are active', async () => {
+    const result = await sendWelcomeEmail({
+      to: 'founder@desi.io',
+      name: 'Rohan Verma',
+      settings: {
+        welcomeEnabled: true,
+        umamiPixelEnabled: true,
+        umamiPixelUrl: 'https://cloud.umami.is/api/pixel/12345678-abcd-ef01-2345-6789abcdef01',
+        emailPixelTrackingEnabled: true,
+      },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.id).toBe('dev-mock-welcome-id');
+  });
+
+  it('passes pixelUrl to newsletter welcome dispatch when enabled', async () => {
+    const result = await sendNewsletterWelcomeEmail({
+      to: 'reader@tech.in',
+      name: 'Simran Kaur',
+      settings: {
+        newsletterWelcomeEnabled: true,
+        umamiPixelEnabled: true,
+        umamiPixelUrl: 'https://cloud.umami.is/api/pixel/98765432-dcba-10fe-5432-10fedcba9876',
+        emailPixelTrackingEnabled: true,
+      },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.id).toBe('dev-mock-newsletter-welcome-id');
+  });
+});
+

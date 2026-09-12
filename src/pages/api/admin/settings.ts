@@ -71,6 +71,9 @@ export const GET: APIRoute = async ({ locals }) => {
         umamiEnabled: settings?.umamiEnabled === true,
         umamiWebsiteId: settings?.umamiWebsiteId || '',
         umamiScriptUrl: settings?.umamiScriptUrl || 'https://cloud.umami.is/script.js',
+        umamiPixelEnabled: settings?.umamiPixelEnabled === true,
+        umamiPixelUrl: settings?.umamiPixelUrl || '',
+        emailPixelTrackingEnabled: settings?.emailPixelTrackingEnabled === true,
       }),
       {
         status: 200,
@@ -124,6 +127,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const umamiWebsiteId = String(body?.umamiWebsiteId || '').trim();
     const umamiScriptUrl = String(body?.umamiScriptUrl || '').trim() || 'https://cloud.umami.is/script.js';
 
+    const umamiPixelEnabled = Boolean(body?.umamiPixelEnabled);
+    const umamiPixelUrl = String(body?.umamiPixelUrl || '').trim();
+    const emailPixelTrackingEnabled = Boolean(body?.emailPixelTrackingEnabled);
+
     const existing = await db
       .select()
       .from(siteSettings)
@@ -144,6 +151,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       umamiEnabled,
       umamiWebsiteId: umamiWebsiteId || null,
       umamiScriptUrl,
+      umamiPixelEnabled,
+      umamiPixelUrl: umamiPixelUrl || null,
+      emailPixelTrackingEnabled,
       updatedAt: sql`CURRENT_TIMESTAMP`,
     };
 

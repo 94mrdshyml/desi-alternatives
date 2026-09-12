@@ -306,6 +306,9 @@ https://desialternatives.in/newsletter`).notNull(),
   umamiEnabled: integer('umami_enabled', { mode: 'boolean' }).default(false).notNull(),
   umamiWebsiteId: text('umami_website_id'),
   umamiScriptUrl: text('umami_script_url').default('https://cloud.umami.is/script.js').notNull(),
+  umamiPixelEnabled: integer('umami_pixel_enabled', { mode: 'boolean' }).default(false).notNull(),
+  umamiPixelUrl: text('umami_pixel_url'),
+  emailPixelTrackingEnabled: integer('email_pixel_tracking_enabled', { mode: 'boolean' }).default(false).notNull(),
 
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });

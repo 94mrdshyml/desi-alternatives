@@ -113,6 +113,13 @@
       "when": 1789200000000,
       "tag": "0015_analytics_tracking_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1789250000000,
+      "tag": "0016_umami_pixel_settings",
+      "breakpoints": true
     }
   ]
 }
