@@ -1175,6 +1175,40 @@
    - `astro check`: **0 errors, 0 warnings** across 93 files.
    - `bun run build`: Clean production SSR build.
 
+---
+
+## Session 45 — Reviews Polish, "I Use This Tool" Counter & Profile Activity Timeline
+
+**Date & Time (IST):** 2026-09-12 15:18 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Avatar Consistency with Deterministic Dicebear Glyphs**:
+   - Fixed review submit endpoint (`/api/reviews/submit.ts`) to use user profile avatar or deterministic Dicebear glyph (`https://api.dicebear.com/9.x/identicon/svg?seed=...`), completely eliminating random Unsplash images.
+   - Updated review cards in `src/pages/tools/[slug].astro` to fallback to Dicebear glyphs if an old Unsplash image URL exists.
+
+2. **Editable Review Display Name**:
+   - Permitted custom display names, roles, and company metadata during review submissions while preserving user verification.
+
+3. **"I Have Used This Tool" Usage Engine (`user_tool_usage`)**:
+   - Created `user_tool_usage` database table with foreign keys to `users(id)` and `desi_tools(id)` and a unique compound index on `(user_id, tool_id)`.
+   - Created toggle API endpoint at `/api/tools/toggle-used`.
+   - Added live usage badge in tool hero: `👥 X builders use this`.
+   - Added interactive `⚡ I use this tool` / `✓ I use this` button with instant AJAX toggling.
+
+4. **User Activity Timeline & Stack on Profile (`src/pages/profile.astro`)**:
+   - Added tabbed navigation (`Activity & Stack` vs `Account Settings`).
+   - Built a comprehensive chronological Activity Timeline stream tracking all submitted tool reviews, star ratings, content snippets, and marked tech stack tools with exact date & time.
+   - Added quick stat cards for Reviews Written, Tools in Stack, and Helpful Endorsements Received.
+
+5. **Testing & Verification**:
+   - Vitest unit tests: **57/57 passed** (+1 new unit test for `createToolUsageId` and Dicebear avatar resolution).
+   - `astro check`: **0 errors, 0 warnings** across 94 files.
+   - `bun run build`: Built cleanly with 0 errors.
+
+
 
 
 

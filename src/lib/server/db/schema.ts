@@ -19,6 +19,7 @@ import {
   createReviewId,
   createReviewVoteId,
   createNewsletterSubscriberId,
+  createToolUsageId,
 } from '../id';
 
 // ==========================================
@@ -431,6 +432,17 @@ export const newsletterSubscribers = sqliteTable('newsletter_subscribers', {
   token: text('token').notNull().unique(), // Secure nanoid token for 1-click unsubscribe links
   subscribedAt: text('subscribed_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
   unsubscribedAt: text('unsubscribed_at'),
+});
+
+// ==========================================
+// 12. USER TOOL USAGE ("I USE THIS TOOL")
+// ==========================================
+
+export const userToolUsage = sqliteTable('user_tool_usage', {
+  id: text('id').primaryKey().$defaultFn(createToolUsageId),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  toolId: text('tool_id').notNull().references(() => desiTools.id, { onDelete: 'cascade' }),
+  createdAt: text('created_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
 

@@ -4,7 +4,7 @@ import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
 import Breadcrumbs from '@/components/Breadcrumbs.astro';
 import { eq, asc, desc } from 'drizzle-orm';
-import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans, toolReviews } from '@/lib/server/db/schema';
+import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans, toolReviews, userToolUsage } from '@/lib/server/db/schema';
 
 const db = Astro.locals.db;
 const user = Astro.locals.user;
@@ -20,6 +20,8 @@ let pricingPlans: any[] = [];
 let dbReviews: any[] = [];
 let parsedPros: string[] = [];
 let parsedCons: string[] = [];
+let usedByCount = 0;
+let hasUsedByUser = false;
 
 try {
   // 1. Fetch tool by slug
@@ -114,6 +116,22 @@ try {
     try {
       if (toolResult.cons) parsedCons = JSON.parse(toolResult.cons);
     } catch {}
+
+    // 6. Fetch user tool usage ("I use this tool")
+    try {
+      const usages = await db
+        .select({ id: userToolUsage.id, userId: userToolUsage.userId })
+        .from(userToolUsage)
+        .where(eq(userToolUsage.toolId, toolResult.id))
+        .all();
+      usedByCount = usages.length;
+      if (user) {
+        hasUsedByUser = usages.some((u) => u.userId === user.id);
+      }
+    } catch {
+      usedByCount = 0;
+      hasUsedByUser = false;
+    }
   }
 } catch (e) {
   console.error('Error fetching tool details:', e);
@@ -291,6 +309,16 @@ const avgResidency = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc 
                     {toolResult.startingPriceInr === 0 ? 'Free tier' : `From ₹${toolResult.startingPriceInr.toLocaleString('en-IN')}/mo`}
                   </span>
                 )}
+
+                <span
+                  id="tool-used-count-badge"
+                  class="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800 border border-slate-200"
+                >
+                  <span>👥</span>
+                  <span id="tool-used-count-text">
+                    {usedByCount} {usedByCount === 1 ? 'builder uses this' : 'builders use this'}
+                  </span>
+                </span>
               </div>
 
               <p class="mt-1 text-sm sm:text-base font-medium text-muted-foreground">
@@ -398,13 +426,13 @@ const avgResidency = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc 
           </div>
 
           <!-- Right Column: Action CTAs -->
-          <div class="flex items-center gap-2.5 pt-2 sm:pt-3 shrink-0">
+          <div class="flex flex-wrap items-center gap-2.5 pt-2 sm:pt-3 shrink-0">
             <a
               href={toolResult.websiteUrl}
               target="_blank"
               rel="noopener noreferrer"
               data-outbound-tool={toolResult.slug}
-              class="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
+              class="inline-flex items-center gap-2 rounded-xl bg-primary px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover transition cursor-pointer"
             >
               <span>Visit Website</span>
               <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -414,8 +442,24 @@ const avgResidency = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc 
 
             <button
               type="button"
+              id="toggle-used-tool-btn"
+              data-tool-id={toolResult.id}
+              data-has-used={hasUsedByUser ? 'true' : 'false'}
+              data-user-logged-in={user ? 'true' : 'false'}
+              class={`inline-flex items-center gap-1.5 rounded-xl px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs ${
+                hasUsedByUser
+                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600'
+                  : 'border border-border bg-white text-foreground hover:bg-slate-50 hover:border-emerald-300'
+              }`}
+            >
+              <span id="toggle-used-icon">{hasUsedByUser ? '✓' : '⚡'}</span>
+              <span id="toggle-used-text">{hasUsedByUser ? 'I use this' : 'I use this tool'}</span>
+            </button>
+
+            <button
+              type="button"
               id="claim-tool-btn"
-              class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-foreground shadow-2xs hover:border-primary/40 hover:bg-slate-50 transition cursor-pointer"
+              class="inline-flex items-center gap-1.5 rounded-xl border border-border bg-white px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold text-foreground shadow-2xs hover:border-primary/40 hover:bg-slate-50 transition cursor-pointer"
             >
               <svg class="h-4 w-4 text-amber-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -746,9 +790,9 @@ const avgResidency = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc 
                     <div class="flex items-start justify-between gap-3">
                       <div class="flex items-center gap-3">
                         <img
-                          src={rev.authorAvatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80'}
+                          src={rev.authorAvatarUrl && !rev.authorAvatarUrl.includes('images.unsplash.com') ? rev.authorAvatarUrl : `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(rev.authorName || 'User')}`}
                           alt={rev.authorName}
-                          class="h-9 w-9 rounded-full object-cover border border-border shadow-2xs"
+                          class="h-9 w-9 rounded-full object-cover border border-border shadow-2xs bg-amber-50"
                         />
                         <div>
                           <div class="flex items-center gap-2">
@@ -1276,4 +1320,59 @@ const avgResidency = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc 
       }
     });
   });
+
+  // 6. Toggle "I use this tool"
+  const toggleUsedBtn = document.getElementById('toggle-used-tool-btn') as HTMLButtonElement | null;
+  const toggleUsedIcon = document.getElementById('toggle-used-icon');
+  const toggleUsedText = document.getElementById('toggle-used-text');
+  const usedCountText = document.getElementById('tool-used-count-text');
+
+  if (toggleUsedBtn) {
+    toggleUsedBtn.addEventListener('click', async () => {
+      const isLoggedIn = toggleUsedBtn.getAttribute('data-user-logged-in') === 'true';
+      if (!isLoggedIn) {
+        window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+        return;
+      }
+
+      const toolId = toggleUsedBtn.getAttribute('data-tool-id');
+      if (!toolId) return;
+
+      toggleUsedBtn.disabled = true;
+      try {
+        const res = await fetch('/api/tools/toggle-used', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ toolId }),
+        });
+
+        const data = (await res.json()) as any;
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to update usage status.');
+        }
+
+        const hasUsed = Boolean(data.hasUsed);
+        toggleUsedBtn.setAttribute('data-has-used', hasUsed ? 'true' : 'false');
+
+        if (hasUsed) {
+          toggleUsedBtn.className = 'inline-flex items-center gap-1.5 rounded-xl px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs bg-emerald-600 text-white hover:bg-emerald-700 border border-emerald-600';
+          if (toggleUsedIcon) toggleUsedIcon.textContent = '✓';
+          if (toggleUsedText) toggleUsedText.textContent = 'I use this';
+        } else {
+          toggleUsedBtn.className = 'inline-flex items-center gap-1.5 rounded-xl px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-semibold transition cursor-pointer shadow-2xs border border-border bg-white text-foreground hover:bg-slate-50 hover:border-emerald-300';
+          if (toggleUsedIcon) toggleUsedIcon.textContent = '⚡';
+          if (toggleUsedText) toggleUsedText.textContent = 'I use this tool';
+        }
+
+        if (usedCountText && data.totalUsersCount !== undefined) {
+          const count = data.totalUsersCount;
+          usedCountText.textContent = `${count} ${count === 1 ? 'builder uses this' : 'builders use this'}`;
+        }
+      } catch (err: any) {
+        console.error('Failed to toggle tool usage:', err);
+      } finally {
+        toggleUsedBtn.disabled = false;
+      }
+    });
+  }
 </script>

@@ -23,6 +23,7 @@ export const ID_PREFIXES = {
   review: 'rev_',
   reviewVote: 'vote_',
   newsletterSubscriber: 'sub_',
+  toolUsage: 'usage_',
 } as const;
 
 export type IdPrefixKey = keyof typeof ID_PREFIXES;
@@ -49,3 +50,4 @@ export const createSearchLogId = () => generateId(ID_PREFIXES.searchLog);
 export const createReviewId = () => generateId(ID_PREFIXES.review);
 export const createReviewVoteId = () => generateId(ID_PREFIXES.reviewVote);
 export const createNewsletterSubscriberId = () => generateId(ID_PREFIXES.newsletterSubscriber);
+export const createToolUsageId = () => generateId(ID_PREFIXES.toolUsage);

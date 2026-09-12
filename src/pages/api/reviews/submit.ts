@@ -57,21 +57,14 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     // Resolve author metadata
-    const finalAuthorName = (user?.name || authorName || 'Anonymous Developer').trim();
+    const finalAuthorName = (authorName || user?.name || 'Anonymous Developer').trim();
     const finalAuthorRole = (authorRole || (user ? 'Verified User' : 'Software Engineer')).trim();
     const finalAuthorCompany = (authorCompany || 'Indian Tech Ecosystem').trim();
     const isVerified = Boolean(user && user.email);
 
-    // Random stylish avatar if not provided
-    const avatarList = [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
-    ];
-    const defaultAvatar = avatarList[Math.floor(Math.random() * avatarList.length)];
-    const finalAvatar = user?.image || defaultAvatar;
+    // Use user profile avatar or deterministic Dicebear glyph avatar
+    const finalAvatar =
+      user?.image || `https://api.dicebear.com/9.x/identicon/svg?seed=${encodeURIComponent(finalAuthorName)}`;
 
     const newReview = {
       id: createReviewId(),
