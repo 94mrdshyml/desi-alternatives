@@ -1106,6 +1106,40 @@
    - `astro check`: **0 errors, 0 warnings** across 92 files.
    - `bun run build`: Built cleanly with 0 errors.
 
+---
+
+## Session 43 — Unified 3-in-1 Analytics Event Tracking Engine (First-Party + GA4/GTM + Umami)
+
+**Date & Time (IST):** 2026-09-12 13:10 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Unified Client Event Dispatcher (`src/lib/client/analytics.ts`)**:
+   - Implemented `trackEvent(eventName, params)` utility broadcasting simultaneously to:
+     - **Google Analytics 4 / Google Tag Manager**: `window.dataLayer.push({ event, ... })` and `window.gtag('event', ...)`
+     - **Umami Analytics**: `window.umami.track(eventName, params)`
+     - **First-Party Sovereign Engine**: `navigator.sendBeacon('/api/analytics/collect', payload)` with fallback to keepalive `fetch`.
+   - Attached to `window.trackEvent` for universal access.
+
+2. **Core Event Hooks Connected Across the Platform**:
+   - **User Registration (`/register`)**: Dispatches `sign_up` and `user_register` (`method: 'email_otp'`) on successful OTP account verification.
+   - **Newsletter Subscription (`/newsletter`, `/register`, `/profile`)**: Dispatches `newsletter_subscribe` with source attribution (`newsletter_page`, `registration`, `profile`).
+   - **User Login (`/login`)**: Dispatches `login` and `user_login` on successful OTP authentication.
+   - **Directory Outbound Clicks (`AnalyticsTracker.astro`)**: Dispatches `outbound_click` with `tool_slug` and `target_url` when visitors click through to Indian software websites.
+   - **Comparison Matchups (`AnalyticsTracker.astro`)**: Dispatches `compare_view` with `comparison_slug`.
+   - **Search Dialog (`SearchDialog.tsx`)**: Dispatches `search` event with query and results count.
+
+3. **Server Analytics Engine Expansion (`src/lib/server/analytics.ts`)**:
+   - Extended `AnalyticsEventInput['eventType']` with `'user_register' | 'user_login' | 'newsletter_subscribe' | 'compare_view'`.
+
+4. **Testing & Quality Assurance**:
+   - Vitest unit tests: **56/56 passed** (+2 new unit tests for `trackEvent` dispatcher).
+   - `astro check`: **0 errors, 0 warnings** across 93 files.
+   - `bun run build`: Clean production SSR build.
+
+
 
 
 

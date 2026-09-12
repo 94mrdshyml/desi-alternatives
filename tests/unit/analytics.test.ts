@@ -52,4 +52,65 @@ describe('First-Party Analytics Utilities', () => {
       expect(hashA).not.toBe(hashB);
     });
   });
+
+  describe('Unified Client 3-in-1 trackEvent Dispatcher', () => {
+    it('dispatches to dataLayer, gtag, and umami when present on window', async () => {
+      const { trackEvent } = await import('@/lib/client/analytics');
+
+      const dataLayerMock: any[] = [];
+      const gtagCalls: any[] = [];
+      const umamiCalls: any[] = [];
+
+      Object.defineProperty(globalThis, 'window', {
+        value: {
+          location: { pathname: '/tools/signoz' },
+          dataLayer: dataLayerMock,
+          gtag: (type: string, name: string, params: any) => {
+            gtagCalls.push({ type, name, params });
+          },
+          umami: {
+            track: (name: string, params: any) => {
+              umamiCalls.push({ name, params });
+            },
+          },
+        },
+        configurable: true,
+        writable: true,
+      });
+
+      Object.defineProperty(globalThis, 'document', {
+        value: { referrer: 'https://google.com' },
+        configurable: true,
+        writable: true,
+      });
+
+      trackEvent('user_register', { method: 'email_otp' });
+
+      expect(dataLayerMock).toHaveLength(1);
+      expect(dataLayerMock[0].event).toBe('user_register');
+      expect(dataLayerMock[0].method).toBe('email_otp');
+
+      expect(gtagCalls).toHaveLength(1);
+      expect(gtagCalls[0].name).toBe('user_register');
+
+      expect(umamiCalls).toHaveLength(1);
+      expect(umamiCalls[0].name).toBe('user_register');
+    });
+
+    it('safely runs in environments where window objects are omitted', async () => {
+      const { trackEvent } = await import('@/lib/client/analytics');
+
+      Object.defineProperty(globalThis, 'window', {
+        value: {
+          location: { pathname: '/newsletter' },
+        },
+        configurable: true,
+        writable: true,
+      });
+
+      expect(() => {
+        trackEvent('newsletter_subscribe', { source: 'newsletter_page' });
+      }).not.toThrow();
+    });
+  });
 });

@@ -152,6 +152,7 @@ if (user) {
 
   <script>
     import { authClient } from '@/lib/auth-client';
+    import { trackEvent } from '@/lib/client/analytics';
 
     const emailForm = document.getElementById('email-step-form') as HTMLFormElement;
     const emailInput = document.getElementById('email-input') as HTMLInputElement;
@@ -366,6 +367,14 @@ if (user) {
           otpBoxes.forEach((b) => (b.value = ''));
           otpBoxes[0]?.focus();
         } else {
+          // 1. Analytics Events (3-in-1: First-Party, GA4, Umami)
+          trackEvent('login', {
+            method: 'email_otp',
+          });
+          trackEvent('user_login', {
+            method: 'email_otp',
+          });
+
           showInfo('Verification successful! Redirecting...');
           window.location.href = '/';
         }

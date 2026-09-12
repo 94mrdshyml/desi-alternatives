@@ -5,11 +5,24 @@
  */
 
 export interface AnalyticsEventInput {
-  eventType: 'pageview' | 'tool_view' | 'outbound_click' | 'badge_click' | 'search';
+  eventType:
+    | 'pageview'
+    | 'tool_view'
+    | 'outbound_click'
+    | 'badge_click'
+    | 'search'
+    | 'user_register'
+    | 'user_login'
+    | 'newsletter_subscribe'
+    | 'compare_view'
+    | 'claim_submitted'
+    | string;
   path: string;
   toolId?: string;
   toolSlug?: string;
   globalToolSlug?: string;
+  comparisonSlug?: string;
+  newsletterSource?: string;
   badgeType?: string;
   referrer?: string;
   searchQuery?: string;

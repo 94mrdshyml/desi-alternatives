@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { trackEvent } from '@/lib/client/analytics';
 
 export interface SearchResultItem {
   id: string;
@@ -114,6 +115,14 @@ export default function SearchDialog() {
         if (data.counts) setCounts(data.counts);
         if (data.searchLogId) setSearchLogId(data.searchLogId);
         setSelectedIndex(0);
+
+        if (q.trim()) {
+          trackEvent('search', {
+            search_query: q.trim(),
+            searchQuery: q.trim(),
+            results_count: data.results?.length || 0,
+          });
+        }
       }
     } catch (err) {
       console.error('Search fetch error:', err);

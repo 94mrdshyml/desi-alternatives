@@ -394,6 +394,8 @@ const curatedIssues = [
 </BaseLayout>
 
 <script>
+  import { trackEvent } from '@/lib/client/analytics';
+
   // Substack AJAX Subscription Form Handler
   function setupForm(formId: string, msgId: string) {
     const form = document.getElementById(formId) as HTMLFormElement | null;
@@ -423,6 +425,11 @@ const curatedIssues = [
         const data = (await res.json()) as any;
 
         if (res.ok && data.success) {
+          // 1. Analytics Events (3-in-1: First-Party, GA4, Umami)
+          trackEvent('newsletter_subscribe', {
+            source: 'newsletter_page',
+          });
+
           msg.textContent = data.message || '🎉 Check your inbox — you are subscribed!';
           msg.className = 'mt-2.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 p-3 text-xs font-semibold block';
           form.reset();

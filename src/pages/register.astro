@@ -209,6 +209,7 @@ if (user) {
 
   <script>
     import { authClient } from '@/lib/auth-client';
+    import { trackEvent } from '@/lib/client/analytics';
 
     const registerForm = document.getElementById('register-step-form') as HTMLFormElement;
     const nameInput = document.getElementById('name-input') as HTMLInputElement;
@@ -423,8 +424,21 @@ if (user) {
           // Non-blocking
         }
 
+        // 1. Analytics Events (3-in-1: First-Party, GA4, Umami)
+        trackEvent('sign_up', {
+          method: 'email_otp',
+          newsletter_opt_in: Boolean(newsletterOptIn?.checked),
+        });
+        trackEvent('user_register', {
+          method: 'email_otp',
+          newsletter_opt_in: Boolean(newsletterOptIn?.checked),
+        });
+
         // Handle newsletter subscription if opted in
         if (newsletterOptIn?.checked) {
+          trackEvent('newsletter_subscribe', {
+            source: 'registration',
+          });
           try {
             await fetch('/api/newsletter/subscribe', {
               method: 'POST',
