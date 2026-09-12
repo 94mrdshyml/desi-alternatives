@@ -66,6 +66,11 @@ export const GET: APIRoute = async ({ locals }) => {
         newsletterWelcomeEnabled: settings?.newsletterWelcomeEnabled !== false,
         newsletterWelcomeSubject: settings?.newsletterWelcomeSubject || DEFAULT_NEWSLETTER_SUBJECT,
         newsletterWelcomeBody: settings?.newsletterWelcomeBody || DEFAULT_NEWSLETTER_BODY,
+        gtmEnabled: settings?.gtmEnabled === true,
+        gtmId: settings?.gtmId || '',
+        umamiEnabled: settings?.umamiEnabled === true,
+        umamiWebsiteId: settings?.umamiWebsiteId || '',
+        umamiScriptUrl: settings?.umamiScriptUrl || 'https://cloud.umami.is/script.js',
       }),
       {
         status: 200,
@@ -112,6 +117,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const newsletterWelcomeSubject = String(body?.newsletterWelcomeSubject || '').trim() || DEFAULT_NEWSLETTER_SUBJECT;
     const newsletterWelcomeBody = String(body?.newsletterWelcomeBody || '').trim() || DEFAULT_NEWSLETTER_BODY;
 
+    const gtmEnabled = Boolean(body?.gtmEnabled);
+    const gtmId = String(body?.gtmId || '').trim();
+
+    const umamiEnabled = Boolean(body?.umamiEnabled);
+    const umamiWebsiteId = String(body?.umamiWebsiteId || '').trim();
+    const umamiScriptUrl = String(body?.umamiScriptUrl || '').trim() || 'https://cloud.umami.is/script.js';
+
     const existing = await db
       .select()
       .from(siteSettings)
@@ -127,6 +139,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       newsletterWelcomeEnabled,
       newsletterWelcomeSubject,
       newsletterWelcomeBody,
+      gtmEnabled,
+      gtmId: gtmId || null,
+      umamiEnabled,
+      umamiWebsiteId: umamiWebsiteId || null,
+      umamiScriptUrl,
       updatedAt: sql`CURRENT_TIMESTAMP`,
     };
 

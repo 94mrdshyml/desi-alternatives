@@ -981,8 +981,65 @@
 3. **Testing & Verification**:
    - Vitest unit tests: **50/50 tests passed**.
 
+---
 
+## Session 39 — Uniform Welcome Email Typography, HTML Normalizer & WYSIWYG Paste Sanitizer
 
+**Date & Time (IST):** 2026-09-12 10:30 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **Email HTML Normalizer & Sanitizer (`src/lib/email-utils.ts` & `src/lib/server/email.ts`)**:
+   - Built `sanitizeEmailHtml` to automatically strip external editor artifacts (`data-path-to-node`, `data-index-in-node`).
+   - Removed rogue inline font sizes (such as `style="font-size: 0.875rem;"`) that caused unequal text sizes in email clients.
+   - Unwrapped redundant `<span>` elements and eliminated empty `<p></p>` / `<p><br></p>` block artifacts.
+
+2. **Unified React Email Typography Styles (`src/emails/WelcomeEmail.tsx`)**:
+   - Embedded `<style>` block in `<Head>` guaranteeing uniform `font-size: 14px !important`, `line-height: 24px !important`, and `color: #334155 !important` across `<p>`, `<li>`, `<span>`, `<div>`, `<strong>`, and `<a>` elements in all web and mobile email clients.
+   - Normalized list margins, list item spacing, and paragraph margins.
+
+3. **WYSIWYG Admin Canvas & Paste Sanitizer (`src/pages/admin/settings.astro`)**:
+   - Added `paste` clipboard event listener to `.wysiwyg-editor-canvas` to sanitize pasted HTML from Google Docs, Notion, and rich text editors on the fly.
+   - Unified editor canvas CSS rules across all paragraph and list descendants.
+   - Updated clean default `welcomeBody` copy in admin settings and database templates.
+
+4. **Testing & Quality Assurance**:
+   - Added unit test suite `describe('Email HTML Normalizer & Sanitizer')` in `tests/unit/email.test.ts`.
+   - Vitest unit tests: **52/52 tests passed** across all 12 test suites.
+   - Astro diagnostics: **0 errors, 0 warnings** across 90 files (`bun run astro check`).
+   - Playwright E2E tests: **18/18 tests passed** (`bun run test:e2e`).
+   - Production bundle: **Clean SSR build** via `bun run build`.
+
+---
+
+## Session 40 — Google Tag Manager (GTM) & Umami Analytics Admin Integration
+
+**Date & Time (IST):** 2026-09-12 10:40 IST
+**Status:** Completed
+**Branch:** `main`
+
+### What We Built & Delivered
+
+1. **D1 Schema & Migration Layer (`schema.ts` & `0015_analytics_tracking_settings.sql`)**:
+   - Added `gtmEnabled`, `gtmId`, `umamiEnabled`, `umamiWebsiteId`, and `umamiScriptUrl` columns to `siteSettings` table.
+   - Generated migration `0015_analytics_tracking_settings.sql` and registered entry in `drizzle/migrations/meta/_journal.json`.
+
+2. **Admin Settings API & Management UI (`/admin/settings.astro` & `api/admin/settings.ts`)**:
+   - Extended `GET` and `POST` handlers in `/api/admin/settings.ts` to manage analytics settings.
+   - Added Tab 4: `📊 Analytics & Tracking (GTM / Umami)` with toggles, validation helpers, ID inputs, script URL customizer, and DPDP-compliance notes.
+
+3. **Global Page Injection (`src/layouts/BaseLayout.astro`)**:
+   - Queries `siteSettings` from D1 (with environment variable fallbacks `PUBLIC_GTM_ID`, `PUBLIC_UMAMI_WEBSITE_ID`).
+   - Dynamically injects Umami `<script is:inline defer>` in `<head>`.
+   - Dynamically injects GTM container script in `<head>` and `<noscript><iframe ...>` in `<body>`.
+   - Only outputs script tags when both enabled and valid IDs are configured.
+
+4. **Testing & Quality Assurance**:
+   - Vitest unit tests: **52/52 tests passed**.
+   - `astro check`: **0 errors, 0 warnings** across 90 files.
+   - `bun run build`: Built cleanly with 0 TypeScript/compiler diagnostics.
 
 
 

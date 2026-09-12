@@ -15,17 +15,17 @@ let fromEmail = 'team@letter.mrdshyml.xyz';
 
 let welcomeEnabled = true;
 let welcomeSubject = 'Welcome to Desi Alternatives, {{first_name|builder}}! 🇮🇳';
-let welcomeBody = `<p>Hi {{first_name|there}},</p>
-<p>Welcome to Desi Alternatives! We're thrilled to have you join our sovereign community of founders, CTOs, and developers building the future of Indian tech.</p>
-<p><strong>Here is what you can do right now:</strong></p>
-<ul>
-  <li>Explore the Sovereign Directory across Developer Tools, Cloud, AI, and Productivity</li>
-  <li>Compare Indian SaaS vs Global Giants in our Head-to-Head Comparison Engine</li>
-  <li>Submit or Claim your Indian software listing to verify official ownership</li>
-  <li>Read in-depth migration teardowns and architecture blueprints in the Tech Journal</li>
-</ul>
-<p>Have questions or built a tool you'd like indexed? Simply reply to this email.</p>
-<p>Best regards,<br><strong>The Desi Alternatives Team</strong><br><a href="https://desialternatives.in">https://desialternatives.in</a></p>`;
+let welcomeBody = `<p>Hi {{first_name|there}} 👋,</p>
+<p>Welcome to Desi Alternatives! We're absolutely thrilled you're here. Whether you're writing the code, leading a team, or founding the next big thing, if you love seeing the Indian tech scene thrive, you've found your people.</p>
+<p><strong>Here is what you can dive into right away:</strong></p>
+<ol>
+  <li><strong>🛠️ Explore homegrown tools:</strong> Browse our curated list of local apps spanning AI, cloud, developer tools, and everyday productivity.</li>
+  <li><strong>🥊 See the matchups:</strong> Check out how our local SaaS heroes stack up against the global heavyweights.</li>
+  <li><strong>🚀 Show off your work:</strong> Built something awesome? Submit your software or claim an existing listing so everyone knows it belongs to you.</li>
+  <li><strong>🤓 Geek out:</strong> Read behind-the-scenes tech stories, guides, and deep dives on our blog.</li>
+</ol>
+<p>Got a question, or built a tool you want us to feature? Just hit reply—we actually read these and would love to chat 💬!</p>
+<p>Regards,<br><strong>Desi Alternatives Team</strong></p>`;
 
 let newsletterWelcomeEnabled = true;
 let newsletterWelcomeSubject = 'Welcome to Desi Alternatives Dispatch, {{first_name|there}}! 📬';
@@ -40,6 +40,12 @@ let newsletterWelcomeBody = `<p>Hi {{first_name|there}},</p>
 </ul>
 <p>Look out for our next dispatch in your inbox this Thursday!</p>
 <p>Warmly,<br><strong>The Dispatch Editorial Team</strong><br><a href="https://desialternatives.in/newsletter">https://desialternatives.in/newsletter</a></p>`;
+
+let gtmEnabled = false;
+let gtmId = '';
+let umamiEnabled = false;
+let umamiWebsiteId = '';
+let umamiScriptUrl = 'https://cloud.umami.is/script.js';
 
 let totalToolsCount = 0;
 let totalGlobalCount = 0;
@@ -59,6 +65,11 @@ if (db) {
       newsletterWelcomeEnabled = settings.newsletterWelcomeEnabled !== false;
       newsletterWelcomeSubject = settings.newsletterWelcomeSubject || newsletterWelcomeSubject;
       newsletterWelcomeBody = settings.newsletterWelcomeBody || newsletterWelcomeBody;
+      gtmEnabled = settings.gtmEnabled === true;
+      gtmId = settings.gtmId || '';
+      umamiEnabled = settings.umamiEnabled === true;
+      umamiWebsiteId = settings.umamiWebsiteId || '';
+      umamiScriptUrl = settings.umamiScriptUrl || umamiScriptUrl;
     }
 
     const tools = await db.select().from(desiTools).all();
@@ -105,6 +116,13 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
       color: #1e293b;
       line-height: 1.7;
       font-size: 0.875rem;
+    }
+    .wysiwyg-editor-canvas p,
+    .wysiwyg-editor-canvas li,
+    .wysiwyg-editor-canvas span {
+      font-size: 0.875rem !important;
+      line-height: 1.7 !important;
+      color: #1e293b !important;
     }
     .wysiwyg-editor-canvas p {
       margin-bottom: 0.75rem;
@@ -202,6 +220,14 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
         >
           <span>📬</span>
           <span>Newsletter Welcome (WYSIWYG)</span>
+        </button>
+        <button
+          type="button"
+          class="settings-tab flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-slate-50 transition cursor-pointer border border-transparent"
+          data-tab="analytics"
+        >
+          <span>📊</span>
+          <span>Analytics &amp; Tracking (GTM / Umami)</span>
         </button>
       </nav>
     </div>
@@ -619,6 +645,134 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
         </div>
       </div>
 
+      <!-- ========================================== -->
+      <!-- TAB 4: ANALYTICS & TRACKING (GTM / UMAMI)  -->
+      <!-- ========================================== -->
+      <div id="tab-panel-analytics" class="settings-panel hidden space-y-6">
+        <!-- Google Tag Manager Card -->
+        <div class="rounded-2xl border border-border bg-white p-6 shadow-xs space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-700 text-base">
+                🏷️
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-foreground">Google Tag Manager (GTM)</h3>
+                <p class="text-xs text-muted-foreground">Injects GTM container script into &lt;head&gt; and noscript iframe into &lt;body&gt; across all public pages</p>
+              </div>
+            </div>
+
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground bg-slate-50 px-3 py-1.5 rounded-xl border border-border">
+              <input
+                type="checkbox"
+                name="gtmEnabled"
+                id="gtm-enabled-toggle"
+                checked={gtmEnabled}
+                class="h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+              />
+              <span>Enable Google Tag Manager</span>
+            </label>
+          </div>
+
+          <div class="space-y-4">
+            <div>
+              <label for="settings-gtm-id" class="block text-xs font-semibold text-foreground">
+                GTM Container ID
+              </label>
+              <input
+                type="text"
+                id="settings-gtm-id"
+                name="gtmId"
+                value={gtmId}
+                placeholder="GTM-XXXXXXX"
+                class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+              />
+              <p class="mt-1 text-[11px] text-muted-foreground">
+                Found in your Google Tag Manager workspace header (e.g. <code>GTM-XXXXXXX</code>).
+              </p>
+            </div>
+
+            <div class="rounded-xl border border-blue-100 bg-blue-50/60 p-4 text-xs text-blue-950">
+              <p class="font-bold text-blue-900 mb-1">How it loads:</p>
+              <p class="text-blue-800 leading-relaxed text-[11.5px]">
+                When enabled and provided with a valid ID, the GTM container script executes automatically on all directory, comparison, tool profile, newsletter, and blog pages.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Umami Analytics Card -->
+        <div class="rounded-2xl border border-border bg-white p-6 shadow-xs space-y-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-border">
+            <div class="flex items-center gap-2.5">
+              <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-700 text-base">
+                📈
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-foreground">Umami Analytics (Cookieless &amp; DPDP Compliant)</h3>
+                <p class="text-xs text-muted-foreground">Lightweight privacy-friendly analytics script supporting Umami Cloud and self-hosted instances</p>
+              </div>
+            </div>
+
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-foreground bg-slate-50 px-3 py-1.5 rounded-xl border border-border">
+              <input
+                type="checkbox"
+                name="umamiEnabled"
+                id="umami-enabled-toggle"
+                checked={umamiEnabled}
+                class="h-4 w-4 rounded border-border text-primary focus:ring-primary/20 accent-primary"
+              />
+              <span>Enable Umami Analytics</span>
+            </label>
+          </div>
+
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label for="settings-umami-website-id" class="block text-xs font-semibold text-foreground">
+                  Umami Website ID (UUID)
+                </label>
+                <input
+                  type="text"
+                  id="settings-umami-website-id"
+                  name="umamiWebsiteId"
+                  value={umamiWebsiteId}
+                  placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                  class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                />
+                <p class="mt-1 text-[11px] text-muted-foreground">
+                  The unique website identifier provided by your Umami Dashboard.
+                </p>
+              </div>
+
+              <div>
+                <label for="settings-umami-script-url" class="block text-xs font-semibold text-foreground">
+                  Umami Script URL
+                </label>
+                <input
+                  type="text"
+                  id="settings-umami-script-url"
+                  name="umamiScriptUrl"
+                  value={umamiScriptUrl}
+                  placeholder="https://cloud.umami.is/script.js"
+                  class="mt-1.5 w-full rounded-xl border border-border px-3.5 py-2.5 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 shadow-2xs focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition"
+                />
+                <p class="mt-1 text-[11px] text-muted-foreground">
+                  Defaults to <code>https://cloud.umami.is/script.js</code> or your self-hosted tracker URL.
+                </p>
+              </div>
+            </div>
+
+            <div class="rounded-xl border border-purple-100 bg-purple-50/60 p-4 text-xs text-purple-950">
+              <p class="font-bold text-purple-900 mb-1">Privacy Guarantee:</p>
+              <p class="text-purple-800 leading-relaxed text-[11.5px]">
+                Umami does not collect cookies, IP addresses, or personal identifiable information (PII), adhering 100% to India DPDP Act 2023 and GDPR guidelines.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- BOTTOM SAVE BUTTON -->
       <div class="flex items-center justify-end gap-3 pt-2">
         <button
@@ -626,7 +780,7 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
           id="save-settings-btn"
           class="rounded-xl bg-primary px-6 py-3 text-xs sm:text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition cursor-pointer disabled:opacity-50"
         >
-          Save All Email Settings
+          Save All Settings
         </button>
       </div>
     </form>
@@ -807,6 +961,32 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
     canvas?.addEventListener('input', () => syncEditor(type));
     canvas?.addEventListener('keyup', () => syncEditor(type));
     textarea?.addEventListener('input', () => syncEditor(type));
+
+    canvas?.addEventListener('paste', (e: ClipboardEvent) => {
+      e.preventDefault();
+      const html = e.clipboardData?.getData('text/html');
+      const text = e.clipboardData?.getData('text/plain') || '';
+
+      if (html) {
+        // Sanitize pasted HTML: remove data-* and style attributes with font-size
+        const cleaned = html
+          .replace(/\s+data-[a-z0-9_-]+=(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+          .replace(/\s*style="([^"]*)"/gi, (_, styleContent) => {
+            const cleanStyle = styleContent.replace(/font-size\s*:\s*[^;]+;?/gi, '').trim();
+            return cleanStyle ? ` style="${cleanStyle}"` : '';
+          })
+          .replace(/\s*style='([^']*)'/gi, (_, styleContent) => {
+            const cleanStyle = styleContent.replace(/font-size\s*:\s*[^;]+;?/gi, '').trim();
+            return cleanStyle ? ` style='${cleanStyle}'` : '';
+          })
+          .replace(/<span>([\s\S]*?)<\/span>/gi, '$1')
+          .replace(/<p>\s*(?:&nbsp;|<br\s*\/?>|\s*)*<\/p>/gi, '');
+        document.execCommand('insertHTML', false, cleaned);
+      } else if (text) {
+        document.execCommand('insertText', false, text);
+      }
+      syncEditor(type);
+    });
   });
 
   // Dynamic Live Preview Interpolator
@@ -872,6 +1052,13 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
     const newsletterWelcomeSubject = formData.get('newsletterWelcomeSubject');
     const newsletterWelcomeBody = formData.get('newsletterWelcomeBody');
 
+    const gtmEnabled = (document.getElementById('gtm-enabled-toggle') as HTMLInputElement)?.checked;
+    const gtmId = formData.get('gtmId');
+
+    const umamiEnabled = (document.getElementById('umami-enabled-toggle') as HTMLInputElement)?.checked;
+    const umamiWebsiteId = formData.get('umamiWebsiteId');
+    const umamiScriptUrl = formData.get('umamiScriptUrl');
+
     try {
       const res = await fetch('/api/admin/settings', {
         method: 'POST',
@@ -885,6 +1072,11 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
           newsletterWelcomeEnabled,
           newsletterWelcomeSubject,
           newsletterWelcomeBody,
+          gtmEnabled,
+          gtmId,
+          umamiEnabled,
+          umamiWebsiteId,
+          umamiScriptUrl,
         }),
       });
 
@@ -893,7 +1085,7 @@ function sampleRender(str: string, name = 'Aarav Sharma', firstName = 'Aarav', e
       if (res.ok) {
         if (statusDiv) {
           statusDiv.className = 'rounded-xl p-4 text-xs font-medium border border-emerald-200 bg-emerald-50 text-emerald-800 block';
-          statusDiv.textContent = '✓ All email settings & WYSIWYG welcome templates saved successfully!';
+          statusDiv.textContent = '✓ All platform, email & analytics tracking settings saved successfully!';
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {

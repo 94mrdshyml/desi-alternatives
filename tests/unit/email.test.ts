@@ -4,6 +4,7 @@ import {
   sendWelcomeEmail,
   sendNewsletterWelcomeEmail,
   interpolateTemplate,
+  sanitizeEmailHtml,
 } from '@/lib/server/email';
 
 describe('React Email & Resend OTP Dispatcher', () => {
@@ -126,5 +127,26 @@ describe('Welcome Email Personalization & Template Interpolation Engine', () => 
 
     expect(result.success).toBe(true);
     expect(result.id).toBe('skipped-disabled');
+  });
+});
+
+describe('Email HTML Normalizer & Sanitizer', () => {
+  it('strips external editor data attributes and rogue font-size inline styles', () => {
+    const dirtyHtml = `<p data-path-to-node="1">Hi {{first_name|there}} 👋,</p><p data-path-to-node="2"><span style="font-size: 0.875rem;">Here is what you can dive into right away:&nbsp;</span></p><ol><li>🛠️ <span data-path-to-node="3" data-index-in-node="47">Explore homegrown tools:</span> Local apps</li></ol><p></p><p data-path-to-node="4"><span style="font-size: 0.875rem;">Got a question?</span></p>`;
+
+    const clean = sanitizeEmailHtml(dirtyHtml);
+
+    expect(clean).not.toContain('data-path-to-node');
+    expect(clean).not.toContain('data-index-in-node');
+    expect(clean).not.toContain('font-size: 0.875rem');
+    expect(clean).not.toContain('<p></p>');
+    expect(clean).toContain('🛠️ Explore homegrown tools:');
+  });
+
+  it('preserves valid semantic HTML structure and headings', () => {
+    const html = `<h2>Welcome</h2><p><strong>Bold text</strong> and <em>italic</em>.</p><ul><li>Item 1</li><li>Item 2</li></ul>`;
+    const clean = sanitizeEmailHtml(html);
+
+    expect(clean).toBe(html);
   });
 });

@@ -12,6 +12,7 @@ import {
   Section,
   Text,
 } from '@react-email/components';
+import { sanitizeEmailHtml } from '@/lib/email-utils';
 
 interface WelcomeEmailProps {
   subject: string;
@@ -31,11 +32,60 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
   unsubscribeUrl,
 }) => {
   const isHtml = /<[a-z][\s\S]*>/i.test(body);
-  const paragraphs = !isHtml ? body.split(/\n\n+/).map((p) => p.trim()).filter(Boolean) : [];
+  const cleanBody = isHtml ? sanitizeEmailHtml(body) : body;
+  const paragraphs = !isHtml ? cleanBody.split(/\n\n+/).map((p) => p.trim()).filter(Boolean) : [];
 
   return (
     <Html>
-      <Head />
+      <Head>
+        <style>{`
+          .email-content p, .email-content li, .email-content span, .email-content div {
+            font-size: 14px !important;
+            line-height: 24px !important;
+            color: #334155 !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+          }
+          .email-content p {
+            margin: 0 0 16px 0 !important;
+          }
+          .email-content ol, .email-content ul {
+            margin: 0 0 16px 0 !important;
+            padding-left: 20px !important;
+          }
+          .email-content li {
+            margin: 0 0 8px 0 !important;
+          }
+          .email-content strong {
+            font-weight: 700 !important;
+            color: #0f172a !important;
+          }
+          .email-content a {
+            color: #d97706 !important;
+            text-decoration: underline !important;
+          }
+          .email-content h2 {
+            font-size: 18px !important;
+            line-height: 26px !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin: 20px 0 10px 0 !important;
+          }
+          .email-content h3 {
+            font-size: 16px !important;
+            line-height: 24px !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin: 16px 0 8px 0 !important;
+          }
+          .email-content blockquote {
+            border-left: 3px solid #d97706 !important;
+            padding-left: 12px !important;
+            color: #64748b !important;
+            font-style: italic !important;
+            margin: 16px 0 !important;
+          }
+        `}</style>
+      </Head>
       <Preview>{subject}</Preview>
       <Body style={main}>
         <Container style={container}>
@@ -56,8 +106,9 @@ export const WelcomeEmail: React.FC<WelcomeEmailProps> = ({
             {/* Render HTML content if WYSIWYG format, otherwise formatted paragraphs */}
             {isHtml ? (
               <div
+                className="email-content"
                 style={htmlContainer}
-                dangerouslySetInnerHTML={{ __html: body }}
+                dangerouslySetInnerHTML={{ __html: cleanBody }}
               />
             ) : (
               paragraphs.map((p, idx) => {

@@ -2,6 +2,9 @@ import { render } from '@react-email/render';
 import * as React from 'react';
 import { OtpVerificationEmail } from '@/emails/OtpVerificationEmail';
 import { WelcomeEmail } from '@/emails/WelcomeEmail';
+import { sanitizeEmailHtml } from '@/lib/email-utils';
+
+export { sanitizeEmailHtml };
 
 export interface SendOtpEmailParams {
   apiKey?: string;

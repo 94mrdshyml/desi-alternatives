@@ -300,6 +300,13 @@ Warmly,
 The Dispatch Editorial Team
 https://desialternatives.in/newsletter`).notNull(),
 
+  // Google Tag Manager & Umami Tracking
+  gtmEnabled: integer('gtm_enabled', { mode: 'boolean' }).default(false).notNull(),
+  gtmId: text('gtm_id'),
+  umamiEnabled: integer('umami_enabled', { mode: 'boolean' }).default(false).notNull(),
+  umamiWebsiteId: text('umami_website_id'),
+  umamiScriptUrl: text('umami_script_url').default('https://cloud.umami.is/script.js').notNull(),
+
   updatedAt: text('updated_at').default(sql`CURRENT_TIMESTAMP`).notNull(),
 });
 
