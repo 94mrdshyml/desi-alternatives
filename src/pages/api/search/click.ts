@@ -40,8 +40,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (error: any) {
-    return new Response(JSON.stringify({ error: error?.message || 'Failed to log click' }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'Failed to log click' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

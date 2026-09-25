@@ -18,8 +18,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const token = body?.token ? String(body.token).trim() : null;
     const emailRaw = body?.email ? String(body.email).trim().toLowerCase() : null;
 
-    if (!token && !emailRaw && !user) {
-      return new Response(JSON.stringify({ error: 'Unsubscribe token or authenticated session required' }), {
+    // Without the emailed token, only a signed-in user may unsubscribe (and only their own email).
+    if (!token && !user) {
+      return new Response(JSON.stringify({ error: 'Please use the unsubscribe link from your email, or sign in.' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -33,7 +34,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         .from(newsletterSubscribers)
         .where(eq(newsletterSubscribers.token, token))
         .get();
-    } else if (emailRaw) {
+    } else if (emailRaw && user && emailRaw === user.email.toLowerCase()) {
       targetSubscriber = await db
         .select()
         .from(newsletterSubscribers)
@@ -80,7 +81,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch (err: any) {
     console.error('Newsletter unsubscribe error:', err);
     return new Response(
-      JSON.stringify({ error: err.message || 'An unexpected error occurred while unsubscribing' }),
+      JSON.stringify({ error: 'An unexpected error occurred while unsubscribing' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

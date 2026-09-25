@@ -3,11 +3,14 @@
 
 type D1Database = import('@cloudflare/workers-types').D1Database;
 type R2Bucket = import('@cloudflare/workers-types').R2Bucket;
+type RateLimiter = { limit(options: { key: string }): Promise<{ success: boolean }> };
 
 interface CloudflareEnv {
   DB: D1Database;
   R2_BUCKET: R2Bucket;
   ANALYTICS?: import('@cloudflare/workers-types').AnalyticsEngineDataset;
+  RL_OTP?: RateLimiter;
+  RL_WRITE?: RateLimiter;
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
   BETTER_AUTH_API_KEY?: string;

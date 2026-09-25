@@ -1,4 +1,5 @@
 ---
+import { jsonLd } from '@/lib/json-ld';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
@@ -208,7 +209,7 @@ const jsonLdData = [
   <Navbar />
 
   <!-- Inject Schema.org JSON-LD -->
-  <script type="application/ld+json" is:inline set:html={JSON.stringify(jsonLdData)} />
+  <script type="application/ld+json" is:inline set:html={jsonLd(jsonLdData)} />
 
   <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
     <!-- Breadcrumbs Navigation -->

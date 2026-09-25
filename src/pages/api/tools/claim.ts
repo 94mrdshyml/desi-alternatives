@@ -53,9 +53,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } catch (err: any) {
+  } catch {
     return new Response(
-      JSON.stringify({ error: err.message || 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error' }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json' },

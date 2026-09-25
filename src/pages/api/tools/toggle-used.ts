@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch (err: any) {
     console.error('Failed to toggle tool usage:', err);
     return new Response(
-      JSON.stringify({ error: err.message || 'Failed to update tool usage.' }),
+      JSON.stringify({ error: 'Failed to update tool usage.' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

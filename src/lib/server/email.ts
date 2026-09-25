@@ -70,9 +70,12 @@ export function interpolateTemplate(
 ): string {
   if (!template) return '';
 
-  const rawName = (vars.name || '').trim();
-  const rawFirstName = (vars.firstName || (rawName ? rawName.split(/\s+/)[0] : '')).trim();
-  const email = (vars.email || '').trim();
+  // Values come from user input. Strip angle brackets so they can never inject
+  // markup (or flip a plain-text template into HTML mode in WelcomeEmail).
+  const clean = (v: string | null | undefined) => (v || '').replace(/[<>]/g, '').trim();
+  const rawName = clean(vars.name);
+  const rawFirstName = clean(vars.firstName || (rawName ? rawName.split(/\s+/)[0] : ''));
+  const email = clean(vars.email);
 
   // Replace {{first_name|fallback}} and {{name|fallback}} with optional whitespace
   return template.replace(/\{\{\s*([a-zA-Z0-9_]+)(?:\s*\|\s*([^}]+?))?\s*\}\}/g, (_, key, fallback) => {

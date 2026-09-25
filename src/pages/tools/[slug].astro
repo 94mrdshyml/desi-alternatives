@@ -1275,7 +1275,7 @@ const avgResidency = totalReviewsCount > 0 ? (allReviews.reduce((acc, r) => acc 
 
         if (formStatus) {
           formStatus.className = 'block text-xs rounded-lg p-2.5 bg-emerald-50 text-emerald-800 border border-emerald-200';
-          formStatus.textContent = '✓ Review published successfully! Thank you for supporting Indian software.';
+          formStatus.textContent = `✓ ${data.message || 'Review submitted for approval.'}`;
         }
 
         setTimeout(() => {

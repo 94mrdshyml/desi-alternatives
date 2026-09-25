@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { buildAssetHeaders } from '@/lib/server/upload';
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const r2 = locals.runtime?.env?.R2_BUCKET;
@@ -15,20 +16,13 @@ export const GET: APIRoute = async ({ params, locals }) => {
       return new Response('Asset not found', { status: 404 });
     }
 
-    const headers: Record<string, string> = {
-      'Cache-Control': 'public, max-age=31536000, immutable',
-      etag: object.httpEtag,
-    };
-
-    if (object.httpMetadata?.contentType) {
-      headers['Content-Type'] = object.httpMetadata.contentType;
-    }
+    const headers = buildAssetHeaders(object.httpMetadata?.contentType, object.httpEtag);
 
     return new Response(object.body as any, {
       status: 200,
       headers,
     });
-  } catch (err: any) {
-    return new Response(err.message || 'Error fetching asset', { status: 500 });
+  } catch {
+    return new Response('Error fetching asset', { status: 500 });
   }
 };

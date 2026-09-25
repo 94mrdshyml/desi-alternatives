@@ -34,8 +34,8 @@ export const GET: APIRoute = async ({ locals }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || 'Failed to fetch consent status' }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'Failed to fetch consent status' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -85,8 +85,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || 'Failed to update consent status' }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'Failed to update consent status' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

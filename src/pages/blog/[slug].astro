@@ -1,4 +1,5 @@
 ---
+import { jsonLd } from '@/lib/json-ld';
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import Navbar from '@/components/Navbar.astro';
 import Footer from '@/components/Footer.astro';
@@ -569,7 +570,7 @@ const canonicalUrl = post.canonicalUrl || `${siteUrl}/blog/${post.slug}`;
 </BaseLayout>
 
 <!-- JSON-LD Structured Schema -->
-<script type="application/ld+json" is:inline set:html={JSON.stringify({
+<script type="application/ld+json" is:inline set:html={jsonLd({
   "@context": "https://schema.org",
   "@type": "Article",
   "headline": post.title,

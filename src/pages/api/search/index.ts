@@ -500,7 +500,6 @@ export const GET: APIRoute = async ({ request, locals }) => {
     return new Response(
       JSON.stringify({
         error: 'Search execution failed',
-        message: error?.message || 'Unknown error',
       }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
