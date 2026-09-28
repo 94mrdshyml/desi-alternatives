@@ -32,8 +32,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'Failed to record event' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

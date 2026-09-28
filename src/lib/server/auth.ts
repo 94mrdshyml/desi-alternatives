@@ -75,6 +75,12 @@ export function createAuth(
   // Determine baseURL dynamically: requestOrigin > env.BETTER_AUTH_URL > fallback
   const baseURL = requestOrigin || env.BETTER_AUTH_URL || 'http://localhost:4321';
 
+  // Never sign sessions with the public dev fallback outside local development.
+  const isLocalDev = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(baseURL);
+  if (!env.BETTER_AUTH_SECRET && !isLocalDev) {
+    throw new Error('BETTER_AUTH_SECRET is not configured');
+  }
+
   return betterAuth({
     database: drizzleAdapter(db, {
       provider: 'sqlite',
@@ -103,9 +109,10 @@ export function createAuth(
       },
     },
     plugins,
+    // Passwordless only: accounts are created and accessed via 6-digit email OTP,
+    // which proves inbox ownership. Password sign-up/sign-in endpoints are disabled.
     emailAndPassword: {
-      enabled: true,
-      autoSignIn: true,
+      enabled: false,
     },
     advanced: {
       database: {

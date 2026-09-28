@@ -371,7 +371,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
                 </svg>
                 <span>Add Cover Image</span>
               </button>
-              <input type="file" id="cover-file-input" accept="image/*" class="hidden" />
+              <input type="file" id="cover-file-input" accept="image/png,image/jpeg,image/webp" class="hidden" />
             </div>
           </div>
 
@@ -1608,25 +1608,28 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
     toolSearchDebounce = setTimeout(() => loadToolsForModal(modalToolSearchInput.value.trim()), 200);
   });
 
+  const esc = (v: unknown) =>
+    String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+
   async function loadToolsForModal(query: string) {
     toolSearchResults.innerHTML = `<div class="text-center py-4 text-xs text-muted-foreground">Searching...</div>`;
     try {
       const res = await fetch(`/api/admin/blog/search-tools?q=${encodeURIComponent(query)}`);
       const data: any = await res.json();
       if (!data.tools || data.tools.length === 0) {
-        toolSearchResults.innerHTML = `<div class="text-center py-4 text-xs text-muted-foreground">No Indian tools found matching "${query}".</div>`;
+        toolSearchResults.innerHTML = `<div class="text-center py-4 text-xs text-muted-foreground">No Indian tools found matching "${esc(query)}".</div>`;
         return;
       }
 
       toolSearchResults.innerHTML = data.tools
         .map(
           (t: any) => `
-        <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer select-tool-item" data-slug="${t.slug}" data-name="${t.name}">
+        <div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-100 transition cursor-pointer select-tool-item" data-slug="${esc(t.slug)}" data-name="${esc(t.name)}">
           <div class="flex items-center gap-2.5">
-            <img src="${t.logoUrl}" alt="${t.name}" class="h-7 w-7 rounded-lg object-contain bg-white border border-border" />
+            <img src="${esc(t.logoUrl)}" alt="${esc(t.name)}" class="h-7 w-7 rounded-lg object-contain bg-white border border-border" />
             <div>
-              <div class="font-bold text-foreground text-xs">${t.name}</div>
-              <div class="text-[10px] text-muted-foreground line-clamp-1">${t.tagline}</div>
+              <div class="font-bold text-foreground text-xs">${esc(t.name)}</div>
+              <div class="text-[10px] text-muted-foreground line-clamp-1">${esc(t.tagline)}</div>
             </div>
           </div>
           <button type="button" class="rounded-lg bg-primary/10 text-primary px-2.5 py-1 text-[11px] font-bold hover:bg-primary hover:text-white transition cursor-pointer">
@@ -1642,15 +1645,15 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
           const slug = (item as HTMLElement).dataset.slug;
           const name = (item as HTMLElement).dataset.name;
           const toolCardHtml = `
-            <div class="my-6 rounded-2xl border border-border/80 bg-gradient-to-br from-white via-amber-50/20 to-slate-50/60 p-4 sm:p-5 shadow-sm not-prose select-none cursor-default" data-block="tool" data-slug="${slug}" contenteditable="false">
+            <div class="my-6 rounded-2xl border border-border/80 bg-gradient-to-br from-white via-amber-50/20 to-slate-50/60 p-4 sm:p-5 shadow-sm not-prose select-none cursor-default" data-block="tool" data-slug="${esc(slug)}" contenteditable="false">
               <div class="flex items-center justify-between gap-3 flex-wrap">
                 <div class="flex items-center gap-3">
                   <div class="h-11 w-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center text-base font-bold text-amber-900 shrink-0">
                     ⚡
                   </div>
                   <div>
-                    <div class="font-bold text-foreground text-sm sm:text-base">${name}</div>
-                    <div class="text-[11px] text-muted-foreground">Live Indian Software Card · Directory Embed (<code>${slug}</code>)</div>
+                    <div class="font-bold text-foreground text-sm sm:text-base">${esc(name)}</div>
+                    <div class="text-[11px] text-muted-foreground">Live Indian Software Card · Directory Embed (<code>${esc(slug)}</code>)</div>
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -1667,7 +1670,7 @@ const pageTitle = existingPost ? `Edit: ${existingPost.title}` : 'Write Article 
           attachCanvasInteractions();
           toolSearchModal.classList.add('hidden');
           updateReadingStats();
-          showToast(`Embedded tool card for ${name}.`, 'success');
+          showToast(`Embedded tool card for ${esc(name)}.`, 'success');
         });
       });
     } catch (e: any) {

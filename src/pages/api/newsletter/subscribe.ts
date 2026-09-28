@@ -42,7 +42,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const validSources: NewsletterSource[] = ['registration', 'profile', 'newsletter_page'];
     const source: NewsletterSource = validSources.includes(sourceRaw) ? sourceRaw : 'newsletter_page';
-    const name = nameRaw && typeof nameRaw === 'string' ? nameRaw.trim().slice(0, 100) : (user?.name || null);
+    // A custom name is only accepted when a signed-in user subscribes their own email.
+    // Otherwise anyone could put arbitrary text into a branded email sent to any inbox.
+    const isOwnEmail = Boolean(user && user.email.toLowerCase() === email);
+    let name: string | null = null;
+    if (isOwnEmail) {
+      name = (typeof nameRaw === 'string' ? nameRaw.trim().slice(0, 100) : '') || user!.name || null;
+    }
 
     // Check if user is linked or find matching registered user by email
     let linkedUserId = user?.id || null;
@@ -174,7 +180,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   } catch (err: any) {
     console.error('Newsletter subscribe error:', err);
     return new Response(
-      JSON.stringify({ error: err.message || 'An unexpected error occurred while subscribing' }),
+      JSON.stringify({ error: 'An unexpected error occurred while subscribing' }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }

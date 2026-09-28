@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { findUnsafeUrlField, unsafeUrlResponse } from '@/lib/server/url';
 import { desiTools, toolAlternatives } from '@/lib/server/db/schema';
 import { createToolId, createAlternativeId } from '@/lib/server/id';
 import { pingIndexNow } from '@/lib/server/indexnow';
@@ -17,6 +18,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const body = (await request.json()) as any;
+    const unsafeUrlField = findUnsafeUrlField(body);
+    if (unsafeUrlField) return unsafeUrlResponse(unsafeUrlField);
     const { toolId, action } = body;
 
     // 0. Check Tool Slug Uniqueness Endpoint

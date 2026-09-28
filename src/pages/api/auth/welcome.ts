@@ -1,12 +1,17 @@
 import type { APIRoute } from 'astro';
-import { siteSettings, users } from '@/lib/server/db/schema';
+import { siteSettings } from '@/lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { sendWelcomeEmail } from '@/lib/server/email';
 
 export const prerender = false;
 
+// Welcome emails may only be sent to the signed-in user's own inbox, right after
+// their account was created. This stops the endpoint being used as an open mail relay.
+const WELCOME_WINDOW_MS = 10 * 60 * 1000;
+
 export const POST: APIRoute = async ({ request, locals }) => {
   const db = locals.db;
+  const user = locals.user;
   const runtime = (locals as any).runtime;
   const resendApiKey = runtime?.env?.RESEND_API_KEY;
 
@@ -17,32 +22,25 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
+  if (!user) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  const createdAt = new Date(user.createdAt).getTime();
+  if (!createdAt || Date.now() - createdAt > WELCOME_WINDOW_MS) {
+    return new Response(JSON.stringify({ error: 'Welcome email is only sent for new accounts' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
-    const body = (await request.json()) as any;
-    const emailRaw = body?.email;
+    const body = (await request.json().catch(() => ({}))) as any;
     const nameRaw = body?.name;
-
-    if (!emailRaw || typeof emailRaw !== 'string') {
-      return new Response(JSON.stringify({ error: 'Valid email is required' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const email = emailRaw.trim().toLowerCase();
-    let name = nameRaw && typeof nameRaw === 'string' ? nameRaw.trim() : '';
-
-    // If name wasn't provided, try fetching from users table
-    if (!name) {
-      try {
-        const u = await db.select().from(users).where(eq(users.email, email)).get();
-        if (u) {
-          name = u.name || '';
-        }
-      } catch (e) {
-        // Non-blocking
-      }
-    }
+    const name = (nameRaw && typeof nameRaw === 'string' ? nameRaw.trim().slice(0, 100) : '') || user.name || '';
 
     // Fetch site settings
     let settings: any = null;
@@ -54,18 +52,18 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const res = await sendWelcomeEmail({
       apiKey: resendApiKey,
-      to: email,
+      to: user.email,
       name,
       settings,
     });
 
-    return new Response(JSON.stringify({ success: res.success, id: res.id, error: res.error }), {
+    return new Response(JSON.stringify({ success: res.success }), {
       status: res.success ? 200 : 400,
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err: any) {
-    console.error('Registration welcome email dispatch error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    console.error('Registration welcome email dispatch error:', err?.message);
+    return new Response(JSON.stringify({ error: 'Failed to send welcome email' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

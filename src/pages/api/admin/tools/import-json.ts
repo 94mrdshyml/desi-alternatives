@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { findUnsafeUrlField, unsafeUrlResponse } from '@/lib/server/url';
 import { categories, desiTools, globalTools, toolAlternatives, toolPricingPlans } from '@/lib/server/db/schema';
 import { createToolId, createAlternativeId, createPricingPlanId } from '@/lib/server/id';
 import { eq } from 'drizzle-orm';
@@ -18,6 +19,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const body = (await request.json()) as any;
+    const unsafeUrlField = findUnsafeUrlField(body);
+    if (unsafeUrlField) return unsafeUrlResponse(unsafeUrlField);
     
     // Normalize input into an array of tool objects
     let toolsPayload: any[] = [];

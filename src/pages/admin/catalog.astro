@@ -584,7 +584,7 @@ const initialTab = Astro.url.searchParams.get('tab') || 'indian-tools';
               <input type="text" id="global-logo-input" name="logoUrl" placeholder="https://... or /api/assets/..." class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
               <label class="shrink-0 inline-flex items-center gap-1 rounded-xl border border-border bg-slate-50 hover:bg-slate-100 px-2.5 py-2 text-xs font-semibold text-foreground cursor-pointer transition">
                 <span>📁</span>
-                <input type="file" id="global-logo-file-input" accept="image/*" class="hidden" />
+                <input type="file" id="global-logo-file-input" accept="image/png,image/jpeg,image/webp" class="hidden" />
               </label>
             </div>
           </div>
@@ -695,7 +695,7 @@ const initialTab = Astro.url.searchParams.get('tab') || 'indian-tools';
               <input type="text" id="create-tool-logo-url-hidden" name="logoUrl" placeholder="https://... or /api/assets/..." class="w-full rounded-xl border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary" />
               <label class="shrink-0 inline-flex items-center gap-1 rounded-xl border border-border bg-slate-50 hover:bg-slate-100 px-2.5 py-2 text-xs font-semibold text-foreground cursor-pointer transition" title="Upload Logo to R2">
                 <span>📁 Upload</span>
-                <input type="file" id="create-tool-logo-file-input" accept="image/*" class="hidden" />
+                <input type="file" id="create-tool-logo-file-input" accept="image/png,image/jpeg,image/webp" class="hidden" />
               </label>
             </div>
           </div>

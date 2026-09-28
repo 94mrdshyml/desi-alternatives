@@ -185,3 +185,22 @@ describe('Umami Tracking Pixel Email Integration', () => {
   });
 });
 
+
+describe('Template interpolation injection safety', () => {
+  it('strips HTML tags from user-supplied names so they cannot inject markup', () => {
+    const out = interpolateTemplate('Hi {{name}}, welcome!', {
+      name: '<a href="https://evil.example">Verify your account</a>',
+    });
+    expect(out).not.toContain('<');
+    expect(out).not.toContain('>');
+  });
+
+  it('keeps a plain-text template plain even with a malicious first name', () => {
+    const out = interpolateTemplate('Hi {{first_name|there}}', { firstName: '<img src=x onerror=alert(1)>' });
+    expect(/<[a-z][\s\S]*>/i.test(out)).toBe(false);
+  });
+
+  it('leaves normal names untouched', () => {
+    expect(interpolateTemplate('Hi {{name}}', { name: "Aarav O'Brien" })).toBe("Hi Aarav O'Brien");
+  });
+});

@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { findUnsafeUrlField, unsafeUrlResponse } from '@/lib/server/url';
 import { desiTools, toolAlternatives } from '@/lib/server/db/schema';
 import { createToolId, createAlternativeId } from '@/lib/server/id';
 import { eq } from 'drizzle-orm';
@@ -25,6 +26,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const body = (await request.json()) as any;
+    const unsafeUrlField = findUnsafeUrlField(body);
+    if (unsafeUrlField) return unsafeUrlResponse(unsafeUrlField);
     const {
       name,
       tagline,
@@ -124,9 +127,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
         headers: { 'Content-Type': 'application/json' },
       }
     );
-  } catch (err: any) {
+  } catch {
     return new Response(
-      JSON.stringify({ error: err.message || 'Failed to submit tool' }),
+      JSON.stringify({ error: 'Failed to submit tool' }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json' },

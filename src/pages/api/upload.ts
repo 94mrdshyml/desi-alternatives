@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { detectImageType } from '@/lib/server/upload';
 
 export const POST: APIRoute = async ({ request, locals }) => {
   const r2 = locals.runtime?.env?.R2_BUCKET;
@@ -37,15 +38,22 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const ext = file.name.split('.').pop() || 'png';
-    const cleanExt = ext.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const randomSuffix = Math.random().toString(36).substring(2, 10);
-    const key = `logos/${Date.now()}-${randomSuffix}.${cleanExt}`;
-
     const arrayBuffer = await file.arrayBuffer();
+    const detected = detectImageType(new Uint8Array(arrayBuffer));
+
+    if (!detected) {
+      return new Response(JSON.stringify({ error: 'Only PNG, JPG, or WebP images are allowed.' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    const randomSuffix = Math.random().toString(36).substring(2, 10);
+    const key = `logos/${Date.now()}-${randomSuffix}.${detected.ext}`;
+
     await r2.put(key, arrayBuffer, {
       httpMetadata: {
-        contentType: file.type || 'image/png',
+        contentType: detected.mime,
       },
     });
 
@@ -55,8 +63,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || 'Upload failed' }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'Upload failed' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

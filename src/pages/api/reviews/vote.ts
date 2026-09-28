@@ -79,7 +79,7 @@ export const POST: APIRoute = async ({ request, locals, clientAddress }) => {
     );
   } catch (err: any) {
     console.error('Failed to register helpful vote:', err);
-    return new Response(JSON.stringify({ error: err.message || 'Failed to register vote.' }), {
+    return new Response(JSON.stringify({ error: 'Failed to register vote.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

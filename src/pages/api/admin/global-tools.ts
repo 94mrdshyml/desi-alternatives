@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { findUnsafeUrlField, unsafeUrlResponse } from '@/lib/server/url';
 import { globalTools, toolAlternatives } from '@/lib/server/db/schema';
 import { eq, sql, and } from 'drizzle-orm';
 import { createGlobalToolId, createAlternativeId } from '@/lib/server/id';
@@ -19,6 +20,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     const body = (await request.json()) as any;
+    const unsafeUrlField = findUnsafeUrlField(body);
+    if (unsafeUrlField) return unsafeUrlResponse(unsafeUrlField);
     const action = String(body?.action || '').trim();
 
     // 1. CREATE GLOBAL GIANT

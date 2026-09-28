@@ -107,6 +107,76 @@ export function parseHtmlMetadata(html: string, baseUrl: string): ScrapedMetadat
   };
 }
 
+/**
+ * Only public http(s) websites on default ports may be scraped. Blocks IP-literal
+ * hosts and internal hostnames so the worker can't be used to probe other services.
+ */
+export function isAllowedScrapeTarget(raw: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+  if (u.username || u.password) return false;
+  if (u.port && u.port !== '80' && u.port !== '443') return false;
+
+  const host = u.hostname.toLowerCase();
+  if (!host.includes('.')) return false; // localhost, single-label intranet names
+  if (/^\d+(\.\d+){3}$/.test(host) || host.startsWith('[')) return false; // IPv4 / IPv6 literals
+  if (/\.(local|localhost|internal|lan|home|arpa)$/.test(host)) return false;
+  return true;
+}
+
+const MAX_REDIRECTS = 3;
+const MAX_HTML_BYTES = 1024 * 1024;
+const FETCH_TIMEOUT_MS = 8000;
+
+// Follows redirects manually so every hop is re-validated, and caps size and time.
+async function fetchPublicHtml(startUrl: string): Promise<string | null> {
+  let current = startUrl;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isAllowedScrapeTarget(current)) return null;
+
+    const response = await fetch(current, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+      },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (!location) return null;
+      current = new URL(location, current).toString();
+      continue;
+    }
+
+    if (!response.ok || !response.body) return null;
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let html = '';
+    let bytes = 0;
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      html += decoder.decode(value, { stream: true });
+      if (bytes >= MAX_HTML_BYTES) {
+        await reader.cancel();
+        break;
+      }
+    }
+    return html;
+  }
+  return null;
+}
+
 export async function scrapeUrl(targetUrl: string): Promise<ScrapedMetadata> {
   let url = targetUrl.trim();
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -119,17 +189,8 @@ export async function scrapeUrl(targetUrl: string): Promise<ScrapedMetadata> {
   } catch {}
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-      redirect: 'follow',
-    });
-
-    if (response.ok) {
-      const html = await response.text();
+    const html = await fetchPublicHtml(url);
+    if (html !== null) {
       return parseHtmlMetadata(html, url);
     }
   } catch {

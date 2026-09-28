@@ -4,6 +4,14 @@ import { eq } from 'drizzle-orm';
 
 export const GET: APIRoute = async ({ request, locals }) => {
   const db = locals.db;
+  const user = locals.user;
+  if (!user || (user.role !== 'admin' && user.role !== 'author')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   if (!db) {
     return new Response(JSON.stringify({ tools: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
@@ -32,6 +40,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
       })
       .from(desiTools)
       .leftJoin(categories, eq(desiTools.categoryId, categories.id))
+      .where(eq(desiTools.status, 'published'))
       .all();
 
     if (q) {

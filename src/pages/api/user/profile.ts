@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { isSafeUrlValue, unsafeUrlResponse } from '@/lib/server/url';
 import { users } from '@/lib/server/db/schema';
 import { eq, and, ne } from 'drizzle-orm';
 import { generateFunnyUsername } from '@/lib/username';
@@ -27,6 +28,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const { firstName, lastName, username, image } = body;
+
+    if (!isSafeUrlValue(image)) return unsafeUrlResponse('image');
 
     const trimmedFirst = firstName ? String(firstName).trim() : '';
     const trimmedLast = lastName ? String(lastName).trim() : '';
@@ -74,8 +77,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-  } catch (err: any) {
-    return new Response(JSON.stringify({ error: err.message || 'Failed to update profile' }), {
+  } catch {
+    return new Response(JSON.stringify({ error: 'Failed to update profile' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

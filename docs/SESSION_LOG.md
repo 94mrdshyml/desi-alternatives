@@ -1219,3 +1219,60 @@
 
 
 
+
+---
+
+## Session 46 — Security Hardening (Uploads, OTP-Only Auth, Mail Relay, URLs, Rate Limits, Headers, Reviews)
+
+**Date & Time (IST):** 2026-09-25 18:48 IST
+**Status:** Completed
+**Branch:** `feature/session-46-security-hardening`
+
+### What We Built
+Fixed the top findings from a code-level security audit: a stored-XSS → admin-takeover chain via uploads, XSS in the admin blog editor tool search, password sign-up that bypassed email verification, an unauthenticated branded-email relay, `javascript:` URLs in tool listings, and a hardcoded auth-secret fallback.
+
+### How We Built It
+- **Uploads** (`src/lib/server/upload.ts`, `/api/upload`, `/api/assets/[...key]`): image type detected from magic bytes (PNG/JPG/WebP only; SVG/HTML/GIF rejected); server sets `Content-Type` and extension. Assets always served with `X-Content-Type-Options: nosniff` + `Content-Security-Policy: sandbox`; legacy objects with non-image types are forced to download. File pickers now `accept="image/png,image/jpeg,image/webp"`.
+- **Blog editor tool search** (`admin/blog/editor.astro`): all tool data HTML-escaped via local `esc()` before `innerHTML`/`insertHTML`. `/api/admin/blog/search-tools` now requires admin/author and returns only published tools.
+- **OTP-only auth** (`src/lib/server/auth.ts`): `emailAndPassword.enabled = false`. Existing users sign in with 6-digit OTP. Removed profile "Change Password" section + orphaned `changePassword` export.
+- **Welcome email** (`/api/auth/welcome`): requires session, sends only to the signed-in user's own email, only within 10 minutes of account creation; no longer echoes internal errors. `interpolateTemplate` strips `<`/`>` from user values (a tag in a name previously flipped plain-text templates into HTML mode). `/api/newsletter/subscribe` accepts a custom name only when a signed-in user subscribes their own email.
+- **URL schemes** (`src/lib/server/url.ts`): `findUnsafeUrlField` rejects non-http(s) schemes (incl. whitespace-obfuscated `java\tscript:`) on URL-named keys, recursively. Applied to `/api/tools/submit`, `/api/admin/tools`, `/api/admin/global-tools`, `/api/admin/tools/import-json`; `isSafeUrlValue` applied to profile `image`. Relative paths and bare social handles still allowed.
+- **Secret fail-closed**: `createAuth` throws when `BETTER_AUTH_SECRET` is missing outside localhost. Middleware now creates auth inside its `try`, so public pages keep working and logs `[middleware] auth unavailable`.
+
+- **Rate limiting** (`src/lib/server/rate-limit.ts`, `wrangler.jsonc` `ratelimits`): Workers Rate Limiting bindings `RL_OTP` (5/min/IP: OTP send + OTP sign-in) and `RL_WRITE` (10/min/IP: welcome, reviews submit/vote, tool submit/claim, newsletter subscribe/unsubscribe, upload, scrape). Enforced in middleware before auth; returns 429 + `Retry-After`.
+- **Security headers** (`src/lib/server/security-headers.ts`): `CSP: frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy`, HSTS on https. Route-specific CSP (sandboxed `/api/assets`) is preserved. Full script CSP deferred (GTM/Umami inline scripts).
+- **Scraper SSRF** (`src/lib/server/scraper.ts`, `/api/admin/scrape`): `isAllowedScrapeTarget` blocks IP literals, single-label/internal hostnames (`.local/.internal/...`), credentials, non-default ports, non-http(s). Redirects followed manually (max 3) with every hop re-validated; 8s timeout; 1 MB body cap. GET is admin-only (admin catalog); POST stays for signed-in founders (rate limited). No internal error text returned.
+- **Reviews**: login required; new reviews are `pending` until approved in `/admin/moderation` (existing Approve/Reject UI); one review per user per tool (409 + unique index); `isVerified` = `user.emailVerified`; field lengths capped. Profile timeline shows "Pending approval" / "Not approved" badges. Tool page shows server message.
+- **Migration** `0018_review_one_per_user.sql`: `CREATE UNIQUE INDEX IF NOT EXISTS tool_reviews_user_tool_unique ON tool_reviews(user_id, tool_id)` — additive only. Hand-written (snapshots stop at 0010, so `drizzle-kit generate` would re-emit 0011–0017), journal entry added. Remote pre-checked read-only: 0 duplicate (user_id, tool_id) rows. Applied locally only.
+- **Extras**: `jsonLd()` helper (`src/lib/json-ld.ts`) escapes `<` in all 4 JSON-LD blocks; unsubscribe requires emailed token or own session; 13 public API routes no longer return raw `err.message`.
+- **Dependencies**: in-range bumps (`@astrojs/cloudflare` 12.6.13, `@astrojs/react` 4.4.2, `@astrojs/check` 0.9.10). Astro 5.18.2 is the latest 5.x; advisory fixes require Astro 6.1.10+ (major).
+
+### In Scope
+- Fixes #1, #2, #4, #5, #6, #7 from the audit (blog renderer part of #3 deferred)
+- Part 2: Astro in-range bumps, rate limiting, security headers, scraper SSRF, review approval + one-per-user, JSON-LD escaping, unsubscribe hardening, public error-message leakage
+- Tests: `tests/unit/upload.test.ts`, `tests/unit/url.test.ts`, `tests/unit/hardening.test.ts`, 3 new cases in `tests/unit/email.test.ts`, `tests/e2e/security.spec.ts` (10 tests incl. live rate-limit check)
+- Verification: unit 78/78, E2E 28/28, `astro check` 0 errors / 0 warnings, `bun run build` clean, `wrangler deploy --dry-run` shows `RL_OTP`/`RL_WRITE` bindings
+
+### Out of Scope
+- Blog markdown renderer XSS (`blog/[slug].astro` raw HTML + `javascript:` links) — to be handled in the dedicated blog rebuild session
+- **Astro 6 upgrade** (fixes Astro advisories incl. critical AVIF RCE — not exploitable here: `cloudflare` image service, no sharp at runtime). Adapter v13 removes `locals.runtime.env`, touching ~30 files — needs its own session.
+- Full script CSP; helpful-vote manipulation (IP-keyed anon votes); author post ownership (blog rebuild); claim work-email verification; admin endpoints still echo `err.message` (admin-only)
+
+### Breaking Changes
+- Password sign-in and sign-up are disabled; all accounts use email OTP. Existing password users must sign in with OTP (same email, same account).
+- `/api/upload` rejects anything that is not PNG/JPG/WebP by content.
+- `/api/auth/welcome` returns 401/403 unless called by a newly created, signed-in user.
+- Tool/global-tool/profile write APIs return 400 for non-http(s) URL schemes.
+- Production now fails closed (auth unavailable) if `BETTER_AUTH_SECRET` is missing.
+- New migration `0018` (additive unique index) — applied automatically by `deploy.yml` on push to `main`.
+- New `ratelimits` bindings in `wrangler.jsonc`. Rapid bursts to OTP/write endpoints now get 429.
+- Reviews require sign-in and start as `pending`; `/api/reviews/submit` no longer returns the `review` object; 409 on a second review for the same tool.
+- `GET /api/admin/scrape` is admin-only; `/api/newsletter/unsubscribe` no longer accepts email alone.
+- All pages send `X-Frame-Options: DENY` / `frame-ancestors 'none'` — the site can no longer be embedded in iframes.
+
+### Notes for Future Sessions
+- The name typed at registration is never saved to `users.name` (only kept in localStorage for the welcome/newsletter calls) — pre-existing bug.
+- `ARCHITECTURE.md` referenced by CLAUDE.md does not exist; `ci.yml` described in CLAUDE.md does not exist (only `deploy.yml`); `editor` role exists in schema/docs but not in code.
+- Analytics session-hash still has a default salt fallback (`src/lib/server/analytics.ts`) — low risk.
+- Local E2E hits the real Resend API when a `RESEND_API_KEY` is present locally (OTP rate-limit test uses `example.com`, which Resend rejects). Consider a test-mode switch.
+- Free-plan Cloudflare WAF can add an edge rate-limit rule on `/api/*` as a second layer (dashboard, not code).
