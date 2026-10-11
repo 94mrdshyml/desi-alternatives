@@ -1,0 +1,35 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import Navbar from '@/components/Navbar.astro';
+import Footer from '@/components/Footer.astro';
+import Breadcrumbs from '@/components/Breadcrumbs.astro';
+
+interface Props {
+  title: string;
+  description: string;
+  updated: string;
+}
+
+const { title, description, updated } = Astro.props;
+---
+
+<BaseLayout title={`${title} — Desi Alternatives`} description={description}>
+  <Navbar />
+
+  <main class="py-12 sm:py-16">
+    <article class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+      <Breadcrumbs items={[{ label: 'Home', href: '/' }, { label: title }]} class="mb-6" />
+
+      <h1 class="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">{title}</h1>
+      <p class="mt-2 text-sm text-muted-foreground">Last updated {updated}</p>
+
+      <div
+        class="mt-8 space-y-4 text-base leading-relaxed text-slate-700 max-w-[65ch] [&_h2]:mt-10 [&_h2]:text-xl [&_h2]:font-bold [&_h2]:tracking-tight [&_h2]:text-foreground [&_ul]:list-disc [&_ul]:space-y-1.5 [&_ul]:pl-5 [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4"
+      >
+        <slot />
+      </div>
+    </article>
+  </main>
+
+  <Footer />
+</BaseLayout>

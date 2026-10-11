@@ -11,8 +11,8 @@
   --color-popover-foreground: #0f172a;
   
   /* Sovereign Amber Brand Accent */
-  --color-primary: #d97706;
-  --color-primary-hover: #b45309;
+  --color-primary: #b45309;
+  --color-primary-hover: #92400e;
   --color-primary-foreground: #ffffff;
   
   --color-secondary: #f1f5f9;
@@ -45,4 +45,13 @@ body {
 
 .font-serif-editorial {
   font-family: var(--font-serif-editorial);
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

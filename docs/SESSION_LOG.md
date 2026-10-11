@@ -1276,3 +1276,37 @@ Fixed the top findings from a code-level security audit: a stored-XSS → admin-
 - Analytics session-hash still has a default salt fallback (`src/lib/server/analytics.ts`) — low risk.
 - Local E2E hits the real Resend API when a `RESEND_API_KEY` is present locally (OTP rate-limit test uses `example.com`, which Resend rejects). Consider a test-mode switch.
 - Free-plan Cloudflare WAF can add an edge rate-limit rule on `/api/*` as a second layer (dashboard, not code).
+
+---
+
+## Session 47 — Design Audit Fixes (Legal Pages, 404, Contrast, Footer Copy)
+
+**Date & Time (IST):** 2026-10-11 16:40 IST
+**Status:** Completed
+**Branch:** claude/beautiful-mendel-m3llqk
+
+### What We Built
+First batch of fixes from a design audit (taste-skill + redesign-skill installed under `.claude/skills/`): the missing `/privacy` and `/terms` pages, a branded 404 page, an accessible primary colour, the missing `no-scrollbar` utility, and plainer footer copy.
+
+### How We Built It
+- `src/layouts/LegalLayout.astro`: shared shell (Navbar, Breadcrumbs, 65ch prose, Footer) used by `privacy.astro` and `terms.astro`. Policy text describes only what the code does today (OTP sign-in, first-party analytics, consent-gated GTM, Cloudflare, Resend, Google Fonts, DiceBear).
+- `src/pages/404.astro`: search trigger (`data-open-search`), home and alternatives links. Dev server returns HTTP 404 for unknown paths.
+- `src/styles/global.css`: `--color-primary` `#d97706` → `#b45309` (white text now ~5:1, was ~3.2:1), hover `#92400e`; added `.no-scrollbar`.
+- `src/components/Footer.astro`: replaced vague tagline and removed the second tagline line.
+
+### In Scope
+- Audit items 1–5 (privacy/terms 404s, no custom 404, button contrast, `no-scrollbar` undefined, footer copy)
+- Verification: `astro check` 0 errors, unit 78/78, `astro build` clean, `/privacy` and `/terms` 200, unknown path 404
+
+### Out of Scope
+- Tiny text sizes (364 uses of 9–11px), skip link, focus-visible styles, reduced-motion, hero and card redesign, icon library swap, font doc drift (Plus Jakarta Sans vs Instrument Sans), `min-h-screen` → `min-h-dvh`
+- Playwright E2E not run this session
+- Hardcoded `#d97706` remains in email templates, admin settings and the blog editor
+
+### Breaking Changes
+- NONE
+
+### Notes for Future Sessions
+- `privacy.astro` has an empty `CONTACT_EMAIL` constant, so no contact route is shown. DPDP Act expects one. Set it before launch.
+- Privacy and terms are plain-language drafts, not legal advice. Have a lawyer review them.
+- Remaining audit items are listed in the chat history for this session; next priorities are 6 and 7 (text size, keyboard focus and skip link).

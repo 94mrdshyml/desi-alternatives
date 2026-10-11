@@ -1,0 +1,75 @@
+---
+import LegalLayout from '@/layouts/LegalLayout.astro';
+
+// Public contact for privacy requests. Left empty until the owner supplies one.
+const CONTACT_EMAIL = '';
+---
+
+<LegalLayout
+  title="Privacy policy"
+  description="What Desi Alternatives collects, why, who handles it, and how to ask us to change or delete it."
+  updated="11 October 2026"
+>
+  <p>
+    This page explains what data Desi Alternatives collects when you use the site, why we collect it, and what
+    you can do about it. We try to collect as little as we can.
+  </p>
+
+  <h2>What we collect</h2>
+  <ul>
+    <li><strong>Account details.</strong> Your email address and name when you register or sign in. We sign you in with a one-time code sent to your email, so there is no password.</li>
+    <li><strong>Things you submit.</strong> Tool suggestions, ownership claims (including a work email), edit requests and reviews, along with the text you write.</li>
+    <li><strong>Newsletter.</strong> Your email address if you subscribe.</li>
+    <li><strong>Usage data.</strong> Pages viewed, searches, outbound clicks, and rough device details such as browser and operating system.</li>
+  </ul>
+
+  <h2>How we use it</h2>
+  <ul>
+    <li>To run your account and keep you signed in.</li>
+    <li>To review tool listings, claims and reviews before they go live.</li>
+    <li>To send the emails you asked for, such as sign-in codes and the newsletter.</li>
+    <li>To see which pages are useful and fix what is not.</li>
+  </ul>
+  <p>We do not sell your data.</p>
+
+  <h2>Analytics and cookies</h2>
+  <p>
+    We use our own page-view counting on Cloudflare, and a cookieless analytics script. Visitors are counted
+    with a hashed identifier that changes daily, so we cannot follow one person across days.
+  </p>
+  <p>
+    Google Tag Manager and Google tags are switched off until you press <em>Allow all</em> in the cookie
+    banner. If you press <em>Decline</em>, they stay off. Your choice is saved in your browser. A sign-in
+    cookie is set when you log in, because the site cannot work without it.
+  </p>
+
+  <h2>Who else handles your data</h2>
+  <ul>
+    <li><strong>Cloudflare</strong> hosts the site, the database and image storage.</li>
+    <li><strong>Resend</strong> delivers our emails.</li>
+    <li><strong>Google Fonts</strong> serves our fonts, so your browser contacts Google when a page loads.</li>
+    <li><strong>DiceBear</strong> generates the default profile picture if you have not uploaded one.</li>
+  </ul>
+
+  <h2>Your rights</h2>
+  <p>
+    Under India's Digital Personal Data Protection Act, 2023, you can ask to see the data we hold about you,
+    correct it, or have it deleted. You can unsubscribe from the newsletter at any time using the link in any
+    issue.
+  </p>
+  {CONTACT_EMAIL && (
+    <p>
+      To make a request, email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> from the address on your
+      account.
+    </p>
+  )}
+
+  <h2>How long we keep it</h2>
+  <p>
+    Account and newsletter data stays until you ask us to remove it. Published reviews and tool listings stay
+    on the site unless they are removed.
+  </p>
+
+  <h2>Changes</h2>
+  <p>If we change this policy, the date at the top of the page changes with it.</p>
+</LegalLayout>
